@@ -89,7 +89,7 @@ window.fillMissingPhotos=async function fillMissingPhotos({concurrency=6,max=80,
   save();
   if(typeof logActivity==='function')logActivity('photos','Filled '+done+' catalog photos');
   if(!silent)showToast('🖼 Saved '+done+' free photos'+(need.length>=max?' (run again for more)':''));
-  if(tab==='have'||tab==='want'||tab==='dash')render();
+  if(!silent && (tab==='have'||tab==='want'||tab==='dash'))render();
   return done;
 };
 

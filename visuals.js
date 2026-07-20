@@ -180,15 +180,18 @@
     (root || document).querySelectorAll('.logoChip[data-team-abbr]').forEach((btn) => {
       btn.onclick = () => {
         const abbr = btn.getAttribute('data-team-abbr');
-        const qEl = typeof $ === 'function' ? $('q') : null;
-        if (qEl) {
-          qEl.classList.remove('isHidden');
-          qEl.value = TEAM_NAMES[abbr] || abbr;
-          if (typeof q !== 'undefined') q = qEl.value;
+        const name = TEAM_NAMES[abbr] || abbr;
+        if (typeof applyCollectionFilter === 'function') {
+          applyCollectionFilter(name, { status: 'have' });
+        } else {
+          const qEl = typeof $ === 'function' ? $('q') : null;
+          if (qEl) {
+            qEl.classList.remove('isHidden');
+            qEl.value = name;
+          }
+          if (typeof render === 'function') render();
         }
-        if (typeof tab !== 'undefined') tab = 'have';
-        if (typeof render === 'function') render();
-        if (typeof showToast === 'function') showToast((TEAM_NAMES[abbr] || abbr) + ' · filter');
+        if (typeof showToast === 'function') showToast(name + ' · filter');
       };
     });
   };
@@ -237,9 +240,10 @@
     el.classList.add('hasPortrait');
     /* keep team badge if present */
     const badge = el.querySelector('.teamBadge');
+    const badgeClone = badge ? badge.cloneNode(true) : null;
     el.innerHTML = '';
     el.appendChild(img);
-    if (badge) el.appendChild(badge);
+    if (badgeClone) el.appendChild(badgeClone);
     else if (c.team) {
       const b = document.createElement('div');
       b.innerHTML = teamBadgeHtml(c.team);
@@ -254,6 +258,12 @@
     } catch (e) {}
 
     try {
+      if (typeof loadMlbCareerJson === 'function' && !(typeof MLB_CAREER !== 'undefined' && MLB_CAREER.loaded)) {
+        await loadMlbCareerJson();
+      }
+    } catch (e) {}
+
+    try {
       if (typeof fillMissingPhotos === 'function' && state && state.cards && state.cards.length) {
         const need = state.cards.filter((c) => c.status !== 'sold' && c.csId && !c.imgId && !c.imgUrl);
         if (need.length) await fillMissingPhotos({ concurrency: 5, max: 80, silent: true });
@@ -264,14 +274,14 @@
       await preloadVaultPortraits();
     } catch (e) {}
 
-    /* Re-paint any still-empty thumbs with portraits */
+    /* Re-paint any still-empty thumbs with portraits (no full render) */
     try {
       if (state && state.cards) {
         for (const c of state.cards) {
           const el = typeof $ === 'function' ? $('im-' + c.id) : null;
-          if (el && !el.querySelector('img.cardPhoto') && !el.querySelector('img:not(.teamBadge)')) {
-            applyPortraitFallback(el, c);
-          }
+          if (!el) continue;
+          if (el.querySelector('img.cardPhoto') || el.querySelector('img:not(.teamBadge)')) continue;
+          applyPortraitFallback(el, c);
         }
       }
     } catch (e) {}

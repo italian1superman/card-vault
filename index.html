@@ -335,7 +335,7 @@ details summary::-webkit-details-marker{display:none}
   background:#fff;border-radius:4px;padding:1px;box-shadow:0 1px 3px rgba(0,0,0,.18);z-index:2;
 }
 .gimg .teamBadge{width:22px;height:22px;right:4px;bottom:4px}
-.thumb,.gimg{position:relative}
+.thumb,.gimg,.photoBox .pv{position:relative}
 .brandMark{
   width:16px;height:16px;border-radius:4px;object-fit:cover;vertical-align:-3px;margin-right:4px;
   box-shadow:0 0 0 0.5px var(--sep);
@@ -1517,10 +1517,20 @@ async function sdbSearch(name){
 /* ---- rendering ---- */
 const TABS=[['dash','⌂','Home'],['have','▤','Have'],['want','☆','Want'],['sold','$','Sold'],['sets','▦','Sets'],['explore','⌕','Find']];
 function syncPhoneFilter(){
-  const q=$('q'); if(!q) return;
+  const qel=$('q'); if(!qel) return;
   const show=['have','want','sold','sets'].includes(tab);
-  q.classList.toggle('isHidden', !show);
+  qel.classList.toggle('isHidden', !show);
 }
+/** Used by visuals.js logo strip — let q/tab are not on window. */
+window.applyCollectionFilter=function applyCollectionFilter(text,{status='have'}={}){
+  clearTimeout(window.__qPropTimer);
+  const qel=$('q');
+  const v=String(text||'').trim();
+  if(qel){ qel.classList.remove('isHidden'); qel.value=v; }
+  q=v;
+  if(status) tab=status;
+  render();
+};
 function renderNav(){
   $('tabsTop').innerHTML=TABS.map(([k,i,l])=>`<div class="tab ${tab===k?'on':''}" data-t="${k}">${i} ${l}</div>`).join('');
   $('navB').innerHTML=TABS.map(([k,i,l])=>`<div class="nb ${tab===k?'on':''}" data-t="${k}"><span class="i">${i}</span><span class="nl">${l}</span></div>`).join('');
@@ -1641,9 +1651,25 @@ function renderListPanel(cs){
 function afterListRender(cs){
   document.querySelectorAll('[data-id]').forEach(el=>el.onclick=()=>{
     sel=state.cards.find(c=>c.id===el.dataset.id);openSheet();});
-  cs.forEach(c=>{
+  const thumbGo=(c)=>{
     const t=$('im-'+c.id);
-    if(t&&(c.imgId||c.imgUrl||c.csId||c._pPhoto))fillThumb(t,c);
+    if(!t)return;
+    if(c.imgId||c.imgUrl||c.csId||c._pPhoto){
+      fillThumb(t,c);
+    }else if(typeof applyPortraitFallback==='function'){
+      applyPortraitFallback(t,c);
+    }
+  };
+  /* Paint first screen of thumbs immediately; defer the rest so Find/Home stay snappy */
+  const eager=cs.slice(0,24);
+  const rest=cs.slice(24);
+  eager.forEach(thumbGo);
+  if(rest.length){
+    const kick=()=>rest.forEach(thumbGo);
+    if(typeof requestIdleCallback==='function') requestIdleCallback(kick,{timeout:1200});
+    else setTimeout(kick, 0);
+  }
+  cs.forEach(c=>{
     const sp=$('sp-'+c.id);if(sp)spark(sp,(c.prices||[]).map(p=>p.v));
   });
 }
@@ -2171,7 +2197,7 @@ async function openSheet(){
      ${['Raw','PSA 8','PSA 9','PSA 10','BGS 9.5','SGC 10'].map(g=>`<button type="button" data-g="${esc(g)}" class="${String(c.grade||'')===g?'on':''}">${esc(g)}</button>`).join('')}
    </div>
    <div class="photoBox">
-    <div class="pv" id="pv">${sportIcon(c.sport)}</div>
+    <div class="pv" id="pv">${sportIcon(c.sport)}${typeof teamBadgeHtml==='function'?teamBadgeHtml(c.team):''}</div>
     <div class="pbtns">
      <button id="btnPhoto">📷 Upload / take photo</button>
      ${csKey()?'<button id="btnCsId">🤖 Identify from photo</button><button id="btnCsCat">🔎 Match in catalog</button>':''}
@@ -2740,7 +2766,7 @@ window.fillMissingPhotos=async function fillMissingPhotos({concurrency=6,max=80,
   save();
   if(typeof logActivity==='function')logActivity('photos','Filled '+done+' catalog photos');
   if(!silent)showToast('🖼 Saved '+done+' free photos'+(need.length>=max?' (run again for more)':''));
-  if(tab==='have'||tab==='want'||tab==='dash')render();
+  if(!silent && (tab==='have'||tab==='want'||tab==='dash'))render();
   return done;
 };
 
@@ -4121,8 +4147,7 @@ window.openMlbJsonPanel=function openMlbJsonPanel(){
 /* Back-compat aliases so old buttons keep working */
 window.openGitHubPanel=window.openMlbJsonPanel;
 
-/* Prefetch public JSON once app is up */
-setTimeout(()=>{ loadMlbCareerJson().catch(()=>{}); }, 400);
+/* MLB JSON loaded from init() — no second prefetch */
 
 })();
 
@@ -4157,9 +4182,16 @@ async function init(){
     q=e.target.value;
     clearTimeout(window.__qPropTimer);
     const v=q.trim();
+    /* Have/Want/Sold/Sets: filter the vault only — never hijack to Find */
+    if(tab==='have'||tab==='want'||tab==='sold'||tab==='sets'){
+      render();
+      return;
+    }
+    /* Home / Find: typing a player can open catalog search */
     if(v.length>=3 && csKey()){
       window.__qPropTimer=setTimeout(()=>{
         if(($('q').value||'').trim()!==v)return;
+        if(tab==='have'||tab==='want'||tab==='sold'||tab==='sets')return;
         goExplorePlayer(v,{toast:false});
       },550);
     }else{
@@ -4170,7 +4202,11 @@ async function init(){
   $('q').onkeydown=e=>{
     if(e.key==='Enter'){
       e.preventDefault();
+      clearTimeout(window.__qPropTimer);
       const v=($('q').value||'').trim();
+      if(tab==='have'||tab==='want'||tab==='sold'||tab==='sets'){
+        q=v; render(); return;
+      }
       if(v.length>=2) goExplorePlayer(v);
       else { if(tab==='dash')tab='have'; render(); }
     }
@@ -4186,6 +4222,10 @@ async function init(){
   $('fileIn').onchange=e=>{const f=e.target.files[0];e.target.value='';if(f)handleImportFile(f);};
   $('sheetBk').onclick=closeSheet;
   window.addEventListener('resize',()=>{if(tab==='dash')renderDash();});
+  /* Load MLB map before first paint so team portraits resolve on thumbs */
+  try{
+    if(typeof loadMlbCareerJson==='function') await loadMlbCareerJson();
+  }catch(e){}
   render();
   const warm=()=>{ if(typeof warmGiftVisuals==='function') warmGiftVisuals().catch(()=>{}); };
   if(typeof requestIdleCallback==='function') requestIdleCallback(warm,{timeout:2500});

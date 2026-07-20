@@ -1,5 +1,5 @@
 /* Card Vault service worker */
-const CACHE = 'card-vault-v22-logos';
+const CACHE = 'card-vault-v23-sweep';
 const ASSETS = [
   './',
   './index.html',
@@ -7,9 +7,7 @@ const ASSETS = [
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/apple-touch-icon.png',
-  './hobby-advanced.js',
   './visuals.js',
-  './data/logos.json',
   './data/mlb-career.json',
   './assets/teams/ARI.svg',
   './assets/teams/ATL.svg',
