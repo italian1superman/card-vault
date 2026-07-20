@@ -2,9 +2,11 @@
 
 Sports card collection PWA — values, P/L, CardSight pricing, Excel import/export. All data stays in your browser.
 
+**Live site:** https://italian1superman.github.io/card-vault/
+
 ## Open on iPhone
 
-1. Open this site in **Safari** (not Chrome).
+1. Open **https://italian1superman.github.io/card-vault/** in **Safari** (not Chrome).
 2. Tap **Share** → **Add to Home Screen**.
 3. Open the **Card Vault** icon.
 
