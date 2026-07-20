@@ -192,16 +192,48 @@ footer{color:var(--dim);font-size:11.5px;text-align:center;padding:8px 14px 90px
 .popLadder span{background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:2px 6px}
 .groupHead{font-size:12px;color:var(--dim);font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:12px 4px 4px;border-bottom:1px solid var(--line);margin-top:4px}
 
+
+.heroPanel{background:linear-gradient(165deg,#1a2438 0%,var(--panel) 55%)}
+.heroTitle{font-size:20px;font-weight:800;margin:0 0 4px}
+.heroSub{color:var(--dim);font-size:13px;margin:0 0 12px;line-height:1.45;max-width:36em}
+.empty.soft{padding:28px 12px}
+.empty .bigActs{display:flex;flex-direction:column;gap:8px;max-width:320px;margin:14px auto 0}
+.empty .bigActs button{font-weight:700;padding:12px}
+.quickGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-top:10px}
+.quickCard{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px;text-align:left;cursor:pointer}
+.quickCard:active{transform:scale(.98)}
+.quickCard b{display:block;font-size:14px;margin-bottom:2px}
+.quickCard span{font-size:12px;color:var(--dim)}
+.parHero{display:flex;gap:12px;align-items:center;margin-bottom:8px}
+.parThumb{width:64px;height:88px;border-radius:8px;background:var(--panel3);overflow:hidden;flex:none;display:flex;align-items:center;justify-content:center;font-size:28px}
+.parThumb img{width:100%;height:100%;object-fit:cover}
+.parTitle{font-weight:800;font-size:16px}
+.parSub{font-size:12px;color:var(--dim);margin-top:2px}
+.prog.fat{height:10px;margin-top:8px}
+.checkRow.owned{background:rgba(62,207,122,.06)}
+.tinyAdd{padding:5px 8px;font-size:12px}
+.badge.b-stale{background:#2b2412;color:var(--amber)}
+.confetti{pointer-events:none;position:fixed;inset:0;z-index:90;overflow:hidden}
+.confetti i{position:absolute;top:-10px;width:8px;height:12px;border-radius:2px;animation:fall .85s ease-in forwards}
+@keyframes fall{to{transform:translateY(100vh) rotate(420deg);opacity:0}}
+#fabMenu{position:fixed;right:16px;bottom:calc(128px + env(safe-area-inset-bottom));z-index:22;
+ background:var(--panel3);border:1px solid var(--line);border-radius:14px;padding:6px;min-width:180px;
+ box-shadow:0 10px 30px rgba(0,0,0,.5)}
+#fabMenu button{display:block;width:100%;text-align:left;border:0;background:none;padding:11px 14px;border-radius:10px;font-weight:600}
+#fabMenu button:hover{background:var(--panel2)}
+.staleDot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--amber);margin-left:4px;vertical-align:2px}
+@media(max-width:899px){#navB .nb{font-size:9px;padding:8px 0 6px}#navB .nb .i{font-size:18px}}
+
 </style>
 </head>
 <body>
 <header>
   <h1>⚾ <span>Card Vault</span></h1>
   <div id="tabsTop"></div>
-  <input id="q" placeholder="🔎 baseball player…" list="dlSearch">
+  <input id="q" placeholder="🔎 Type a player — cards appear…" list="dlSearch">
   <button class="bigxl" id="btnXl">Excel ⬇</button>
   <button class="bigim" id="btnIm">Import ⬆</button>
-  <button id="btnAddTop">+ Add</button>
+  <button id="btnAddTop">+ Card</button>
   <button id="btnMenu">⋯</button>
 </header>
 <div id="iosBanner" class="ios-banner" hidden></div>
@@ -948,7 +980,7 @@ async function csAutoPrice(c){
   return v;
 }
 async function refreshStalePrices(){
-  if(!csKey())return alert('CardSight key unavailable');
+  if(!csKey())return showToast('CardSight unavailable');
   const days=Math.round(CS_TTL_PRICE/864e5);
   const stale=state.cards.filter(c=>c.csId&&c.status!=='sold'&&priceAgeDays(c)>=days).slice(0,100);
   if(!stale.length)return showToast('No stale prices — need linked catalog IDs with prices ≥'+days+' days old');
@@ -1033,7 +1065,7 @@ async function sdbSearch(name){
 }
 
 /* ---- rendering ---- */
-const TABS=[['dash','📊','Dashboard'],['have','🃏','Collection'],['want','⭐','Want'],['sold','💰','Sold'],['sets','📚','Sets'],['explore','🔍','Explore']];
+const TABS=[['dash','🏠','Home'],['have','🃏','Have'],['want','⭐','Want'],['sold','💰','Sold'],['sets','📚','Sets'],['explore','🔍','Find']];
 function renderNav(){
   $('tabsTop').innerHTML=TABS.map(([k,i,l])=>`<div class="tab ${tab===k?'on':''}" data-t="${k}">${i} ${l}</div>`).join('');
   $('navB').innerHTML=TABS.map(([k,i,l])=>`<div class="nb ${tab===k?'on':''}" data-t="${k}"><span class="i">${i}</span>${l}</div>`).join('');
@@ -1064,9 +1096,12 @@ function badges(c){
   let b='';
   if(c.rookie)b+='<span class="badge b-rc">RC</span>';
   if(c.serial)b+=`<span class="badge b-ser">/${esc(String(c.serial).replace(/^\//,''))}</span>`;
+  if(c.variant)b+='<span class="badge b-ser">'+esc(String(c.variant).slice(0,14))+'</span>';
   if(dealHit(c))b+='<span class="badge b-deal">🔥 DEAL</span>';
   if(tab==='dash'&&c.status==='want')b+='<span class="badge b-want">want</span>';
   if(c.status==='sold')b+='<span class="badge b-sold">sold</span>';
+  if(c.csId&&c.status==='have'&&typeof priceAgeDays==='function'&&priceAgeDays(c)>=3)
+    b+='<span class="badge b-stale" title="Price may be stale">stale $</span>';
   return b;
 }
 async function fillThumb(el,c){
@@ -1084,7 +1119,7 @@ function groupLabel(c){
   return '';
 }
 function renderListPanel(cs){
-  if(!cs.length)return `<div class="empty">Nothing here yet — tap <b>+</b> to add a card, browse <b>Sets</b>, or <b>Explore</b> a player.</div>`;
+  if(!cs.length)return `<div class="empty soft"><b>Nothing here yet</b><div class="bigActs"><button type="button" class="bigim" id="emptyFind">🔍 Find a player</button><button type="button" id="emptySets">📚 Build a set</button><button type="button" id="emptyAdd">＋ Add blank card</button></div></div>`;
   if(view==='grid'){
     return `<div class="grid">${cs.map(c=>`
       <div class="gcard" data-id="${c.id}">
@@ -1127,31 +1162,66 @@ function renderDash(){
     .sort((a,b)=>Math.abs(b[1])-Math.abs(a[1]));
   const backupAge=state.meta.lastBackup?Math.floor((Date.now()-state.meta.lastBackup)/86400000):null;
   const best=cs.filter(c=>c.status==='have').sort((a,b)=>valueOf(b)*(b.qty||1)-valueOf(a)*(a.qty||1))[0];
+  const empty=!cs.length;
+  const qp=(typeof QUICK_PLAYERS!=='undefined'?QUICK_PLAYERS:['Ken Griffey Jr','Shohei Ohtani','Mike Trout','Aaron Judge']);
   $('view').innerHTML=`
-   ${(cs.length&&(backupAge===null||backupAge>7))?`<div class="warn">💾 ${backupAge===null?'No backup yet':'Last backup '+backupAge+' days ago'} — use ⋯ → Backup. On iPhone the system can wipe browser storage without warning.</div>`:''}
-   <div class="panel" style="padding:10px 12px;font-size:13px;color:var(--dim)">Online stack: MLB + CardSight · cache ${CS_STATS.hits}h/${CS_STATS.stale}s/${CS_STATS.misses}m · saved ${CS_STATS.saved} price lookups. <button type="button" id="btnStale" style="margin-left:6px">♻ Refresh stale prices</button></div>
-   <div class="panel"><div class="chips">
-    <div class="chipStat"><div class="k">Collection value</div><div class="v">${money0(s.val)}</div><div class="s">${s.have} cards · ${s.qty} qty</div></div>
+   ${empty?`<div class="panel heroPanel">
+      <div class="heroTitle">⚾ Your baseball card vault</div>
+      <div class="heroSub">Search a player, finish a set checklist, or snap a card. Everything auto-saves on this phone — fun first, serious collector tools underneath.</div>
+      <div class="quickGrid">
+        <button type="button" class="quickCard" data-go="explore"><b>🔍 Find a player</b><span>Photos + parallels fill in</span></button>
+        <button type="button" class="quickCard" data-go="sets"><b>📚 Build a set</b><span>TCDB-style checklist %</span></button>
+        <button type="button" class="quickCard" data-go="add"><b>📷 Add a card</b><span>Blank sheet or AI identify</span></button>
+        <button type="button" class="quickCard" data-go="want"><b>⭐ Start a want</b><span>Deal alerts when price dips</span></button>
+      </div>
+      <div class="ct" style="margin-top:14px">Try a legend</div>
+      <div class="pill-row">${qp.slice(0,6).map(n=>`<button type="button" class="pill" data-pl="${esc(n)}">⚾ ${esc(n)}</button>`).join('')}</div>
+    </div>`:''}
+   ${(cs.length&&(backupAge===null||backupAge>7))?`<div class="warn">💾 ${backupAge===null?'Tip: make a Backup from ⋯ so a phone wipe can’t erase your vault.':'Last backup '+backupAge+' days ago — ⋯ → Backup when you can.'}</div>`:''}
+   ${!empty?`<div class="panel heroPanel">
+     <div class="heroTitle">${money0(s.val)}</div>
+     <div class="heroSub">${s.have} in collection · ${s.want} wants${s.deals?` · <span class="pos">🔥 ${s.deals} deal${s.deals>1?'s':''}</span>`:''} · P/L <span class="${s.pl>=0?'pos':'neg'}">${s.pl>=0?'+':''}${money0(s.pl)}</span></div>
+     <div class="home-actions">
+       <button type="button" id="btnGoFind" class="bigim">🔍 Find cards</button>
+       <button type="button" id="btnGoSets">📚 Sets</button>
+       <button type="button" id="btnStale">♻ Refresh values</button>
+     </div>
+     <div class="ct" style="margin-top:12px">Jump to a player</div>
+     <div class="pill-row">${qp.slice(0,8).map(n=>`<button type="button" class="pill" data-pl="${esc(n)}">⚾ ${esc(n)}</button>`).join('')}</div>
+   </div>`:''}
+   ${!empty?`<div class="panel"><div class="chips">
     <div class="chipStat"><div class="k">Cost basis</div><div class="v">${money0(s.cost)}</div></div>
-    <div class="chipStat"><div class="k">Unrealized P/L</div><div class="v ${s.pl>=0?'pos':'neg'}">${s.pl>=0?'+':''}${money0(s.pl)}</div><div class="s">${s.cost?((s.pl/s.cost*100).toFixed(1)+'%'):''}</div></div>
-    <div class="chipStat"><div class="k">Realized (sold)</div><div class="v ${s.realized>=0?'pos':'neg'}">${s.realized>=0?'+':''}${money0(s.realized)}</div><div class="s">${s.sold} sold</div></div>
-    <div class="chipStat"><div class="k">Want list</div><div class="v">${s.want}</div><div class="s">≈${money0(s.wantCost)}${s.deals?` · <span class="pos">🔥 ${s.deals} deal${s.deals>1?'s':''}</span>`:''}</div></div>
+    <div class="chipStat"><div class="k">Realized</div><div class="v ${s.realized>=0?'pos':'neg'}">${s.realized>=0?'+':''}${money0(s.realized)}</div><div class="s">${s.sold} sold</div></div>
     <div class="chipStat"><div class="k">Top card</div><div class="v" style="font-size:14px">${best?esc(best.player||best.setName||'—'):'—'}</div><div class="s">${best?money0(valueOf(best)):''}</div></div>
+    <div class="chipStat"><div class="k">Cache</div><div class="v" style="font-size:14px">${CS_STATS.hits}h</div><div class="s">${CS_STATS.stale} soft · ${csUseN()}/750</div></div>
    </div></div>
-   <div class="panel"><div class="ct">Portfolio value over time</div><canvas class="chart" id="chPort"></canvas></div>
+   <div class="panel"><div class="ct">Portfolio over time</div><canvas class="chart" id="chPort"></canvas></div>
    <div class="chartsGrid">
-    <div class="panel"><div class="ct">Value by sport</div><canvas class="chart" id="chSport"></canvas></div>
-    <div class="panel"><div class="ct">Top players by value</div><canvas class="chart" id="chPlayers"></canvas></div>
-    <div class="panel"><div class="ct">Biggest movers ($ gain/loss)</div><canvas class="chart" id="chMovers"></canvas></div>
-    <div class="panel"><div class="ct">Value by grade</div><canvas class="chart" id="chGrade"></canvas></div>
-   </div>`;
-  const have=cs.filter(c=>c.status==='have');
-  chLine($('chPort'),portfolioSeries(cs),'#4da3ff',200);
-  chDonut($('chSport'),groupSum(have,c=>c.sport));
-  chBars($('chPlayers'),groupSum(have,c=>c.player).slice(0,7));
-  chBars($('chMovers'),movers.slice(0,7),{signed:true});
-  chDonut($('chGrade'),groupSum(have,c=>c.grade||'Raw'));
-  const bs=$('btnStale'); if(bs) bs.onclick=()=>refreshStalePrices();
+    <div class="panel"><div class="ct">Top players</div><canvas class="chart" id="chPlayers"></canvas></div>
+    <div class="panel"><div class="ct">Movers</div><canvas class="chart" id="chMovers"></canvas></div>
+    <div class="panel"><div class="ct">By grade</div><canvas class="chart" id="chGrade"></canvas></div>
+    <div class="panel"><div class="ct">By sport</div><canvas class="chart" id="chSport"></canvas></div>
+   </div>`:''}`;
+  document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{
+    const g=b.dataset.go;
+    if(g==='explore'){tab='explore';render();}
+    else if(g==='sets'){tab='sets';render();}
+    else if(g==='add'){tab='have';addCard();}
+    else if(g==='want'){tab='want';addCard();}
+  });
+  document.querySelectorAll('[data-pl]').forEach(b=>b.onclick=()=>goExplorePlayer(b.dataset.pl));
+  const bf=$('btnGoFind'); if(bf) bf.onclick=()=>{tab='explore';render();};
+  const bs=$('btnGoSets'); if(bs) bs.onclick=()=>{tab='sets';render();};
+  const br=$('btnStale'); if(br) br.onclick=()=>refreshStalePrices();
+  if(!empty){
+    const have=cs.filter(c=>c.status==='have');
+    chLine($('chPort'),portfolioSeries(cs),'#4da3ff',200);
+    chBars($('chPlayers'),groupSum(have,c=>c.player).slice(0,7));
+    chBars($('chMovers'),movers.slice(0,7),{signed:true});
+    chDonut($('chGrade'),groupSum(have,c=>c.grade||'Raw'));
+    chDonut($('chSport'),groupSum(have,c=>c.sport));
+    if(typeof autoRefreshPricesIfNeeded==='function') autoRefreshPricesIfNeeded();
+  }
 }
 function renderList(){
   const sports=[...new Set(state.cards.map(c=>c.sport).filter(Boolean))].sort();
@@ -1188,6 +1258,9 @@ function refreshList(){
   $('cnt').textContent=cs.length+' cards · '+money0(cs.reduce((s,c)=>s+valueOf(c)*(+c.qty||1),0));
   $('listBody').innerHTML=renderListPanel(cs);
   afterListRender(cs);
+  const ef=$('emptyFind'); if(ef) ef.onclick=()=>{tab='explore';render();};
+  const es=$('emptySets'); if(es) es.onclick=()=>{tab='sets';render();};
+  const ea=$('emptyAdd'); if(ea) ea.onclick=()=>addCard();
 }
 function render(){
   renderNav();
@@ -1336,12 +1409,13 @@ function csImgSrc(d){
 }
 function renderExplore(){
   $('view').innerHTML=`<div class="panel">
-    <div class="ct">Player PC — type a player, every card + free images</div>
+    <div class="ct">Find any player — photos load free, tap + to pick parallels</div>
     <div style="display:flex;gap:8px">
       <input id="exQ" placeholder="⚾ Player — e.g. Ken Griffey Jr" value="${esc(EX.q)}" autocomplete="off">
       <button class="bigim" id="exGo" style="flex:none">Search</button>
     </div>
     <div id="exSugg" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"></div>
+    <div class="pill-row" id="exPills"></div>
     <div class="boothBox">
       <div class="ct">Booth mode — year + set + #</div>
       <div class="boothBar">
@@ -1397,7 +1471,13 @@ function renderExplore(){
       try{const d=await csFetchCached('/v1/catalog/cards/'+x.id,{},{ttlMs:CS_TTL_CARD});if(d)x={...x,...d};}catch(e){}
       const st=confirm('Add to Have? (Cancel = Want)')?'have':'want';
       await addFromCatalog(x,st);
-      paintEx();
+        const exp=$('exPills');
+  if(exp){
+    const qp=(typeof QUICK_PLAYERS!=='undefined'?QUICK_PLAYERS:['Ken Griffey Jr','Shohei Ohtani','Mike Trout']);
+    exp.innerHTML=qp.slice(0,6).map(n=>`<button type="button" class="pill" data-pl="${esc(n)}">⚾ ${esc(n)}</button>`).join('');
+    exp.querySelectorAll('[data-pl]').forEach(b=>b.onclick=()=>{ $('exQ').value=b.dataset.pl; exGo(true); });
+  }
+  paintEx();
     })().catch(e=>alert(e.message));
   };
   const ebs=$('exBnSet');
@@ -1965,12 +2045,13 @@ function openMenu(anchor){
 
 /* ---- hobbyist advanced (inlined) ---- */
 /* Card Vault — advanced hobbyist layer (prefetch, parallels, Sets, booth, pop, filters)
-   Loaded after main inline script hooks; also safe if inlined. */
+   Friendlier UX pass: soft dupes, richer parallel sheet, celebrations. */
 (function(){
 'use strict';
 if(typeof window==='undefined')return;
 
-/* ---- Prefetch pool (free images) ---- */
+const QUICK_PLAYERS=['Ken Griffey Jr','Shohei Ohtani','Mike Trout','Aaron Judge','Ronald Acuña Jr','Juan Soto','Elly De La Cruz','Paul Skenes'];
+
 window.csPrefetchImages=async function csPrefetchImages(ids,{concurrency=6,toast=true}={}){
   const list=[...new Set((ids||[]).filter(Boolean))];
   if(!list.length)return 0;
@@ -1982,11 +2063,10 @@ window.csPrefetchImages=async function csPrefetchImages(ids,{concurrency=6,toast
     }
   }
   await Promise.all(Array.from({length:Math.min(concurrency,list.length)},()=>worker()));
-  if(toast)showToast('Images ready · '+done+' cards · 0 billed');
+  if(toast)showToast('🖼 '+done+' photos ready · free');
   return done;
 };
 
-/* ---- Ownership helpers ---- */
 window.ownKey=function ownKey(csId,parallelId){
   return String(csId||'')+'|'+(parallelId||'');
 };
@@ -2010,7 +2090,6 @@ window.ownParallelCountInSet=function ownParallelCountInSet(setId){
   return n;
 };
 
-/* ---- Hydrate + parallel picker ---- */
 window.csHydrateCard=function csHydrateCard(nc,x,par){
   FIELDS.forEach(f=>{if(!(f in nc))nc[f]=f==='qty'?1:'';});
   nc.sport=BB_SPORT;
@@ -2045,7 +2124,7 @@ window.csEnsureParallels=async function csEnsureParallels(x){
   if(!x.id)return [];
   try{
     const d=await csFetchCached('/v1/catalog/cards/'+x.id,{},{ttlMs:CS_TTL_CARD});
-    if(d&&d.parallels){x.parallels=d.parallels;return d.parallels;}
+    if(d&&d.parallels){x.parallels=d.parallels;if(d.manufacturerName&&!x.manufacturerName)x.manufacturerName=d.manufacturerName;return d.parallels;}
   }catch(e){}
   return x.parallels||[];
 };
@@ -2056,19 +2135,31 @@ window.openParallelPicker=function openParallelPicker(x,status){
     if(!pars.length){resolve(null);return;}
     const bk=document.createElement('div');
     bk.className='parPickBk';
+    const verb=status==='want'?'Want':'Have';
     bk.innerHTML=`<div class="parPick">
-      <div class="ct">Pick parallel for ${esc(x.name||'card')}</div>
+      <div class="parHero">
+        <div class="parThumb" id="parThumb">⚾</div>
+        <div>
+          <div class="parTitle">${esc(x.name||'Card')}</div>
+          <div class="parSub">${esc([x.releaseYear||x.year,x.releaseName,x.setName,x.number?'#'+x.number:''].filter(Boolean).join(' · '))}</div>
+          <div class="parSub">Pick Base or a parallel — fields fill in for you</div>
+        </div>
+      </div>
       <div class="parChips">
-        <button type="button" data-p="base" class="parChip on">Base</button>
+        <button type="button" data-p="base" class="parChip on">✨ Base</button>
         ${pars.map((p,i)=>`<button type="button" data-p="${i}" class="parChip">${esc(p.name||'Parallel')}${p.numberedTo?' <span>/'+esc(String(p.numberedTo))+'</span>':''}</button>`).join('')}
       </div>
-      <div style="display:flex;gap:8px;margin-top:12px">
-        <button type="button" class="bigxl" id="parGo" style="flex:1;box-shadow:none">Add to ${status==='want'?'Want':'Have'}</button>
-        <button type="button" id="parCancel">Cancel</button>
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <button type="button" class="bigxl" id="parGo" style="flex:1;box-shadow:none">Add to ${verb}</button>
+        <button type="button" id="parCancel">Not now</button>
       </div>
     </div>`;
     document.body.appendChild(bk);
     let chosen=null;
+    csImageData(x.id).then(d=>{
+      const url=csImgSrc(d); const el=$('parThumb');
+      if(url&&el)el.innerHTML=`<img src="${esc(url)}" alt="">`;
+    }).catch(()=>{});
     bk.querySelectorAll('.parChip').forEach(b=>b.onclick=()=>{
       bk.querySelectorAll('.parChip').forEach(x=>x.classList.remove('on'));
       b.classList.add('on');
@@ -2081,22 +2172,23 @@ window.openParallelPicker=function openParallelPicker(x,status){
   });
 };
 
-window.addFromCatalogAdvanced=async function addFromCatalogAdvanced(x,status,{parallel,skipPicker,skipDup}={}){
+window.addFromCatalogAdvanced=async function addFromCatalogAdvanced(x,status,{parallel,skipPicker,skipDup,quiet}={}){
   if(!x)return null;
   let par=parallel;
   if(par===undefined&&!skipPicker){
     const pick=await openParallelPicker(x,status);
-    if(pick===undefined)return null; /* cancelled */
+    if(pick===undefined)return null;
     par=pick;
   }
   const existing=findOwned(x.id,par&&par.id);
   if(existing&&!skipDup){
-    const ans=confirm('Already in vault: '+ (existing.player||'')+' '+(existing.variant||'Base')+'.\n\nOK = +1 qty on existing\nCancel = add as separate copy');
-    if(ans){
-      existing.qty=(+existing.qty||1)+1;save();render();
-      showToast('Qty now '+(existing.qty)+' · '+existing.player);
-      return existing;
-    }
+    existing.qty=(+existing.qty||1)+1;save();
+    if(typeof confettiBurst==='function')confettiBurst();
+    showToast('＋ Qty now '+existing.qty+' · '+ (existing.player||'card')+(existing.variant?' · '+existing.variant:''), ()=>{
+      existing.qty=Math.max(1,(+existing.qty||1)-1);save();render();
+    });
+    render();
+    return existing;
   }
   const nc={id:uid(),created:Date.now(),status,qty:1,prices:[],rookie:false};
   csHydrateCard(nc,x,par||null);
@@ -2110,14 +2202,22 @@ window.addFromCatalogAdvanced=async function addFromCatalogAdvanced(x,status,{pa
       else {nc.imgUrl=url;save();}
     }
   }catch(e){}
-  showToast((status==='want'?'⭐ Want: ':'✔ Have: ')+nc.player+(nc.variant?' · '+nc.variant:'')+(nc.csId?' · linked':''));
+  /* background price if linked and no price yet */
+  if(nc.csId&&!nc.prices.length){
+    csBulkPriceByIds([nc.csId]).then(map=>{
+      if(map[nc.csId]!=null&&applyCsPrice(nc,map[nc.csId],'cardsight')){save(); if(tab==='dash'||sel===nc)render();}
+    }).catch(()=>{});
+  }
+  if(!quiet){
+    if(typeof confettiBurst==='function')confettiBurst();
+    showToast((status==='want'?'⭐ Wanted: ':'✔ Added: ')+nc.player+(nc.variant?' · '+nc.variant:'')+(nc.num?' #'+nc.num:''));
+  }
   return nc;
 };
 
-/* ---- Deep links ---- */
 window.psaPopUrl=function psaPopUrl(c){
   const q=[c.year,c.setName,c.player,c.num].filter(Boolean).join(' ');
-  return 'https://www.psacard.com/pop/'+(c.gradeCert?('cert/'+encodeURIComponent(c.gradeCert)):'search?q='+encodeURIComponent(q));
+  return 'https://www.psacard.com/pop/search?q='+encodeURIComponent(q);
 };
 window.psaCertUrl=function psaCertUrl(cert){
   return 'https://www.psacard.com/cert/'+encodeURIComponent(String(cert||'').trim());
@@ -2136,7 +2236,6 @@ window.renderDeepLinks=function renderDeepLinks(c){
   </div>`;
 };
 
-/* ---- PSA pop ladder ---- */
 window.formatPsapop=function formatPsapop(pop){
   if(!pop)return '';
   const total=pop.total_population!=null?Number(pop.total_population).toLocaleString():'—';
@@ -2155,33 +2254,77 @@ window.formatPsapop=function formatPsapop(pop){
   return html;
 };
 
-/* ---- Sets tab state ---- */
-window.SETS=window.SETS||{year:'2024',q:'',releases:[],release:null,sets:[],set:null,cards:[],skip:0,total:0,loading:false};
+/* ---- Auto live-ish values ---- */
+window.autoRefreshPricesIfNeeded=async function autoRefreshPricesIfNeeded(){
+  if(!csKey()||state.meta._priceBusy)return;
+  const days=3;
+  const stale=state.cards.filter(c=>c.csId&&c.status==='have'&&priceAgeDays(c)>=days)
+    .sort((a,b)=>valueOf(b)-valueOf(a)).slice(0,50);
+  if(!stale.length)return;
+  const last=state.meta.lastAutoPrice||0;
+  if(Date.now()-last<6*3600e3)return; /* at most every 6h */
+  state.meta._priceBusy=true;
+  try{
+    showToast('Updating values for '+stale.length+' cards…');
+    const map=await csBulkPriceByIds(stale.map(c=>c.csId),{force:true});
+    let n=0;
+    for(const c of stale){if(map[c.csId]!=null&&applyCsPrice(c,map[c.csId],'cardsight'))n++;}
+    state.meta.lastAutoPrice=Date.now();save();
+    if(n)showToast('💰 Updated '+n+' values');
+  }catch(e){}
+  finally{state.meta._priceBusy=false;}
+};
+
+window.confettiBurst=function confettiBurst(){
+  const layer=document.createElement('div');
+  layer.className='confetti';
+  const colors=['#4da3ff','#3ecf7a','#ffb84d','#ff5d5d','#c99cff'];
+  for(let i=0;i<18;i++){
+    const p=document.createElement('i');
+    p.style.left=(20+Math.random()*60)+'%';
+    p.style.background=colors[i%colors.length];
+    p.style.animationDelay=(Math.random()*0.2)+'s';
+    layer.appendChild(p);
+  }
+  document.body.appendChild(layer);
+  setTimeout(()=>layer.remove(),900);
+};
+
+window.SETS=window.SETS||{year:String(new Date().getFullYear()),q:'',releases:[],release:null,sets:[],set:null,cards:[],skip:0,total:0,loading:false};
+window.QUICK_PLAYERS=QUICK_PLAYERS;
 
 window.renderSets=async function renderSets(){
   const S=SETS;
-  $('view').innerHTML=`<div class="panel">
-    <div class="ct">Sets checklist — TCDB-style (CardSight data)</div>
+  $('view').innerHTML=`<div class="panel heroPanel">
+    <div class="heroTitle">📚 Build a set</div>
+    <div class="heroSub">Search a release (like Topps Chrome), open a checklist, tap Have / Want. Progress saves automatically.</div>
     <div class="boothBar">
       <input id="setYear" type="number" inputmode="numeric" placeholder="Year" value="${esc(S.year||'')}" style="width:88px">
-      <input id="setQ" placeholder="Release — e.g. Topps Chrome" value="${esc(S.q||'')}" autocomplete="off" style="flex:1">
-      <button class="bigim" id="setSearch" style="flex:none">Find</button>
+      <input id="setQ" placeholder="Try: Topps Chrome, Bowman, Heritage…" value="${esc(S.q||'')}" autocomplete="off" style="flex:1">
+      <button class="bigxl" id="setSearch" style="flex:none;box-shadow:none">Find sets</button>
     </div>
+    <div class="pill-row" id="setPills"></div>
     <div id="boothBox" class="boothBox">
-      <div class="ct">Booth mode — add by #</div>
+      <div class="ct">⚡ Booth mode — add by card #</div>
       <div class="boothBar">
         <input id="bnYear" placeholder="Year" value="${esc(S.year||'')}" style="width:72px">
-        <input id="bnSet" list="dlBoothSet" placeholder="Set / release" style="flex:1.4">
+        <input id="bnSet" list="dlBoothSet" placeholder="Set name" style="flex:1.4">
         <input id="bnNum" placeholder="#" style="width:72px">
-        <button id="bnGo" class="bigxl" style="flex:none;box-shadow:none">Find #</button>
+        <button id="bnGo" class="bigim" style="flex:none">Go</button>
       </div>
       <datalist id="dlBoothSet"></datalist>
-      <div id="bnHint" class="teach-hint" style="color:var(--dim);font-size:12px;margin-top:6px">Enter year + set + card number → pick parallel → Have/Want</div>
+      <div id="bnHint" class="teach-hint" style="color:var(--dim);font-size:12px;margin-top:6px">Year + set + # → pick parallel → done</div>
     </div>
     <div id="setReleases" class="setList"></div>
     <div id="setSets" class="setList" style="display:none"></div>
     <div id="setCheck" style="display:none"></div>
   </div>`;
+  const pills=$('setPills');
+  [['2024 Topps Chrome','2024','Topps Chrome'],['2025 Bowman','2025','Bowman'],['2024 Topps','2024','Topps Series'],['2023 Heritage','2023','Heritage']].forEach(([lab,y,q])=>{
+    const b=document.createElement('button'); b.className='pill'; b.type='button'; b.textContent=lab;
+    b.onclick=()=>{$('setYear').value=y;$('setQ').value=q;setsSearchReleases();};
+    pills.appendChild(b);
+  });
   $('setSearch').onclick=()=>setsSearchReleases();
   $('setQ').onkeydown=e=>{if(e.key==='Enter')setsSearchReleases();};
   $('bnGo').onclick=boothFind;
@@ -2190,10 +2333,7 @@ window.renderSets=async function renderSets(){
     const v=$('bnSet').value.trim();
     if(v.length<2)return;
     csFetchCached('/v1/autocomplete/sets?q='+encodeURIComponent(v),{},{ttlMs:CS_TTL_FREE,free:true})
-      .then(j=>{
-        const sug=j.suggestions||[];
-        $('dlBoothSet').innerHTML=sug.slice(0,12).map(s=>`<option value="${esc(s)}">`).join('');
-      }).catch(()=>{});
+      .then(j=>{$('dlBoothSet').innerHTML=(j.suggestions||[]).slice(0,12).map(s=>`<option value="${esc(s)}">`).join('');}).catch(()=>{});
   };
   if(S.release&&S.set){await setsPaintChecklist();return;}
   if(S.release){setsPaintSets();return;}
@@ -2204,14 +2344,15 @@ window.setsSearchReleases=async function setsSearchReleases(){
   const year=($('setYear')&&$('setYear').value)||SETS.year||'';
   const q=($('setQ')&&$('setQ').value.trim())||'';
   SETS.year=year;SETS.q=q;SETS.release=null;SETS.set=null;SETS.cards=[];
-  if(q.length<2)return alert('Type a release name (e.g. Topps Chrome)');
-  $('setReleases').innerHTML='<div class="teach-hint">Searching releases…</div>';
+  if(q.length<2)return showToast('Type a release — try Topps Chrome');
+  $('setReleases').innerHTML='<div class="empty soft">Searching…</div>';
   try{
     const qq=[year,q,'baseball'].filter(Boolean).join(' ');
     const j=await csFetchCached('/v1/catalog/search?type=release&take=24&q='+encodeURIComponent(qq),{},{ttlMs:CS_TTL_CAT});
     SETS.releases=(j.results||[]).filter(r=>r.type==='release'||r.id);
     setsPaintReleases();
-  }catch(e){alert('Release search failed: '+e.message);}
+    if(!SETS.releases.length)showToast('No releases — try a shorter name');
+  }catch(e){showToast('Search failed: '+e.message);}
 };
 
 window.setsPaintReleases=function setsPaintReleases(){
@@ -2219,8 +2360,8 @@ window.setsPaintReleases=function setsPaintReleases(){
   el.style.display='block';
   if($('setSets'))$('setSets').style.display='none';
   if($('setCheck'))$('setCheck').style.display='none';
-  if(!SETS.releases.length){el.innerHTML='<div class="empty">No releases found.</div>';return;}
-  el.innerHTML=`<div class="ct">${SETS.releases.length} releases</div>`+SETS.releases.map((r,i)=>`
+  if(!SETS.releases.length){el.innerHTML='<div class="empty soft">No releases yet — try a pill above.</div>';return;}
+  el.innerHTML=`<div class="ct">${SETS.releases.length} releases — tap one</div>`+SETS.releases.map((r,i)=>`
     <div class="setRow" data-ri="${i}">
       <div><b>${esc(r.name)}</b><div class="l2">${esc([r.year,r.manufacturerName].filter(Boolean).join(' · '))}</div></div>
       <span class="count">Open →</span>
@@ -2231,13 +2372,13 @@ window.setsPaintReleases=function setsPaintReleases(){
 window.setsOpenRelease=async function setsOpenRelease(r){
   SETS.release=r;SETS.set=null;SETS.cards=[];
   $('setReleases').style.display='none';
-  const box=$('setSets'); box.style.display='block'; box.innerHTML='Loading sets…';
+  const box=$('setSets'); box.style.display='block'; box.innerHTML='<div class="empty soft">Loading checklists…</div>';
   try{
     const d=await csFetchCached('/v1/catalog/releases/'+r.id,{},{ttlMs:CS_TTL_CAT});
     SETS.sets=d.sets||[];
     SETS.release={...r,...d,sets:undefined};
     setsPaintSets();
-  }catch(e){box.innerHTML='Failed: '+esc(e.message);}
+  }catch(e){box.innerHTML='<div class="empty">Failed: '+esc(e.message)+'</div>';}
 };
 
 window.setsPaintSets=function setsPaintSets(){
@@ -2248,8 +2389,8 @@ window.setsPaintSets=function setsPaintSets(){
   const ownedSets=SETS.sets.filter(s=>ownCountInSet(s.id)>0).length;
   box.innerHTML=`
     <div class="toolbar">
-      <button type="button" id="setBackRel">← Releases</button>
-      <div class="ct" style="margin:0">${esc(r.year||'')} ${esc(r.name||'')} · ${SETS.sets.length} sets · ${ownedSets} started</div>
+      <button type="button" id="setBackRel">← Back</button>
+      <div class="ct" style="margin:0">${esc(r.year||'')} ${esc(r.name||'')} · ${SETS.sets.length} checklists · ${ownedSets} started</div>
       <a class="count" href="${tcdbSetUrl(r.year,r.name)}" target="_blank" rel="noopener">TCDB ↗</a>
     </div>
     ${SETS.sets.map((s,i)=>{
@@ -2259,7 +2400,7 @@ window.setsPaintSets=function setsPaintSets(){
       return `<div class="setRow" data-si="${i}">
         <div style="flex:1;min-width:0">
           <b>${esc(s.name)}</b>
-          <div class="l2">${tot} cards · ${s.parallelCount||0} parallel types · have ${have}</div>
+          <div class="l2">${tot} cards · ${s.parallelCount||0} parallels · you have ${have}</div>
           <div class="prog"><i style="width:${pct}%"></i></div>
         </div>
         <span class="count">${pct}%</span>
@@ -2279,7 +2420,7 @@ window.setsLoadCards=async function setsLoadCards(reset){
   if(reset){SETS.skip=0;SETS.cards=[];}
   const box=$('setCheck'); box.style.display='block';
   if($('setSets'))$('setSets').style.display='none';
-  if(reset)box.innerHTML='Loading checklist…';
+  if(reset)box.innerHTML='<div class="empty soft">Loading cards + photos…</div>';
   try{
     const take=50;
     const j=await csFetchCached('/v1/catalog/sets/'+s.id+'/cards?take='+take+'&skip='+SETS.skip,{},{ttlMs:CS_TTL_CAT});
@@ -2288,8 +2429,8 @@ window.setsLoadCards=async function setsLoadCards(reset){
     SETS.cards=SETS.cards.concat(batch);
     SETS.skip+=batch.length;
     await setsPaintChecklist();
-    csPrefetchImages(batch.map(c=>c.id),{toast:SETS.cards.length<=50});
-  }catch(e){box.innerHTML='Checklist failed: '+esc(e.message);}
+    csPrefetchImages(batch.map(c=>c.id),{toast:false});
+  }catch(e){box.innerHTML='<div class="empty">Checklist failed: '+esc(e.message)+'</div>';}
 };
 
 window.setsPaintChecklist=async function setsPaintChecklist(){
@@ -2301,39 +2442,43 @@ window.setsPaintChecklist=async function setsPaintChecklist(){
   const masterDenom=parTypes?tot*(parTypes+1):tot;
   const masterHave=ownParallelCountInSet(s.id);
   const masterPct=masterDenom?Math.min(100,Math.round(masterHave/masterDenom*100)):pct;
+  if(pct>=100&&!state.meta['_setDone_'+s.id]){
+    state.meta['_setDone_'+s.id]=1;save();
+    confettiBurst();showToast('🏆 Set complete — nice!');
+  }
   box.innerHTML=`
     <div class="toolbar">
       <button type="button" id="setBackSets">← Sets</button>
       <div style="flex:1">
         <div class="ct" style="margin:0">${esc(r&&r.year||'')} ${esc(r&&r.name||'')} · ${esc(s.name)}</div>
-        <div class="prog" style="margin-top:6px"><i style="width:${pct}%"></i></div>
-        <div class="l2" style="font-size:12px;color:var(--dim)">Base ${haveN}/${tot} (${pct}%) · Master-ish ${masterHave}/${masterDenom} (${masterPct}%)</div>
+        <div class="prog fat"><i style="width:${pct}%"></i></div>
+        <div class="l2" style="font-size:12px;color:var(--dim)">Base ${haveN}/${tot} (${pct}%) · Master-ish ${masterPct}%</div>
       </div>
     </div>
     <div class="toolbar">
-      <button type="button" id="setWantMiss">⭐ Missing → Want</button>
-      <button type="button" id="setHaveAll">+ All base → Have</button>
+      <button type="button" id="setWantMiss" class="bigim">⭐ Missing → Want</button>
+      <button type="button" id="setHaveAll">+ Loaded → Have</button>
       <a href="${tcdbSetUrl(r&&r.year, (r&&r.name||'')+' '+(s.name||''))}" target="_blank" rel="noopener">TCDB ↗</a>
-      <span class="count">${SETS.cards.length} loaded${SETS.cards.length<tot?' of '+tot:''}</span>
+      <span class="count">${SETS.cards.length}${SETS.cards.length<tot?' / '+tot:''}</span>
     </div>
     <div class="checkList" id="checkBody"></div>
     <div style="text-align:center;margin-top:10px">
-      <button id="setMore" style="display:${SETS.cards.length<tot?'inline-block':'none'}">More ↓</button>
+      <button id="setMore" style="display:${SETS.cards.length<tot?'inline-block':'none'}">More cards ↓</button>
     </div>`;
   const body=$('checkBody');
   body.innerHTML=SETS.cards.map((x,i)=>{
     const own=findOwned(x.id,'');
     const rc=(x.attributes||[]).some(a=>/^rc$|rookie/i.test(a));
     const pc=(x.parallels&&x.parallels.length)||0;
-    return `<div class="checkRow">
+    return `<div class="checkRow ${own?'owned':''}">
       <div class="thumb" id="ck-${i}">🃏</div>
       <div class="rmain">
-        <div class="l1">#${esc(x.number||'?')} ${esc(x.name||'')}${rc?'<span class="badge b-rc">RC</span>':''}${own?'<span class="badge b-own">HAVE</span>':''}</div>
+        <div class="l1">#${esc(x.number||'?')} ${esc(x.name||'')}${rc?'<span class="badge b-rc">RC</span>':''}${own?'<span class="badge b-own">HAVE ×'+(own.qty||1)+'</span>':''}</div>
         <div class="l2">${pc?pc+' parallels':''}${(x.attributes||[]).filter(a=>!/^rc$/i.test(a)).slice(0,3).map(a=>' · '+esc(a)).join('')}</div>
       </div>
       <div style="display:flex;flex-direction:column;gap:4px">
-        <button data-h="${i}" style="padding:4px 8px">+Have</button>
-        <button data-w="${i}" style="padding:4px 8px">⭐</button>
+        <button data-h="${i}" class="tinyAdd">+Have</button>
+        <button data-w="${i}" class="tinyAdd">⭐</button>
       </div>
     </div>`;
   }).join('');
@@ -2354,15 +2499,17 @@ window.setsPaintChecklist=async function setsPaintChecklist(){
   $('setMore').onclick=()=>setsLoadCards(false);
   $('setWantMiss').onclick=async()=>{
     const miss=SETS.cards.filter(x=>!findOwned(x.id,''));
-    if(!miss.length)return showToast('No missing among loaded cards');
-    if(!confirm('Add '+miss.length+' missing base cards to Want?'))return;
-    for(const x of miss)await addFromCatalogAdvanced(x,'want',{skipPicker:true,parallel:null,skipDup:true});
-    showToast('Added '+miss.length+' to Want');
+    if(!miss.length)return showToast('You already have all loaded cards');
+    if(!confirm('Add '+miss.length+' missing cards to Want?'))return;
+    showToast('Adding '+miss.length+'…');
+    for(const x of miss)await addFromCatalogAdvanced(x,'want',{skipPicker:true,parallel:null,skipDup:true,quiet:true});
+    confettiBurst();showToast('⭐ '+miss.length+' on your want list');
     setsPaintChecklist();
   };
   $('setHaveAll').onclick=async()=>{
-    if(!confirm('Add all '+SETS.cards.length+' loaded base cards to Have? (duplicates ask per card)'))return;
-    for(const x of SETS.cards)await addFromCatalogAdvanced(x,'have',{skipPicker:true,parallel:null});
+    if(!confirm('Add all '+SETS.cards.length+' loaded base cards to Have?'))return;
+    for(const x of SETS.cards)await addFromCatalogAdvanced(x,'have',{skipPicker:true,parallel:null,quiet:true});
+    confettiBurst();showToast('✔ Loaded cards added');
     setsPaintChecklist();
   };
 };
@@ -2371,7 +2518,7 @@ window.boothFind=async function boothFind(){
   const year=($('bnYear')&&$('bnYear').value.trim())||'';
   const set=($('bnSet')&&$('bnSet').value.trim())||'';
   const num=($('bnNum')&&$('bnNum').value.trim())||'';
-  if(!set||!num)return alert('Need set name and card #');
+  if(!set||!num)return showToast('Need set name and card #');
   const hint=$('bnHint'); if(hint)hint.textContent='Searching…';
   try{
     const q=[year,set,('#'+num),'baseball'].filter(Boolean).join(' ');
@@ -2385,21 +2532,38 @@ window.boothFind=async function boothFind(){
       cards=(j2.cards||[]).filter(c=>String(c.number||'')===String(num)||String(c.number||'').replace(/^0+/,'')===String(num).replace(/^0+/,''));
       if(!cards.length)cards=j2.cards||[];
     }
-    if(!cards.length){if(hint)hint.textContent='No match';return alert('No card found for that #');}
-    const x=cards[0];
-    if(cards.length>1){
-      /* quick pick first exact number match */
-      const exact=cards.find(c=>String(c.number||'')===String(num));
-      if(exact)Object.assign(x,exact);
-    }
+    if(!cards.length){if(hint)hint.textContent='No match — try fewer words';return showToast('No card found for that #');}
+    let x=cards.find(c=>String(c.number||'')===String(num))||cards[0];
     try{
       const d=await csFetchCached('/v1/catalog/cards/'+x.id,{},{ttlMs:CS_TTL_CARD});
       if(d)Object.assign(x,d);
     }catch(e){}
     if(hint)hint.textContent='Found: '+(x.name||'')+' #'+(x.number||num);
-    const status=confirm('Add to Have? (Cancel = Want)')?'have':'want';
+    const status=confirm('Add to Have?\n\nOK = Have · Cancel = Want')?'have':'want';
     await addFromCatalogAdvanced(x,status);
-  }catch(e){alert('Booth search failed: '+e.message);}
+  }catch(e){showToast('Booth search failed: '+e.message);}
+};
+
+window.openFabMenu=function openFabMenu(){
+  const existing=$('fabMenu'); if(existing){existing.remove();return;}
+  const m=document.createElement('div'); m.id='fabMenu';
+  m.innerHTML=`
+    <button data-f="explore">🔍 Find a player</button>
+    <button data-f="sets">📚 Build a set</button>
+    <button data-f="add">＋ Blank card</button>
+    <button data-f="want">⭐ New want</button>`;
+  document.body.appendChild(m);
+  m.querySelectorAll('button').forEach(b=>b.onclick=()=>{
+    m.remove();
+    const a=b.dataset.f;
+    if(a==='explore'){tab='explore';render(); setTimeout(()=>{const i=$('exQ');if(i)i.focus();},100);}
+    else if(a==='sets'){tab='sets';render();}
+    else if(a==='add'){tab='have';addCard();}
+    else if(a==='want'){tab='want';addCard();}
+  });
+  setTimeout(()=>document.addEventListener('click',function h(e){
+    if(!m.contains(e.target)&&e.target.id!=='fab'){m.remove();document.removeEventListener('click',h);}
+  }),0);
 };
 })();
 
@@ -2414,6 +2578,11 @@ async function init(){
     setTimeout(()=>showToast('Cleaned invisible characters from your CardSight key'),0);
   }
   bbLoad();
+  if(!state.meta.seenWelcome){
+    state.meta.seenWelcome=1; save();
+    setTimeout(()=>showToast('Tip: type a player in the search bar — catalog + photos appear'), 600);
+  }
+  setTimeout(()=>{ if(typeof autoRefreshPricesIfNeeded==='function' && tab==='dash') autoRefreshPricesIfNeeded(); }, 2000);
   $('q').oninput=e=>{
     q=e.target.value;
     clearTimeout(window.__qPropTimer);
@@ -2436,7 +2605,7 @@ async function init(){
       else { if(tab==='dash')tab='have'; render(); }
     }
   };
-  $('btnAddTop').onclick=addCard;$('fab').onclick=addCard;
+  $('btnAddTop').onclick=addCard;$('fab').onclick=()=>{ if(typeof openFabMenu==='function') openFabMenu(); else addCard(); };
   $('btnXl').onclick=()=>{
     if(!state.cards.length)return alert('Add or import some cards first');
     download('card-vault-'+today()+'.xls',xlsExport(state.cards),'application/vnd.ms-excel');
