@@ -286,6 +286,53 @@ footer{color:var(--dim);font-size:11.5px;text-align:center;padding:8px 14px 90px
 .mlbCell .v{font-size:13px;font-weight:800;margin-top:2px}
 .mlbLink{display:inline-flex;align-items:center;justify-content:center;padding:8px 12px;border:1px solid var(--line);border-radius:10px;color:var(--acc);text-decoration:none;font-weight:600;font-size:12px}
 
+
+/* ---- iPhone app chrome ---- */
+@supports(padding:max(0px)){
+  header{padding-left:max(14px,env(safe-area-inset-left));padding-right:max(14px,env(safe-area-inset-right))}
+  main{padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}
+}
+.actionBar{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+.actionBar.triple{grid-template-columns:1fr 1fr 1fr}
+.actionBar button{min-height:48px;font-size:15px;font-weight:700;border-radius:14px;padding:12px 10px}
+.actionBar button:disabled{opacity:.45}
+.progBar{height:6px;background:var(--panel3);border-radius:99px;overflow:hidden;margin:8px 0 4px}
+.progBar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--acc),#7ec8ff);border-radius:99px;transition:width .2s}
+.gcard{box-shadow:0 8px 24px rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.06);transition:transform .15s,box-shadow .15s}
+.gcard:active{transform:scale(.97)}
+.gcard .gt .cardActs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+.gcard .gt .cardActs button{min-height:40px;font-weight:700;border-radius:12px;font-size:13px;padding:8px 6px}
+.gimg.imgReady{background:#0a0d14}
+.gimg.imgMiss::after{content:'No photo';font-size:11px;color:var(--dim)}
+.pill{min-height:36px;padding:8px 14px;border-radius:999px;font-weight:600}
+#navB .nb{padding:10px 0 8px;font-size:11px;font-weight:600}
+#navB .nb .i{font-size:22px}
+#fab{width:58px;height:58px;font-size:32px;box-shadow:0 6px 20px rgba(77,163,255,.55)}
+#fabMenu{border-radius:16px;padding:6px;min-width:200px;box-shadow:0 12px 40px rgba(0,0,0,.45)}
+#fabMenu button{min-height:48px;font-size:15px;border-radius:12px}
+.heroPanel{background:linear-gradient(165deg,#1a2233 0%,#121826 55%,#0e1118 100%);border-color:rgba(77,163,255,.2)}
+.quickCard{min-height:72px;border-radius:14px;text-align:left;padding:12px 14px}
+.quickCard b{display:block;font-size:15px;margin-bottom:2px}
+.home-actions button{min-height:44px;border-radius:12px;font-weight:700}
+@media(max-width:899px){
+  .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .gcard .gimg{min-height:0;aspect-ratio:2.5/3.5}
+  .spark{display:none}
+  .rright{min-width:64px}
+  .thumb{width:48px;height:66px;border-radius:8px}
+  #sheet{top:auto;left:0;right:0;bottom:0;width:100%;max-height:92vh;height:auto;
+    border-left:0;border-radius:18px 18px 0 0;transform:translateY(110%);
+    box-shadow:0 -8px 40px rgba(0,0,0,.5)}
+  #sheet.open{transform:none}
+  .photoBox .pv{width:120px;height:168px;border-radius:12px}
+  .toolbar button,.toolbar select{min-height:40px}
+  .boothBar{flex-wrap:wrap}
+  .boothBar input,#exQ{min-height:44px;font-size:16px} /* iOS zoom prevent */
+  input,select,textarea{font-size:16px}
+  .chartsGrid{display:none} /* quieter home on phone */
+  .binderRow{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch}
+}
+
 </style>
 </head>
 <body>
@@ -839,7 +886,7 @@ const money=n=>'$'+(+n||0).toLocaleString(undefined,{minimumFractionDigits:2,max
 const money0=n=>'$'+Math.round(+n||0).toLocaleString();
 const today=()=>new Date().toISOString().slice(0,10);
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
-let state={cards:[],meta:{lastBackup:0}},tab='dash',q='',view='list',listGroup='',sel=null,lastDeleted=null,toastT=null;
+let state={cards:[],meta:{lastBackup:0}},tab='dash',q='',view=(window.matchMedia&&matchMedia('(max-width:899px)').matches)?'grid':'list',listGroup='',sel=null,lastDeleted=null,toastT=null;
 /* BINDER_ID lives on window from pro-suite */
 const imgCache=new Map();
 
@@ -1285,12 +1332,18 @@ async function fillThumb(el,c){
   if(!el||!c)return;
   el.classList.add('thumbLoad');
   try{
-    const src=await resolveCardImg(c);
+    let src=await resolveCardImg(c);
+    if(src&&src.startsWith('data:')&&typeof csDisplayUrl==='function'){
+      /* resolveCardImg may return raw data — prefer blob on iOS */
+      src=csDisplayUrl(src);
+    }else if(src&&typeof csDisplayUrl==='function'&&!src.startsWith('http')&&!src.startsWith('blob:')){
+      src=csDisplayUrl(src);
+    }
     if(src){
-      el.innerHTML=`<img src="${esc(src)}" loading="lazy" alt="" onerror="this.remove()">`;
+      setImgEl(el,src);
       if(!c.imgId&&!c.imgUrl&&c.csId)el.classList.add('catalogHint');
       else el.classList.remove('catalogHint');
-    }
+    }else el.classList.add('imgMiss');
   }finally{el.classList.remove('thumbLoad');}
 }
 function sportIcon(s){return {Baseball:'⚾',Basketball:'🏀',Football:'🏈',Hockey:'🏒',Soccer:'⚽',Golf:'⛳'}[s]||'🃏';}
@@ -1579,33 +1632,71 @@ function csImgSrc(d){
   }
   return '';
 }
+/* Blob URLs paint much more reliably on iPhone than giant data: URLs */
+const _blobByKey=new Map();
+function csDisplayUrl(d){
+  const raw=csImgSrc(d);
+  if(!raw)return '';
+  if(raw.startsWith('blob:')||raw.startsWith('http'))return raw;
+  if(!raw.startsWith('data:'))return raw;
+  const key=raw.length+':'+(raw.slice(5,40));
+  if(_blobByKey.has(key))return _blobByKey.get(key);
+  try{
+    const comma=raw.indexOf(',');
+    const meta=raw.slice(0,comma);
+    const b64=raw.slice(comma+1);
+    const mime=(/data:([^;]+)/.exec(meta)||[])[1]||'image/jpeg';
+    const bin=atob(b64);
+    const arr=new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);
+    const url=URL.createObjectURL(new Blob([arr],{type:mime}));
+    _blobByKey.set(key,url);
+    return url;
+  }catch(e){return raw;}
+}
+function setImgEl(el,url){
+  if(!el||!url)return false;
+  const img=document.createElement('img');
+  img.alt='';
+  img.decoding='async';
+  img.loading='eager';
+  img.src=url; /* never HTML-escape data/blob URLs */
+  el.textContent='';
+  el.appendChild(img);
+  el.classList.add('imgReady');
+  el.classList.remove('thumbLoad','imgMiss');
+  return true;
+}
+
 function renderExplore(){
-  $('view').innerHTML=`<div class="panel">
-    <div class="ct">Find any player — catalog photos load for each card, tap + for parallels</div>
+  $('view').innerHTML=`<div class="panel heroPanel">
+    <div class="heroTitle" style="font-size:20px;margin:0 0 4px">Find cards</div>
+    <div class="heroSub" style="margin:0 0 10px">Search a player — photos fill in on this screen.</div>
     <div style="display:flex;gap:8px">
-      <input id="exQ" placeholder="⚾ Player — e.g. Ken Griffey Jr" value="${esc(EX.q)}" autocomplete="off">
-      <button class="bigim" id="exGo" style="flex:none">Search</button>
+      <input id="exQ" placeholder="Player name" value="${esc(EX.q)}" autocomplete="off" enterkeyhint="search">
+      <button class="bigim" id="exGo" style="flex:none;min-width:88px;min-height:48px">Search</button>
     </div>
     <div id="exSugg" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"></div>
     <div class="pill-row" id="exPills"></div>
     <div class="boothBox">
-      <div class="ct">Booth mode — year + set + #</div>
+      <div class="ct">Booth — year + set + #</div>
       <div class="boothBar">
-        <input id="exBnYear" placeholder="Year" style="width:72px">
+        <input id="exBnYear" placeholder="Year" inputmode="numeric" style="width:72px">
         <input id="exBnSet" list="dlExBoothSet" placeholder="Set / release" style="flex:1.4">
-        <input id="exBnNum" placeholder="#" style="width:72px">
-        <button id="exBnGo" class="bigxl" style="flex:none;box-shadow:none">Find #</button>
+        <input id="exBnNum" placeholder="#" inputmode="numeric" style="width:72px">
+        <button id="exBnGo" class="bigxl" style="flex:none;box-shadow:none;min-height:44px">Find #</button>
       </div>
       <datalist id="dlExBoothSet"></datalist>
     </div>
-    <div class="toolbar" style="margin-top:10px">
-      <button id="exPrices" ${EX.items.length?'':'disabled'}>💲 Load prices</button>
-      <button id="exPrefetch" ${EX.items.length?'':'disabled'}>🖼 Prefetch images</button>
-      <span class="count" id="exCount">${EX.total?EX.total+' cards found':''}</span>
+    <div class="actionBar" style="margin-top:12px">
+      <button type="button" id="exPrefetch" class="bigim" ${EX.items.length?'':'disabled'}>🖼 Load photos</button>
+      <button type="button" id="exPrices" ${EX.items.length?'':'disabled'}>💲 Prices</button>
     </div>
-    <div class="grid" id="exBody" style="margin-top:6px"></div>
-    <div style="text-align:center;margin-top:10px">
-      <button id="exMore" style="display:${EX.items.length&&EX.items.length<EX.total?'inline-block':'none'}">More ↓</button>
+    <div class="progBar" id="exProg" hidden><i id="exProgI"></i></div>
+    <div class="count" id="exCount" style="margin:4px 0 8px">${EX.total?EX.items.length+' shown · '+EX.total+' found':(EX.items.length?EX.items.length+' cards':'')}</div>
+    <div class="grid" id="exBody"></div>
+    <div style="text-align:center;margin-top:12px">
+      <button id="exMore" style="display:${EX.items.length&&EX.items.length<EX.total?'inline-block':'none'};min-height:48px;min-width:160px;font-weight:700">More cards</button>
     </div>
    </div>`;
   const inp=$('exQ');
@@ -1616,7 +1707,7 @@ function renderExplore(){
     bbLoad().then(list=>{
       if(inp.value.trim()!==v)return;
       $('exSugg').innerHTML=bbSearch(list,v,5).map(p=>
-        `<button data-s="${esc(p.n)}" style="font-size:12px;padding:4px 10px">⚾ ${esc(p.n)}</button>`).join('');
+        `<button type="button" data-s="${esc(p.n)}" class="pill">⚾ ${esc(p.n)}</button>`).join('');
       $('exSugg').querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{inp.value=b.dataset.s;exGo(true);});
     });
   };
@@ -1624,33 +1715,22 @@ function renderExplore(){
   $('exPrices').onclick=exLoadPrices;
   $('exMore').onclick=()=>{EX.skip+=24;exGo(false);};
   const ep=$('exPrefetch');
-  if(ep)ep.onclick=()=>csPrefetchImages(EX.items.map(x=>x.id),{toast:true});
+  if(ep)ep.onclick=()=>exLoadPhotos();
   const ebg=$('exBnGo');
   if(ebg)ebg.onclick=()=>{
-    if($('bnYear'))$('bnYear').value=$('exBnYear').value;
-    if($('bnSet'))$('bnSet').value=$('exBnSet').value;
-    if($('bnNum'))$('bnNum').value=$('exBnNum').value;
-    /* temporary booth fields on explore */
     const y=$('exBnYear').value.trim(), set=$('exBnSet').value.trim(), num=$('exBnNum').value.trim();
     (async()=>{
-      if(!set||!num)return alert('Need set and #');
+      if(!set||!num)return showToast('Need set and #');
       const q=[y,set,'#'+num,'baseball'].filter(Boolean).join(' ');
       const j=await csFetchCached('/v1/catalog/search?type=card&take=8&q='+encodeURIComponent(q),{},{ttlMs:CS_TTL_CAT});
       let cards=(j.results||[]).map(r=>({id:r.id,name:r.name,releaseYear:r.year,releaseName:r.releaseName,setName:r.setName||set,number:num,manufacturerName:r.manufacturerName}));
       if(!cards.length){const j2=await csSearchBaseballCards([y,set,num].filter(Boolean).join(' '),{take:12});cards=j2.cards||[];}
-      if(!cards.length)return alert('No card found');
+      if(!cards.length)return showToast('No card found');
       let x=cards.find(c=>String(c.number||'')===String(num))||cards[0];
       try{const d=await csFetchCached('/v1/catalog/cards/'+x.id,{},{ttlMs:CS_TTL_CARD});if(d)x={...x,...d};}catch(e){}
       const st=confirm('Add to Have? (Cancel = Want)')?'have':'want';
       await addFromCatalog(x,st);
-        const exp=$('exPills');
-  if(exp){
-    const qp=(typeof QUICK_PLAYERS!=='undefined'?QUICK_PLAYERS:['Ken Griffey Jr','Shohei Ohtani','Mike Trout']);
-    exp.innerHTML=qp.slice(0,6).map(n=>`<button type="button" class="pill" data-pl="${esc(n)}">⚾ ${esc(n)}</button>`).join('');
-    exp.querySelectorAll('[data-pl]').forEach(b=>b.onclick=()=>{ $('exQ').value=b.dataset.pl; exGo(true); });
-  }
-  paintEx();
-    })().catch(e=>alert(e.message));
+    })().catch(e=>showToast(e.message));
   };
   const ebs=$('exBnSet');
   if(ebs)ebs.oninput=()=>{
@@ -1658,27 +1738,28 @@ function renderExplore(){
     csFetchCached('/v1/autocomplete/sets?q='+encodeURIComponent(v),{},{ttlMs:CS_TTL_FREE,free:true})
       .then(j=>{$('dlExBoothSet').innerHTML=(j.suggestions||[]).slice(0,12).map(x=>`<option value="${esc(x)}">`).join('');}).catch(()=>{});
   };
+  const exp=$('exPills');
+  if(exp){
+    const qp=(typeof QUICK_PLAYERS!=='undefined'?QUICK_PLAYERS:['Ken Griffey Jr','Shohei Ohtani','Mike Trout']);
+    exp.innerHTML=qp.slice(0,6).map(n=>`<button type="button" class="pill" data-pl="${esc(n)}">⚾ ${esc(n)}</button>`).join('');
+    exp.querySelectorAll('[data-pl]').forEach(b=>b.onclick=()=>{ $('exQ').value=b.dataset.pl; exGo(true); });
+  }
   paintEx();
 }
-async function exGo(reset){
-  const inp=$('exQ');
-  const q=inp?inp.value.trim():EX.q;
-  if(q.length<2)return;
-  if(reset){EX.skip=0;EX.items=[];EX.prices={};}
-  EX.q=q;
-  try{
-    const j=await csSearchBaseballCards(q,{take:24,skip:EX.skip});
-    EX.total=j.total_count||0;
-    EX.items=EX.items.concat(j.cards||[]);
-    renderExplore();
-    if(!EX.items.length)$('exBody').innerHTML=`<div class="empty" style="grid-column:1/-1">No baseball cards found for “${esc(q)}”.</div>`;
-    else if(typeof csPrefetchImages==='function') csPrefetchImages((j.cards||[]).map(x=>x.id),{toast:!!reset});
-  }catch(e){
-    const m=String(e&&e.message||e);
-    if(/ISO-8859|headers|code point|invalid characters/i.test(m))
-      alert('Search failed: CardSight rejected the API key.\n\nTry ⋯ → 🔑 and clear the override to use the built-in key, or paste a fresh full key from cardsight.ai.');
-    else alert('Search failed: '+m);
-  }
+async function exLoadPhotos(){
+  if(!EX.items.length)return showToast('Search a player first');
+  const ep=$('exPrefetch'), bar=$('exProg'), fill=$('exProgI');
+  if(ep){ep.disabled=true;}
+  if(bar)bar.hidden=false;
+  const ids=EX.items.map(x=>x.id).filter(Boolean);
+  const n=await csPrefetchImages(ids,{concurrency:4,toast:false,onProgress:(d,t)=>{
+    if(ep)ep.textContent='🖼 '+d+'/'+t;
+    if(fill)fill.style.width=Math.round(d/t*100)+'%';
+  }});
+  await paintExImages();
+  if(ep){ep.textContent='🖼 Photos ready'; ep.disabled=false;}
+  showToast(n+' photos loaded');
+  setTimeout(()=>{if(ep)ep.textContent='🖼 Load photos'; if(bar)bar.hidden=true; if(fill)fill.style.width='0%';},1800);
 }
 function paintEx(){
   const body=$('exBody');if(!body)return;
@@ -1688,15 +1769,14 @@ function paintEx(){
     const own=typeof findOwned==='function'&&findOwned(x.id,'');
     const pc=(x.parallels&&x.parallels.length)||0;
     return `<div class="gcard">
-      <div class="gimg" id="ex-${i}">🃏</div>
+      <div class="gimg thumbLoad" id="ex-${i}">🃏</div>
       <div class="gt">
         <div class="l1">${esc(x.name)}${rc?'<span class="badge b-rc">RC</span>':''}${own?'<span class="badge b-own">HAVE</span>':''}</div>
         <div class="l2">${esc([x.releaseYear,x.releaseName,x.setName&&!/^base\b/i.test(x.setName)?x.setName:'',x.number?'#'+x.number:''].filter(Boolean).join(' · '))}</div>
-        <div class="l2">${pc?pc+' parallels · tap + to pick':''}</div>
-        <div class="l3">${v!=null?money(v):'<span style="color:var(--dim);font-weight:400">tap 💲 for price</span>'}</div>
-        <div style="display:flex;gap:6px;margin-top:6px">
-          <button data-add="have:${i}" style="flex:1;padding:5px">+ Have</button>
-          <button data-add="want:${i}" style="flex:1;padding:5px">⭐ Want</button>
+        <div class="l3">${v!=null?money(v):'<span style="color:var(--dim);font-weight:400">—</span>'}</div>
+        <div class="cardActs">
+          <button type="button" data-add="have:${i}">+ Have</button>
+          <button type="button" data-add="want:${i}">⭐ Want</button>
         </div>
       </div></div>`;
   }).join('');
@@ -1705,13 +1785,26 @@ function paintEx(){
     const [st,i]=b.dataset.add.split(':');
     addFromCatalog(EX.items[+i],st);
   });
-  EX.items.forEach(async(x,i)=>{
-    const el=$('ex-'+i);if(!el)return;
-    const url=csImgSrc(await csImageData(x.id));
-    if(url&&$('ex-'+i))$('ex-'+i).innerHTML=`<img src="${esc(url)}" loading="lazy">`;
-  });
-  if(typeof csPrefetchImages==='function'&&EX.items.length)
-    csPrefetchImages(EX.items.map(x=>x.id),{toast:false});
+  paintExImages();
+}
+async function paintExImages(){
+  const items=EX.items||[];
+  let i=0, shown=0;
+  async function worker(){
+    while(i<items.length){
+      const idx=i++;
+      const x=items[idx];
+      const el=$('ex-'+idx);
+      if(!el||!x||!x.id)continue;
+      try{
+        const url=csDisplayUrl(await csImageData(x.id));
+        if(url){setImgEl(el,url);shown++;}
+        else{el.classList.remove('thumbLoad');el.classList.add('imgMiss');el.textContent='🃏';}
+      }catch(e){el.classList.remove('thumbLoad');el.classList.add('imgMiss');}
+    }
+  }
+  await Promise.all(Array.from({length:Math.min(4,Math.max(1,items.length))},()=>worker()));
+  return shown;
 }
 async function exLoadPrices(){
   if(!EX.items.length)return;
@@ -1861,8 +1954,10 @@ async function openSheet(){
     chLine($('cardChart'),(c.prices||[]).map(p=>({t:p.d,v:p.v})),'#3ecf7a',170);});
   const pv=$('pv');
   if(pv){
-    const src=await (typeof resolveCardImg==='function'?resolveCardImg(c):getImg(c));
-    if(src)pv.innerHTML=`<img src="${esc(src)}" alt="" onerror="this.remove()">`;
+    const raw=await (typeof resolveCardImg==='function'?resolveCardImg(c):getImg(c));
+    const src=raw?(typeof csDisplayUrl==='function'?csDisplayUrl(raw):raw):'';
+    if(src&&typeof setImgEl==='function')setImgEl(pv,src);
+    else if(src){const img=document.createElement('img');img.alt='';img.src=src;pv.textContent='';pv.appendChild(img);}
   }
   if(c.csId&&csKey()){
     csCardPop(c.csId).then(pop=>{
@@ -2262,7 +2357,7 @@ if(typeof window==='undefined')return;
 
 const QUICK_PLAYERS=['Ken Griffey Jr','Shohei Ohtani','Mike Trout','Aaron Judge','Ronald Acuña Jr','Juan Soto','Elly De La Cruz','Paul Skenes'];
 
-window.csPrefetchImages=async function csPrefetchImages(ids,{concurrency=6,toast=true}={}){
+window.csPrefetchImages=async function csPrefetchImages(ids,{concurrency=6,toast=true,onProgress=null}={}){
   const list=[...new Set((ids||[]).filter(Boolean))];
   if(!list.length)return 0;
   let i=0, done=0;
@@ -2270,6 +2365,7 @@ window.csPrefetchImages=async function csPrefetchImages(ids,{concurrency=6,toast
     while(i<list.length){
       const id=list[i++];
       try{await csImageData(id);done++;}catch(e){}
+      if(onProgress)try{onProgress(done,list.length);}catch(e){}
     }
   }
   await Promise.all(Array.from({length:Math.min(concurrency,list.length)},()=>worker()));
@@ -2305,8 +2401,11 @@ window.setsLoadAllPhotos=async function setsLoadAllPhotos(){
   SETS.cards.forEach(async(x,i)=>{
     const el=$('ck-'+i); if(!el)return;
     try{
-      const url=csImgSrc(await csImageData(x.id));
-      if(url&&$('ck-'+i))$('ck-'+i).innerHTML=`<img src="${esc(url)}" loading="lazy" alt="">`;
+      const url=typeof csDisplayUrl==='function'?csDisplayUrl(await csImageData(x.id)):csImgSrc(await csImageData(x.id));
+      if(url&&$('ck-'+i)){
+        if(typeof setImgEl==='function')setImgEl($('ck-'+i),url);
+        else $('ck-'+i).innerHTML=`<img alt="" src="${url.replace(/"/g,'&quot;')}">`;
+      }
     }catch(e){}
   });
   showToast('🖼 '+n+' photos cached for this set');
@@ -2877,8 +2976,13 @@ window.setsPaintChecklist=async function setsPaintChecklist(){
   });
   SETS.cards.forEach(async(x,i)=>{
     const el=$('ck-'+i);if(!el)return;
-    const url=csImgSrc(await csImageData(x.id));
-    if(url&&$('ck-'+i))$('ck-'+i).innerHTML=`<img src="${esc(url)}" loading="lazy">`;
+    try{
+      const url=typeof csDisplayUrl==='function'?csDisplayUrl(await csImageData(x.id)):csImgSrc(await csImageData(x.id));
+      if(url&&$('ck-'+i)){
+        if(typeof setImgEl==='function')setImgEl($('ck-'+i),url);
+        else $('ck-'+i).innerHTML=`<img src="${url.replace(/"/g,'&quot;')}" alt="">`;
+      }
+    }catch(e){}
   });
   $('setBackSets').onclick=()=>{SETS.set=null;setsPaintSets();};
   $('setMore').onclick=()=>setsLoadCards(false);

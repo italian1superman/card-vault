@@ -6,7 +6,7 @@ if(typeof window==='undefined')return;
 
 const QUICK_PLAYERS=['Ken Griffey Jr','Shohei Ohtani','Mike Trout','Aaron Judge','Ronald Acuña Jr','Juan Soto','Elly De La Cruz','Paul Skenes'];
 
-window.csPrefetchImages=async function csPrefetchImages(ids,{concurrency=6,toast=true}={}){
+window.csPrefetchImages=async function csPrefetchImages(ids,{concurrency=6,toast=true,onProgress=null}={}){
   const list=[...new Set((ids||[]).filter(Boolean))];
   if(!list.length)return 0;
   let i=0, done=0;
@@ -14,6 +14,7 @@ window.csPrefetchImages=async function csPrefetchImages(ids,{concurrency=6,toast
     while(i<list.length){
       const id=list[i++];
       try{await csImageData(id);done++;}catch(e){}
+      if(onProgress)try{onProgress(done,list.length);}catch(e){}
     }
   }
   await Promise.all(Array.from({length:Math.min(concurrency,list.length)},()=>worker()));
@@ -49,8 +50,11 @@ window.setsLoadAllPhotos=async function setsLoadAllPhotos(){
   SETS.cards.forEach(async(x,i)=>{
     const el=$('ck-'+i); if(!el)return;
     try{
-      const url=csImgSrc(await csImageData(x.id));
-      if(url&&$('ck-'+i))$('ck-'+i).innerHTML=`<img src="${esc(url)}" loading="lazy" alt="">`;
+      const url=typeof csDisplayUrl==='function'?csDisplayUrl(await csImageData(x.id)):csImgSrc(await csImageData(x.id));
+      if(url&&$('ck-'+i)){
+        if(typeof setImgEl==='function')setImgEl($('ck-'+i),url);
+        else $('ck-'+i).innerHTML=`<img alt="" src="${url.replace(/"/g,'&quot;')}">`;
+      }
     }catch(e){}
   });
   showToast('🖼 '+n+' photos cached for this set');
@@ -621,8 +625,13 @@ window.setsPaintChecklist=async function setsPaintChecklist(){
   });
   SETS.cards.forEach(async(x,i)=>{
     const el=$('ck-'+i);if(!el)return;
-    const url=csImgSrc(await csImageData(x.id));
-    if(url&&$('ck-'+i))$('ck-'+i).innerHTML=`<img src="${esc(url)}" loading="lazy">`;
+    try{
+      const url=typeof csDisplayUrl==='function'?csDisplayUrl(await csImageData(x.id)):csImgSrc(await csImageData(x.id));
+      if(url&&$('ck-'+i)){
+        if(typeof setImgEl==='function')setImgEl($('ck-'+i),url);
+        else $('ck-'+i).innerHTML=`<img src="${url.replace(/"/g,'&quot;')}" alt="">`;
+      }
+    }catch(e){}
   });
   $('setBackSets').onclick=()=>{SETS.set=null;setsPaintSets();};
   $('setMore').onclick=()=>setsLoadCards(false);
