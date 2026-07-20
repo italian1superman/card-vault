@@ -21,33 +21,39 @@
 
 /* Card Ladder–style UI: SF Pro / system font, light surfaces, flat iOS chrome */
 :root{
-  --bg:#f2f2f7;
+  --bg:#eef0f4;
   --bg2:#ffffff;
   --panel:#ffffff;
-  --panel2:#f2f2f7;
-  --panel3:#e5e5ea;
-  --ink:#000000;
-  --dim:#3c3c43;
-  --mute:#8e8e93;
+  --panel2:#f2f3f7;
+  --panel3:#e5e7eb;
+  --ink:#0b0b0f;
+  --dim:#3a3a42;
+  --mute:#8a8a96;
   --acc:#007aff;
-  --acc2:#007aff;
-  --green:#34c759;
+  --acc2:#0a84ff;
+  --green:#30d158;
   --red:#ff3b30;
-  --amber:#ff9500;
-  --violet:#af52de;
-  --line:rgba(60,60,67,.12);
-  --sep:rgba(60,60,67,.18);
-  --xl:#34c759;
-  --radius:10px;
-  --radius-lg:12px;
-  --shadow:0 1px 3px rgba(0,0,0,.08);
+  --amber:#ff9f0a;
+  --violet:#bf5af2;
+  --line:rgba(60,60,67,.10);
+  --sep:rgba(60,60,67,.14);
+  --xl:#30d158;
+  --radius:12px;
+  --radius-lg:16px;
+  --shadow:0 1px 2px rgba(16,24,40,.04), 0 4px 12px rgba(16,24,40,.06);
+  --shadow-soft:0 1px 2px rgba(16,24,40,.03);
   --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue",Helvetica,Arial,sans-serif;
+  --ease:cubic-bezier(.2,.8,.2,1);
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{
   margin:0;min-height:100%;background:var(--bg);color:var(--ink);
   font-family:var(--font);font-size:17px;line-height:1.35;
   -webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%;
+  background-image:
+    radial-gradient(1200px 500px at 50% -120px, rgba(0,122,255,.07), transparent 60%),
+    linear-gradient(180deg, #f5f6fa 0%, var(--bg) 220px);
+  background-attachment:fixed;
 }
 button{
   font:inherit;border:0;background:var(--panel2);color:var(--ink);
@@ -80,9 +86,12 @@ main{padding:12px 16px;max-width:720px;margin:0 auto;padding-bottom:calc(90px + 
 
 .panel{
   background:var(--panel);border:0;border-radius:var(--radius-lg);padding:16px;margin-bottom:12px;
-  box-shadow:none;
+  box-shadow:var(--shadow-soft);
 }
-.heroPanel{background:var(--panel);border:0;overflow:visible}
+.heroPanel{
+  background:linear-gradient(180deg, #ffffff 0%, #fbfbfd 100%);
+  border:0;overflow:visible;box-shadow:var(--shadow);
+}
 .heroPanel::after{display:none!important}
 .heroTitle{
   font-size:34px;font-weight:700;letter-spacing:-.8px;margin:0 0 4px;color:var(--ink);
@@ -108,8 +117,8 @@ main{padding:12px 16px;max-width:720px;margin:0 auto;padding-bottom:calc(90px + 
 }
 .row:active{background:rgba(0,0,0,.04)}
 .thumb{
-  width:44px;height:62px;border-radius:6px;flex:none;overflow:hidden;position:relative;
-  background:#eee;box-shadow:none;border:0.5px solid var(--sep);
+  width:44px;height:62px;border-radius:8px;flex:none;overflow:hidden;position:relative;
+  background:linear-gradient(180deg,#f4f5f8,#e8ebf0);box-shadow:var(--shadow-soft);border:0.5px solid var(--sep);
   display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--mute);
 }
 .thumb img{width:100%;height:100%;object-fit:contain;background:#fff}
@@ -134,12 +143,13 @@ main{padding:12px 16px;max-width:720px;margin:0 auto;padding-bottom:calc(90px + 
 .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 @media(min-width:700px){.grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}}
 .gcard{
-  background:var(--panel);border:0.5px solid var(--sep);border-radius:12px;overflow:hidden;cursor:pointer;
-  box-shadow:var(--shadow);transition:none;
+  background:var(--panel);border:0.5px solid var(--sep);border-radius:14px;overflow:hidden;cursor:pointer;
+  box-shadow:var(--shadow);transition:transform .18s var(--ease), box-shadow .18s var(--ease), opacity .18s;
 }
-.gcard:active{opacity:.7;transform:none}
+.gcard:active{opacity:.92;transform:scale(.985)}
 .gcard .gimg{
-  aspect-ratio:2.5/3.5;min-height:0;position:relative;background:#fafafa;
+  aspect-ratio:2.5/3.5;min-height:0;position:relative;
+  background:linear-gradient(180deg,#f7f8fb 0%,#eef1f6 100%);
   display:flex;align-items:center;justify-content:center;font-size:24px;color:var(--mute);
 }
 .gcard .gimg::after{display:none!important}
@@ -161,9 +171,10 @@ main{padding:12px 16px;max-width:720px;margin:0 auto;padding-bottom:calc(90px + 
 
 #navB{
   position:fixed;bottom:0;left:0;right:0;z-index:20;display:flex;
-  background:rgba(249,249,249,.94);backdrop-filter:saturate(180%) blur(20px);
-  -webkit-backdrop-filter:saturate(180%) blur(20px);
+  background:rgba(255,255,255,.86);backdrop-filter:saturate(180%) blur(22px);
+  -webkit-backdrop-filter:saturate(180%) blur(22px);
   border-top:0.5px solid var(--sep);padding-bottom:env(safe-area-inset-bottom);
+  box-shadow:0 -8px 24px rgba(16,24,40,.04);
 }
 #navB .nb{flex:1;text-align:center;padding:6px 0 4px;color:var(--mute);font-size:10px;font-weight:500;cursor:pointer}
 #navB .nb .i{font-size:22px;display:block;margin-bottom:1px;filter:none;text-shadow:none;line-height:1.1}
@@ -175,7 +186,8 @@ main{padding:12px 16px;max-width:720px;margin:0 auto;padding-bottom:calc(90px + 
 #fab{
   position:fixed;right:16px;bottom:calc(72px + env(safe-area-inset-bottom));z-index:21;
   width:56px;height:56px;border-radius:28px;border:0;font-size:32px;line-height:0;font-weight:300;color:#fff;
-  background:var(--acc);box-shadow:0 4px 14px rgba(0,122,255,.35);
+  background:linear-gradient(180deg,#3b95ff 0%, var(--acc) 100%);
+  box-shadow:0 6px 18px rgba(0,122,255,.38);
 }
 @media(min-width:900px){#fab{display:none}}
 #fabMenu{
@@ -206,8 +218,9 @@ main{padding:12px 16px;max-width:720px;margin:0 auto;padding-bottom:calc(90px + 
 .pill-row{display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:2px 0 10px;scrollbar-width:none}
 .pill-row::-webkit-scrollbar{display:none}
 .pill{
-  min-height:32px;padding:7px 12px;border-radius:999px;font-weight:500;font-size:13px;
-  background:var(--panel);border:0.5px solid var(--sep);white-space:nowrap;flex:none;color:var(--ink);box-shadow:none;
+  min-height:32px;padding:7px 12px;border-radius:999px;font-weight:600;font-size:13px;
+  background:var(--panel);border:0.5px solid var(--sep);white-space:nowrap;flex:none;color:var(--ink);
+  box-shadow:var(--shadow-soft);
 }
 .pill.on,.pill.showPill{background:var(--acc);border-color:var(--acc);color:#fff}
 
@@ -218,9 +231,11 @@ main{padding:12px 16px;max-width:720px;margin:0 auto;padding-bottom:calc(90px + 
 
 .quickGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .quickCard{
-  min-height:72px;border-radius:12px;text-align:left;padding:14px;
-  background:var(--panel);border:0;box-shadow:none;
+  min-height:72px;border-radius:14px;text-align:left;padding:14px;
+  background:var(--panel2);border:0.5px solid var(--sep);box-shadow:none;
+  transition:transform .15s var(--ease), background .15s;
 }
+.quickCard:active{transform:scale(.98);background:#e9ebf0}
 .quickCard b{display:block;font-size:15px;font-weight:600;margin-bottom:3px;color:var(--ink)}
 .quickCard span{font-size:13px;color:var(--mute);font-weight:400;line-height:1.3}
 .home-actions{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 0}
@@ -228,7 +243,7 @@ main{padding:12px 16px;max-width:720px;margin:0 auto;padding-bottom:calc(90px + 
 
 .chips{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
 @media(min-width:700px){.chips{grid-template-columns:repeat(4,1fr)}}
-.chipStat{background:var(--panel2);border:0;border-radius:12px;padding:12px}
+.chipStat{background:var(--panel2);border:0.5px solid transparent;border-radius:14px;padding:12px}
 .chipStat .k{font-size:12px;color:var(--mute);font-weight:400;text-transform:none;letter-spacing:0}
 .chipStat .v{font-size:22px;font-weight:700;margin-top:2px;letter-spacing:-.4px;font-family:var(--font);font-variant-numeric:tabular-nums}
 .chipStat .s{font-size:12px;color:var(--mute);margin-top:2px}
@@ -329,6 +344,100 @@ details summary::-webkit-details-marker{display:none}
 
 
 
+
+/* ===== Visual polish (still iPhone-dense) ===== */
+.brandLockup{display:inline-flex;align-items:center;gap:8px}
+.brandBall{
+  width:18px;height:18px;border-radius:50%;flex:none;
+  background:
+    radial-gradient(circle at 35% 30%, #fff 0 18%, transparent 19%),
+    linear-gradient(135deg, #ff3b30 0 48%, #fff 48% 52%, #ff3b30 52%);
+  box-shadow:inset 0 0 0 1.5px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.12);
+  position:relative;
+}
+.brandBall::after{
+  content:'';position:absolute;inset:3px;border-radius:50%;
+  border:1.5px solid rgba(255,255,255,.55);border-left-color:transparent;border-right-color:transparent;
+  transform:rotate(25deg);
+}
+h1{display:flex;align-items:center}
+
+.listWrap{
+  background:var(--panel);border-radius:var(--radius-lg);padding:2px 12px;
+  box-shadow:var(--shadow-soft);margin-bottom:10px;
+}
+.row{border-bottom-color:var(--line)}
+.row:last-child{border-bottom:0}
+
+.gcard .gt{padding:10px 11px 12px}
+.gcard .gt .l3{color:var(--ink)}
+.gcard .gimg img.portraitFallback{object-fit:cover}
+
+.heroTitle{letter-spacing:-1px}
+.heroPanel .heroTitle{
+  background:linear-gradient(180deg, #111 0%, #2a2a33 100%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  color:transparent;
+}
+@supports not ((-webkit-background-clip:text) or (background-clip:text)){
+  .heroPanel .heroTitle{color:var(--ink);-webkit-text-fill-color:unset;background:none}
+}
+
+.ct{
+  font-size:12px;font-weight:600;color:var(--mute);
+  letter-spacing:.02em;text-transform:uppercase;margin:0 0 8px;
+}
+
+.logoStrip{gap:8px;padding:6px 2px 10px;margin:2px 0 4px}
+.teamBadge{
+  box-shadow:0 1px 4px rgba(0,0,0,.16);
+  border:0.5px solid rgba(255,255,255,.9);
+}
+
+#sheetBk{background:rgba(15,18,25,.42);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+#sheet::before{
+  width:40px;height:5px;border-radius:99px;background:rgba(60,60,67,.22);margin:10px auto 8px;
+}
+#sheet .shead{
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+}
+
+.actionBar button,.home-actions button{
+  transition:transform .12s var(--ease), opacity .12s;
+}
+.actionBar button:active,.home-actions button:active{transform:scale(.98)}
+
+.findSearch button.bigim,.bigim{
+  box-shadow:0 4px 12px rgba(0,122,255,.25);
+}
+
+.ios-banner{
+  display:flex;gap:10px;align-items:flex-start;
+  box-shadow:var(--shadow);
+  border:0.5px solid var(--sep);
+}
+.ios-banner .t{flex:1}
+
+@media (prefers-reduced-motion:reduce){
+  .gcard,.quickCard,.logoChip,#sheet,.actionBar button,.home-actions button{transition:none!important}
+  .gcard:active,.quickCard:active,.logoChip:active{transform:none!important}
+}
+
+@keyframes riseIn{
+  from{opacity:0;transform:translateY(6px)}
+  to{opacity:1;transform:none}
+}
+.panel.heroPanel,.listWrap,.grid .gcard{
+  animation:riseIn .35s var(--ease) both;
+}
+.grid .gcard:nth-child(1){animation-delay:.02s}
+.grid .gcard:nth-child(2){animation-delay:.05s}
+.grid .gcard:nth-child(3){animation-delay:.08s}
+.grid .gcard:nth-child(4){animation-delay:.11s}
+@media (prefers-reduced-motion:reduce){
+  .panel.heroPanel,.listWrap,.grid .gcard{animation:none}
+}
+
 /* Gift visuals: team/brand logos + portraits */
 .teamBadge{
   position:absolute;right:2px;bottom:2px;width:18px;height:18px;object-fit:contain;
@@ -347,11 +456,12 @@ details summary::-webkit-details-marker{display:none}
 }
 .logoStrip::-webkit-scrollbar{display:none}
 .logoChip{
-  flex:none;width:44px;height:44px;padding:6px;border-radius:12px;background:var(--panel);
+  flex:none;width:48px;height:48px;padding:8px;border-radius:14px;background:var(--panel);
   border:0.5px solid var(--sep);display:flex;align-items:center;justify-content:center;
+  box-shadow:var(--shadow-soft);transition:transform .15s var(--ease), box-shadow .15s;
 }
-.logoChip img{width:28px;height:28px;object-fit:contain}
-.logoChip:active{opacity:.7}
+.logoChip img{width:30px;height:30px;object-fit:contain}
+.logoChip:active{opacity:1;transform:scale(.94);box-shadow:none}
 img.cardPhoto, .thumb > img:not(.teamBadge), .gimg > img:not(.teamBadge){
   width:100%;height:100%;object-fit:contain;background:#fff;
 }
@@ -409,9 +519,9 @@ html,body{
   /* Density */
   body{font-size:16px}
   input,select,textarea,button{font-size:16px} /* avoid iOS focus zoom */
-  .panel{padding:12px;margin-bottom:8px;border-radius:12px}
-  .heroTitle{font-size:26px!important;letter-spacing:-.5px;line-height:1.05;word-break:break-word}
-  .heroPanel .heroTitle{font-size:30px!important}
+  .panel{padding:14px;margin-bottom:10px;border-radius:16px}
+  .heroTitle{font-size:28px!important;letter-spacing:-.6px;line-height:1.05;word-break:break-word}
+  .heroPanel .heroTitle{font-size:32px!important}
   .heroSub{font-size:13px;margin:0 0 8px;line-height:1.3}
   .ct{font-size:12px;margin:0 0 6px}
 
@@ -429,9 +539,11 @@ html,body{
   .chipStat .v{font-size:17px}
   .chipStat .k{font-size:11px}
 
-  .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-  .gcard{min-width:0}
-  .gcard .gt{padding:8px}
+  .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .gcard{min-width:0;border-radius:14px}
+  .gcard .gt{padding:9px 9px 10px}
+  .listWrap{padding:0 10px;border-radius:14px;margin-bottom:10px}
+  .groupHead{padding:12px 2px 6px;font-weight:600}
   .gcard .gt .l1{font-size:13px}
   .gcard .gt .l2{font-size:11px}
   .gcard .gt .l3{font-size:14px;margin-top:4px}
@@ -580,7 +692,7 @@ html,body{
 <body>
 <header>
   <div class="hdrTop">
-    <h1><span>Card Vault</span></h1>
+    <h1><span class="brandLockup"><span class="brandBall" aria-hidden="true"></span><span>Card Vault</span></span></h1>
     <div class="hdrActions">
       <button type="button" class="deskOnly bigxl" id="btnXl">Excel</button>
       <button type="button" class="deskOnly bigim" id="btnIm">Import</button>
@@ -1630,10 +1742,13 @@ function renderListPanel(cs){
         <div class="l2">${typeof cardMetaLine==='function'?cardMetaLine(c,[c.year,c.brand||c.setName,c.num?'#'+c.num:'',c.variant,c.grade]):esc([c.year,c.brand||c.setName,c.num?'#'+c.num:'',c.variant,c.grade].filter(Boolean).join(' · '))}</div>
         <div class="l3">${money(valueOf(c))}</div></div></div>`).join('')}</div>`;
   }
-  let last='', html='';
+  let last='', html='<div class="listWrap">';
   for(const c of cs){
     const gl=groupLabel(c);
-    if(listGroup&&gl!==last){html+=`<div class="groupHead">${esc(gl)}</div>`;last=gl;}
+    if(listGroup&&gl!==last){
+      if(last!=='') html+='</div><div class="listWrap">';
+      html+=`<div class="groupHead">${esc(gl)}</div>`;last=gl;
+    }
     const gp=gainPct(c),cls=gp==null?'':gp>=0?'pos':'neg';
     html+=`<div class="row" data-id="${c.id}">
         ${typeof cardThumb==='function'?cardThumb(c,'thumb'):`<div class="thumb" id="im-${c.id}">${sportIcon(c.sport)}</div>`}
@@ -1646,6 +1761,7 @@ function renderListPanel(cs){
         <div class="g ${cls}">${gp==null?'':(gp>=0?'+':'')+gp.toFixed(0)+'%'}</div></div>
       </div>`;
   }
+  html+='</div>';
   return html;
 }
 function afterListRender(cs){
@@ -1686,7 +1802,7 @@ function renderDash(){
   $('view').innerHTML=`
    ${empty?`<div class="panel heroPanel">
       <div class="heroTitle">Card Vault</div>
-      <div class="heroSub">Track values and grow your collection.</div>
+      <div class="heroSub">Your baseball cards, values, and sets — on this phone.</div>
       <div class="quickGrid">
         <button type="button" class="quickCard" data-go="explore"><b>🔍 Find a player</b><span>Browse catalog cards</span></button>
         <button type="button" class="quickCard" data-go="sets"><b>📚 Build a set</b><span>Checklist + completion %</span></button>

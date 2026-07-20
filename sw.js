@@ -1,5 +1,5 @@
 /* Card Vault service worker */
-const CACHE = 'card-vault-v23-sweep';
+const CACHE = 'card-vault-v24-polish';
 const ASSETS = [
   './',
   './index.html',
