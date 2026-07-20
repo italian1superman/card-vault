@@ -1,5 +1,5 @@
 /* Card Vault service worker */
-const CACHE = 'card-vault-v14-mlb-gh';
+const CACHE = 'card-vault-v15-mlb-json';
 const ASSETS = [
   './',
   './index.html',

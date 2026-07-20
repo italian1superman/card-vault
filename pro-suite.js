@@ -246,7 +246,7 @@ window.renderInsightsPanel=function renderInsightsPanel(){
       <button type="button" class="bigim" id="iqShow">🃏 Show Mode</button>
       <button type="button" id="iqPhotos">🖼 Fill photos</button>
       <button type="button" id="iqMlb">⚾ MLB stats</button>
-      <button type="button" id="iqGh">☁ GitHub</button>
+      <button type="button" id="iqGh">⚾ Stats JSON</button>
       <button type="button" id="iqStale">♻ Refresh values</button>
       <button type="button" id="iqUnpriced">Price gaps</button>
     </div>

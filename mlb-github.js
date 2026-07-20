@@ -1,16 +1,13 @@
-/* Card Vault — MLB career stats (statsapi.mlb.com) + GitHub vault sync */
+/* Card Vault — MLB career stats + public data/mlb-career.json (not private collection) */
 (function(){
 'use strict';
 if(typeof window==='undefined')return;
 
 const MLB_API='https://statsapi.mlb.com/api/v1';
-const MLB_STATS_TTL=30*864e5; /* re-fetch career lines after 30 days */
+const MLB_STATS_TTL=30*864e5;
+const MLB_JSON_URL='./data/mlb-career.json';
 
-function ghCfg(){
-  state.meta=state.meta||{};
-  state.meta.github=state.meta.github||{token:'',owner:'',repo:'',path:'vault/collection.json'};
-  return state.meta.github;
-}
+window.MLB_CAREER={v:1,byId:{},byName:{},loaded:false};
 
 window.mlbPickStat=function mlbPickStat(payload, group){
   const blocks=(payload&&payload.stats)||[];
@@ -18,6 +15,62 @@ window.mlbPickStat=function mlbPickStat(payload, group){
     ||blocks.find(s=>String((s.type&&s.type.displayName)||'').toLowerCase()==='career');
   const split=(hit&&hit.splits&&hit.splits[0])||null;
   return split&&split.stat?split.stat:null;
+};
+
+function mlbNameKey(n){
+  return String(n||'').toLowerCase().replace(/\./g,'').replace(/\s+/g,' ').trim();
+}
+window.mergeMlbCareerFile=function mergeMlbCareerFile(j){
+  if(!j||typeof j!=='object')return;
+  MLB_CAREER.byId=Object.assign(MLB_CAREER.byId||{}, j.byId||{});
+  const names=Object.assign({}, j.byName||{});
+  /* alias keys without punctuation so "Ken Griffey Jr" hits "Ken Griffey Jr." */
+  for(const [k,id] of Object.entries(names)){
+    const nk=mlbNameKey(k);
+    if(nk&&!names[nk])names[nk]=id;
+  }
+  MLB_CAREER.byName=Object.assign(MLB_CAREER.byName||{}, names);
+  MLB_CAREER.v=j.v||1;
+  MLB_CAREER.updated=j.updated||MLB_CAREER.updated;
+  MLB_CAREER.count=Object.keys(MLB_CAREER.byId).length;
+  MLB_CAREER.loaded=true;
+};
+
+window.loadMlbCareerJson=async function loadMlbCareerJson(){
+  try{
+    const r=await fetch(MLB_JSON_URL,{cache:'no-cache'});
+    if(!r.ok)return false;
+    mergeMlbCareerFile(await r.json());
+    return true;
+  }catch(e){return false;}
+};
+
+window.mlbLookupCached=function mlbLookupCached(c){
+  if(!c)return null;
+  if(c.mlbId&&MLB_CAREER.byId[String(c.mlbId)])return MLB_CAREER.byId[String(c.mlbId)];
+  const n=String(c.player||'').trim().toLowerCase();
+  if(n&&MLB_CAREER.byName[n]&&MLB_CAREER.byId[MLB_CAREER.byName[n]])
+    return MLB_CAREER.byId[MLB_CAREER.byName[n]];
+  return null;
+};
+
+window.mlbCachePut=function mlbCachePut(summary){
+  if(!summary||!summary.mlbId)return;
+  const id=String(summary.mlbId);
+  MLB_CAREER.byId[id]={
+    mlbId:summary.mlbId,
+    fullName:summary.fullName||'',
+    pos:summary.pos||'',
+    team:summary.team||'',
+    bats:summary.bats||'',
+    throws:summary.throws||'',
+    birthDate:summary.birthDate||'',
+    debutDate:summary.debutDate||'',
+    hitting:summary.hitting||null,
+    pitching:summary.pitching||null
+  };
+  if(summary.fullName)MLB_CAREER.byName[String(summary.fullName).toLowerCase()]=id;
+  MLB_CAREER.count=Object.keys(MLB_CAREER.byId).length;
 };
 
 window.mlbFetchPerson=async function mlbFetchPerson(mlbId){
@@ -68,40 +121,47 @@ window.mlbBuildSummary=function mlbBuildSummary(person, hitting, pitching){
   };
   if(hitting&&(+hitting.atBats||0)>0){
     out.hitting={
-      g:+hitting.gamesPlayed||0,
-      ab:+hitting.atBats||0,
-      h:+hitting.hits||0,
-      hr:+hitting.homeRuns||0,
-      rbi:+hitting.rbi||0,
-      sb:+hitting.stolenBases||0,
-      bb:+hitting.baseOnBalls||0,
-      so:+hitting.strikeOuts||0,
-      avg:hitting.avg||'',
-      obp:hitting.obp||'',
-      slg:hitting.slg||'',
-      ops:hitting.ops||''
+      g:+hitting.gamesPlayed||0, ab:+hitting.atBats||0, h:+hitting.hits||0,
+      hr:+hitting.homeRuns||0, rbi:+hitting.rbi||0, sb:+hitting.stolenBases||0,
+      bb:+hitting.baseOnBalls||0, so:+hitting.strikeOuts||0,
+      avg:hitting.avg||'', obp:hitting.obp||'', slg:hitting.slg||'', ops:hitting.ops||''
     };
   }
   if(pitching&&(+pitching.gamesPlayed||0)>0){
     out.pitching={
-      g:+pitching.gamesPlayed||0,
-      gs:+pitching.gamesStarted||0,
-      w:+pitching.wins||0,
-      l:+pitching.losses||0,
-      sv:+pitching.saves||0,
-      ip:pitching.inningsPitched||'',
-      so:+pitching.strikeOuts||0,
-      bb:+pitching.baseOnBalls||0,
-      era:pitching.era||'',
-      whip:pitching.whip||''
+      g:+pitching.gamesPlayed||0, gs:+pitching.gamesStarted||0,
+      w:+pitching.wins||0, l:+pitching.losses||0, sv:+pitching.saves||0,
+      ip:pitching.inningsPitched||'', so:+pitching.strikeOuts||0, bb:+pitching.baseOnBalls||0,
+      era:pitching.era||'', whip:pitching.whip||''
     };
   }
   return out;
 };
 
+function summaryFromCache(row){
+  if(!row)return null;
+  return {
+    fetched:Date.now(),
+    mlbId:row.mlbId,
+    fullName:row.fullName||'',
+    pos:row.pos||'', team:row.team||'', bats:row.bats||'', throws:row.throws||'',
+    birthDate:row.birthDate||'', debutDate:row.debutDate||'',
+    hitting:row.hitting||null, pitching:row.pitching||null
+  };
+}
+
 window.mlbEnrichCard=async function mlbEnrichCard(c,{force=false}={}){
   if(!c||!c.player)return null;
   if(!force&&c.mlbStats&&c.mlbStats.fetched&&(Date.now()-c.mlbStats.fetched)<MLB_STATS_TTL)return c.mlbStats;
+  if(!force){
+    const cached=mlbLookupCached(c);
+    if(cached){
+      c.mlbStats=summaryFromCache(cached);
+      if(cached.mlbId)c.mlbId=cached.mlbId;
+      if(!c.team&&cached.team)c.team=cached.team;
+      return c.mlbStats;
+    }
+  }
   let id=c.mlbId;
   if(!id&&typeof mlbSearch==='function'){
     const hits=await mlbSearch(c.player);
@@ -116,6 +176,7 @@ window.mlbEnrichCard=async function mlbEnrichCard(c,{force=false}={}){
   ]);
   if(!person)return null;
   c.mlbStats=mlbBuildSummary(person, hitting, pitching);
+  mlbCachePut(c.mlbStats);
   if(!c.team&&c.mlbStats.team)c.team=c.mlbStats.team;
   if(c.mlbStats.pos){
     const tag='Pos: '+c.mlbStats.pos;
@@ -126,6 +187,7 @@ window.mlbEnrichCard=async function mlbEnrichCard(c,{force=false}={}){
 };
 
 window.importAllMlbStats=async function importAllMlbStats({max=150,force=false}={}){
+  if(!MLB_CAREER.loaded)await loadMlbCareerJson();
   const need=state.cards.filter(c=>{
     if(!c.player||String(c.player).trim().length<2)return false;
     if(force)return true;
@@ -153,12 +215,25 @@ window.importAllMlbStats=async function importAllMlbStats({max=150,force=false}=
   return done;
 };
 
+window.downloadMlbCareerJson=function downloadMlbCareerJson(){
+  const out={
+    v:1,
+    source:'statsapi.mlb.com',
+    updated:new Date().toISOString(),
+    count:Object.keys(MLB_CAREER.byId||{}).length,
+    byId:MLB_CAREER.byId||{},
+    byName:MLB_CAREER.byName||{}
+  };
+  download('mlb-career.json', JSON.stringify(out), 'application/json');
+  showToast('Downloaded mlb-career.json ('+out.count+' players)');
+};
+
 window.renderMlbPanel=function renderMlbPanel(c){
   const s=c&&c.mlbStats;
   if(!s){
     return `<div class="panel mlbPanel" id="mlbPanel">
       <div class="ct">MLB career</div>
-      <div class="teach-hint" style="color:var(--dim);font-size:12px;margin:0 0 8px">Pull free career lines from MLB for this player.</div>
+      <div class="teach-hint" style="color:var(--dim);font-size:12px;margin:0 0 8px">Career lines from the public stats JSON / MLB.</div>
       <button type="button" id="btnMlbLoad" class="bigim">Import MLB stats</button>
     </div>`;
   }
@@ -210,154 +285,43 @@ window.wireMlbPanel=function wireMlbPanel(c){
   };
 };
 
-/* ---- GitHub vault sync (Contents API) ---- */
-function ghHeaders(token){
-  return {
-    'Accept':'application/vnd.github+json',
-    'Authorization':'Bearer '+token,
-    'X-GitHub-Api-Version':'2022-11-28',
-    'Content-Type':'application/json'
-  };
-}
-
-window.ghConfigure=function ghConfigure(){
-  const g=ghCfg();
-  const token=prompt('GitHub personal access token (repo Contents read/write).\nStored only on this phone — use a private repo for your collection.', g.token||'');
-  if(token===null)return;
-  const owner=prompt('GitHub user or org', g.owner||'italian1superman');
-  if(owner===null)return;
-  const repo=prompt('Repository name (prefer private)', g.repo||'card-vault-data');
-  if(repo===null)return;
-  const path=prompt('File path in that repo', g.path||'vault/collection.json');
-  if(path===null)return;
-  g.token=String(token).trim();
-  g.owner=String(owner).trim();
-  g.repo=String(repo).trim();
-  g.path=String(path).trim().replace(/^\//,'');
-  save();
-  showToast(g.token?'GitHub linked ✔':'GitHub token cleared');
-};
-
-async function ghGetContent(){
-  const g=ghCfg();
-  if(!g.token||!g.owner||!g.repo||!g.path)throw new Error('Configure GitHub first (⋯ menu)');
-  const url='https://api.github.com/repos/'+encodeURIComponent(g.owner)+'/'+encodeURIComponent(g.repo)+'/contents/'+g.path.split('/').map(encodeURIComponent).join('/');
-  const r=await fetch(url+'?ref=main',{headers:ghHeaders(g.token)});
-  if(r.status===404){
-    const r2=await fetch(url,{headers:ghHeaders(g.token)});
-    if(r2.status===404)return {sha:null,json:null};
-    if(!r2.ok)throw new Error('GitHub '+r2.status);
-    const j=await r2.json();
-    return {sha:j.sha,json:JSON.parse(base64ToUtf8(j.content||''))};
-  }
-  if(!r.ok)throw new Error('GitHub '+r.status+(r.status===401?' — check token':''));
-  const j=await r.json();
-  return {sha:j.sha,json:JSON.parse(base64ToUtf8(j.content||''))};
-}
-function base64ToUtf8(b64){
-  const bin=atob(String(b64).replace(/\s/g,''));
-  const bytes=Uint8Array.from(bin,c=>c.charCodeAt(0));
-  return new TextDecoder().decode(bytes);
-}
-
-function utf8ToBase64(str){
-  const bytes=new TextEncoder().encode(str);
-  let bin='';
-  bytes.forEach(b=>bin+=String.fromCharCode(b));
-  return btoa(bin);
-}
-
-window.ghPushVault=async function ghPushVault({withPhotos=false}={}){
-  const g=ghCfg();
-  if(!g.token){ghConfigure();if(!ghCfg().token)return;}
-  showToast('Pushing vault to GitHub…');
-  const out={v:2,cards:state.cards,meta:{...state.meta,lastBackup:Date.now(),github:{...g,token:'***'}},savedAt:new Date().toISOString()};
-  /* never write the raw token into the repo file */
-  if(out.meta.github)out.meta.github.token='***';
-  if(withPhotos){
-    out.photos={};
-    for(const c of state.cards)if(c.imgId){const d=await getImg(c);if(d)out.photos[c.imgId]=d;}
-  }
-  const body=JSON.stringify(out,null,2);
-  if(body.length>900000&&withPhotos){
-    if(!confirm('Backup is large ('+Math.round(body.length/1024)+' KB). GitHub Contents API prefers smaller files. Continue anyway?'))return;
-  }
-  let sha=null;
-  try{const cur=await ghGetContent();sha=cur.sha;}catch(e){/* new file */}
-  const url='https://api.github.com/repos/'+encodeURIComponent(g.owner)+'/'+encodeURIComponent(g.repo)+'/contents/'+g.path.split('/').map(encodeURIComponent).join('/');
-  const payload={
-    message:'Card Vault backup '+today()+' · '+state.cards.length+' cards',
-    content:utf8ToBase64(body),
-    branch:'main'
-  };
-  if(sha)payload.sha=sha;
-  const r=await fetch(url,{method:'PUT',headers:ghHeaders(g.token),body:JSON.stringify(payload)});
-  if(!r.ok){
-    const err=await r.text().catch(()=>'');
-    throw new Error('Push failed '+r.status+(err?(': '+err.slice(0,120)):'')+'\nCreate a private repo "'+g.repo+'" first if needed.');
-  }
-  state.meta.lastBackup=Date.now();
-  state.meta.githubLastPush=Date.now();
-  save();
-  if(typeof logActivity==='function')logActivity('github','Pushed '+state.cards.length+' cards to GitHub');
-  showToast('Saved to GitHub ✔  '+g.owner+'/'+g.repo);
-  render();
-};
-
-window.ghPullVault=async function ghPullVault(){
-  const g=ghCfg();
-  if(!g.token){ghConfigure();if(!ghCfg().token)return;}
-  showToast('Loading vault from GitHub…');
-  const cur=await ghGetContent();
-  if(!cur.json||!Array.isArray(cur.json.cards))throw new Error('No collection.json on GitHub yet — push first');
-  const j=cur.json;
-  const replace=confirm('GitHub has '+j.cards.length+' cards.\nOK = REPLACE this phone’s '+state.cards.length+'\nCancel = merge new only');
-  if(replace)state.cards=j.cards;
-  else{
-    const ids=new Set(state.cards.map(c=>c.id));
-    j.cards.forEach(c=>{if(!ids.has(c.id))state.cards.push(c);});
-  }
-  if(j.photos)for(const k in j.photos){await idb.put(k,j.photos[k]);imgCache.set(k,j.photos[k]);}
-  if(j.meta){
-    const keepTok=ghCfg().token, keepOwner=ghCfg().owner, keepRepo=ghCfg().repo, keepPath=ghCfg().path;
-    state.meta={...state.meta,...j.meta};
-    state.meta.github={token:keepTok,owner:keepOwner,repo:keepRepo,path:keepPath};
-  }
-  state.meta.lastBackup=Date.now();
-  save();
-  if(typeof logActivity==='function')logActivity('github','Pulled vault from GitHub');
-  showToast('Restored from GitHub ✔');
-  render();
-};
-
-window.openGitHubPanel=function openGitHubPanel(){
-  const g=ghCfg();
-  const linked=!!(g.token&&g.owner&&g.repo);
+/* Public stats JSON only — collection stays on this phone */
+window.openMlbJsonPanel=function openMlbJsonPanel(){
+  const n=Object.keys(MLB_CAREER.byId||{}).length;
   const bk=document.createElement('div');
   bk.className='showModeBk';
   bk.innerHTML=`<div class="showMode">
     <div class="casHead">
       <div>
-        <div class="heroTitle" style="font-size:18px">GitHub vault</div>
-        <div class="heroSub" style="margin:0">Store your collection (and MLB stats) in a repo so a phone wipe can’t erase it. Prefer a private repo.</div>
+        <div class="heroTitle" style="font-size:18px">MLB stats JSON</div>
+        <div class="heroSub" style="margin:0">Public file on GitHub: data/mlb-career.json. Your card collection stays on this phone (⋯ → Backup).</div>
       </div>
       <button type="button" id="ghClose">✕</button>
     </div>
-    <div class="mlbBio" style="margin-bottom:10px">${linked?esc(g.owner+'/'+g.repo+' · '+g.path):'Not linked yet'}${state.meta.githubLastPush?(' · last push '+new Date(state.meta.githubLastPush).toLocaleDateString()):''}</div>
+    <div class="mlbBio" style="margin-bottom:10px">${n? (n+' players loaded'):'Loading…'}${MLB_CAREER.updated?(' · updated '+esc(String(MLB_CAREER.updated).slice(0,10))):''}</div>
     <div class="home-actions">
-      <button type="button" class="bigim" id="ghCfg">Configure</button>
-      <button type="button" id="ghPush" ${linked?'':'disabled'}>Push to GitHub</button>
-      <button type="button" id="ghPull" ${linked?'':'disabled'}>Pull from GitHub</button>
+      <button type="button" class="bigim" id="mlbReload">Reload JSON</button>
+      <button type="button" id="mlbDl">Download JSON</button>
+      <button type="button" id="mlbImport">Import onto cards</button>
     </div>
-    <div class="teach-hint" style="color:var(--dim);font-size:12px;margin-top:12px">Create a fine-grained PAT with Contents read/write on that repo. Token stays in this phone’s storage — it is not written into the backup file.</div>
   </div>`;
   document.body.appendChild(bk);
   const close=()=>bk.remove();
   $('ghClose').onclick=close;
   bk.addEventListener('click',e=>{if(e.target===bk)close();});
-  $('ghCfg').onclick=()=>{ghConfigure();close();openGitHubPanel();};
-  $('ghPush').onclick=async()=>{try{await ghPushVault();close();}catch(e){alert(e.message);}};
-  $('ghPull').onclick=async()=>{try{await ghPullVault();close();}catch(e){alert(e.message);}};
+  $('mlbReload').onclick=async()=>{
+    await loadMlbCareerJson();
+    showToast((Object.keys(MLB_CAREER.byId).length)+' players in JSON');
+    close(); openMlbJsonPanel();
+  };
+  $('mlbDl').onclick=()=>downloadMlbCareerJson();
+  $('mlbImport').onclick=async()=>{close(); await importAllMlbStats();};
 };
+
+/* Back-compat aliases so old buttons keep working */
+window.openGitHubPanel=window.openMlbJsonPanel;
+
+/* Prefetch public JSON once app is up */
+setTimeout(()=>{ loadMlbCareerJson().catch(()=>{}); }, 400);
 
 })();
