@@ -2880,6 +2880,8 @@ function renderDash(){
   });
   if(typeof wireLogoStrip==='function')wireLogoStrip($('view'));
   if(typeof wireHomeShowcase==='function')wireHomeShowcase();
+  if(typeof rebuildLocalChecklists==='function')rebuildLocalChecklists();
+  if(typeof wireSetProgressUi==='function')wireSetProgressUi(document.getElementById('view'));
   const ba=$('btnAstrosHome'); if(ba) ba.onclick=()=>{ if(typeof openTeamPage==='function') openTeamPage('HOU'); };
   const bf=$('btnGoFind'); if(bf) bf.onclick=()=>{tab='explore';render();};
   const bs=$('btnGoSets'); if(bs) bs.onclick=()=>{tab='sets';render();};
