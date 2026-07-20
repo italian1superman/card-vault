@@ -2447,6 +2447,8 @@ function renderDash(){
     .map(c=>[c.player||c.setName||'card',(latestPrice(c)-c.cost)*(+c.qty||1)])
     .sort((a,b)=>Math.abs(b[1])-Math.abs(a[1]));
   const backupAge=state.meta.lastBackup?Math.floor((Date.now()-state.meta.lastBackup)/86400000):null;
+  const unpriced=cs.filter(c=>c.status!=='sold'&&(!c.prices||!c.prices.length)).length;
+  const unlinked=cs.filter(c=>c.status!=='sold'&&!c.csId).length;
   const best=cs.filter(c=>c.status==='have').sort((a,b)=>valueOf(b)*(b.qty||1)-valueOf(a)*(a.qty||1))[0];
   const empty=!cs.length;
   const qp=(typeof QUICK_PLAYERS!=='undefined'?QUICK_PLAYERS:['Ken Griffey Jr','Shohei Ohtani','Mike Trout','Aaron Judge']);
@@ -2472,6 +2474,7 @@ function renderDash(){
       <div class="pill-row">${qp.slice(0,4).map(n=>`<button type="button" class="pill" data-pl="${esc(n)}">⚾ ${esc(n)}</button>`).join('')}</div>
     </div>`:''}
    ${(cs.length&&(backupAge===null||backupAge>7))?`<div class="backupBanner"><div class="bbTxt">💾 ${backupAge===null?'Weekly tip: Backup saves a JSON you can drop in iCloud Drive / Files — a phone wipe can’t erase the vault.':'Last backup '+backupAge+' days ago. One tap downloads a fresh JSON for iCloud.'}</div><button type="button" id="btnBackupNow">Backup now</button></div>`:''}
+   ${(cs.length&&(unpriced>=3||unlinked>=3))?`<div class="backupBanner" style="background:linear-gradient(135deg,rgba(0,45,98,.12),rgba(235,110,31,.1))"><div class="bbTxt">⚡ ${unpriced?unpriced+' cards need prices':''}${unpriced&&unlinked?' · ':''}${unlinked?unlinked+' not linked to catalog':''}. Photos + PSA pop are free; prices bulk-fill ~100 per call (then cached).</div><button type="button" id="btnFillDataBanner">Fill data</button></div>`:''}
    ${!empty?`<div class="panel heroPanel coolHero">
      <div class="heroEyebrow"><span class="dot"></span> Astros collection · Crush City</div>
      <div class="heroTitle">${money0(s.val)}</div>
@@ -2482,6 +2485,7 @@ function renderDash(){
        <button type="button" id="btnGoFind" class="bigim">Search</button>
        <button type="button" id="btnAstrosHome">Astros</button>
        <button type="button" id="btnGoSets">Sets</button>
+       <button type="button" id="btnFillData" class="bigim">Fill data</button>
        <button type="button" id="btnFillPhotos" class="homeMore">Photos</button>
        <button type="button" id="btnStale" class="homeMore">Refresh $</button>
        <button type="button" id="btnMlbAll" class="deskOnly">MLB stats</button>
@@ -2524,6 +2528,7 @@ function renderDash(){
   const bf=$('btnGoFind'); if(bf) bf.onclick=()=>{tab='explore';render();};
   const bs=$('btnGoSets'); if(bs) bs.onclick=()=>{tab='sets';render();};
   const br=$('btnStale'); if(br) br.onclick=()=>refreshStalePrices();
+  const bfd=$('btnFillData'); if(bfd) bfd.onclick=()=>{if(typeof fillVaultData==='function')fillVaultData();};
   const bp=$('btnFillPhotos'); if(bp) bp.onclick=()=>{if(typeof fillMissingPhotos==='function')fillMissingPhotos();};
   const bm=$('btnMlbAll'); if(bm) bm.onclick=()=>{if(typeof importAllMlbStats==='function')importAllMlbStats().catch(e=>alert(e.message));};
   const bg=$('btnGh'); if(bg) bg.onclick=()=>{if(typeof openGitHubPanel==='function')openGitHubPanel();};
@@ -3480,9 +3485,13 @@ function openMenu(anchor){
   m.innerHTML=`
     <div class="menuGrab"></div>
     <div class="menuTitle">Menu</div>
+    <div class="menuSec">Auto-fill</div>
+    <div class="menuGrid">
+      <button type="button" class="menuItem primary" data-a="fill"><span class="miI">⚡</span><span>Fill data<span class="miS">Photos · pop · link · prices</span></span></button>
+    </div>
     <div class="menuSec">Save your vault</div>
     <div class="menuGrid">
-      <button type="button" class="menuItem primary" data-a="bk"><span class="miI">💾</span><span>Backup now<span class="miS">JSON for iCloud / Files</span></span></button>
+      <button type="button" class="menuItem" data-a="bk"><span class="miI">💾</span><span>Backup now<span class="miS">JSON for iCloud / Files</span></span></button>
       <button type="button" class="menuItem" data-a="bkp"><span class="miI">🖼</span>Backup + photos<span class="miS">Larger download</span></button>
       <button type="button" class="menuItem" data-a="restore"><span class="miI">📂</span>Import / restore<span class="miS">JSON · CSV · Excel · TCDB</span></button>
       <button type="button" class="menuItem" data-a="csv"><span class="miI">📑</span>Export CSV<span class="miS">Spreadsheet</span></button>
@@ -3514,7 +3523,8 @@ function openMenu(anchor){
   m.querySelectorAll('button[data-a]').forEach(b=>b.onclick=()=>{
     const a=b.dataset.a;
     closeMenu();
-    if(a==='bk')doBackup(false);
+    if(a==='fill'){if(typeof fillVaultData==='function')fillVaultData();}
+    else if(a==='bk')doBackup(false);
     else if(a==='bkp')doBackup(true);
     else if(a==='gh'){if(typeof openGitHubPanel==='function')openGitHubPanel();}
     else if(a==='mlb'){if(typeof importAllMlbStats==='function')importAllMlbStats().catch(e=>alert(e.message));}
@@ -3762,6 +3772,121 @@ window.fillMissingPhotos=async function fillMissingPhotos({concurrency=6,max=80,
   if(!silent)showToast('🖼 Saved '+done+' free photos'+(need.length>=max?' (run again for more)':''));
   if(!silent && (tab==='have'||tab==='want'||tab==='dash'))render();
   return done;
+};
+
+
+/** One-tap vault fill: free photos + PSA pop, then bulk prices (≤100 IDs / 1 billed call). */
+window.fillVaultData=async function fillVaultData({
+  maxPhoto=120,
+  maxLink=12,
+  maxPriceBatches=8,
+  link=true,
+  silent=false
+}={}){
+  if(typeof csKey!=='function'||!csKey()){
+    if(!silent)showToast('CardSight key needed to fill catalog data');
+    return {photos:0,linked:0,priced:0,pop:0};
+  }
+  if(state.meta._fillBusy){ if(!silent)showToast('Already filling…'); return null; }
+  state.meta._fillBusy=true;
+  const out={photos:0,linked:0,priced:0,pop:0,callsEst:0};
+  try{
+    if(!silent)showToast('Filling photos · pop · prices…');
+
+    /* 1) Free photos */
+    if(typeof fillMissingPhotos==='function'){
+      out.photos=await fillMissingPhotos({concurrency:6,max:maxPhoto,silent:true})||0;
+    }
+
+    /* 2) Free PSA pop onto cards missing it */
+    const needPop=state.cards.filter(c=>c.csId&&c.status!=='sold'&&c.psaPop==null).slice(0,80);
+    for(const c of needPop){
+      try{
+        const pop=await csCardPop(c.csId);
+        if(pop&&pop.total_population!=null){
+          c.psaPop=+pop.total_population;
+          out.pop++;
+        }
+      }catch(e){}
+    }
+
+    /* 3) Link unlinked cards that already have year/brand/# (billed search, capped) */
+    if(link && typeof csSearchBaseballCards==='function'){
+      const needLink=state.cards.filter(c=>c.status!=='sold'&&!c.csId&&(c.player||'').trim().length>=2&&(c.year||c.brand||c.num))
+        .slice(0,maxLink);
+      for(const c of needLink){
+        try{
+          const bits=[c.player,c.year,c.brand,c.num?('#'+c.num):''].filter(Boolean).join(' ');
+          const j=await csSearchBaseballCards(bits,{take:8,skip:0});
+          out.callsEst++;
+          const cards=j.cards||[];
+          if(!cards.length)continue;
+          const scoreHit=h=>{
+            let s=0;
+            const hy=String(h.year||h.releaseYear||'');
+            const hb=String(h.brand||h.manufacturerName||'').toLowerCase();
+            const hn=String(h.num||h.number||'').replace(/^#/,'').toLowerCase();
+            const cy=String(c.year||''), cb=String(c.brand||'').toLowerCase(), cn=String(c.num||'').replace(/^#/,'').toLowerCase();
+            if(cy&&hy&&cy===hy)s+=50;
+            if(cb&&hb&&(hb.includes(cb)||cb.includes(hb)))s+=35;
+            if(cn&&hn&&cn===hn)s+=40;
+            return s;
+          };
+          const hit=[...cards].sort((a,b)=>scoreHit(b)-scoreHit(a))[0];
+          if(scoreHit(hit)<35 && (c.year||c.brand||c.num)) continue;
+          const id=hit.cardId||hit.id;
+          if(!id)continue;
+          c.csId=id;
+          if(!c.year&&(hit.year||hit.releaseYear))c.year=String(hit.year||hit.releaseYear).slice(0,4);
+          if(!c.brand&&(hit.brand||hit.manufacturerName))c.brand=hit.brand||hit.manufacturerName;
+          if(!c.setName&&hit.setName)c.setName=hit.setName;
+          if(!c.num&&(hit.num||hit.number))c.num=hit.num||hit.number;
+          out.linked++;
+        }catch(e){}
+      }
+    }
+
+    /* 4) Bulk price: never-priced first, then stale — soft cache = often $0 billed */
+    const needPrice=state.cards.filter(c=>c.csId&&c.status!=='sold'&&priceAgeDays(c)>=14)
+      .sort((a,b)=>{
+        const a0=!(a.prices&&a.prices.length), b0=!(b.prices&&b.prices.length);
+        if(a0!==b0)return a0?-1:1;
+        return valueOf(b)-valueOf(a);
+      });
+    const ids=[...new Set(needPrice.map(c=>c.csId))];
+    for(let b=0;b<maxPriceBatches && b*100<ids.length;b++){
+      const slice=ids.slice(b*100,(b+1)*100);
+      try{
+        const map=await csBulkPriceByIds(slice,{force:false});
+        out.callsEst++; /* at most 1 if cache miss */
+        for(const c of needPrice){
+          if(slice.includes(c.csId)&&map[c.csId]!=null&&applyCsPrice(c,map[c.csId],'cardsight'))
+            out.priced++;
+        }
+      }catch(e){ break; }
+    }
+
+    /* 5) Free MLB career onto cards missing team/mlbId */
+    if(typeof enrichPlayerFields==='function'){
+      const needMlb=state.cards.filter(c=>c.player&&!c.mlbId&&c.status!=='sold').slice(0,40);
+      for(const c of needMlb){
+        try{await enrichPlayerFields(c,c.player);}catch(e){}
+      }
+    }
+
+    save();
+    state.meta.lastFillData=Date.now();
+    save();
+    if(typeof logActivity==='function')
+      logActivity('fill','photos '+out.photos+' · linked '+out.linked+' · priced '+out.priced+' · pop '+out.pop);
+    if(!silent){
+      showToast(`Filled ✔ 🖼${out.photos} · 🔗${out.linked} · 💰${out.priced} · PSA ${out.pop}`);
+      if(tab==='dash'||tab==='have'||tab==='want')render();
+    }
+    return out;
+  }finally{
+    state.meta._fillBusy=false;
+  }
 };
 
 window.ownKey=function ownKey(csId,parallelId){
@@ -4060,20 +4185,23 @@ window.formatPsapop=function formatPsapop(pop){
 /* ---- Auto live-ish values ---- */
 window.autoRefreshPricesIfNeeded=async function autoRefreshPricesIfNeeded(){
   if(!csKey()||state.meta._priceBusy)return;
-  const days=3;
-  const stale=state.cards.filter(c=>c.csId&&c.status==='have'&&priceAgeDays(c)>=days)
-    .sort((a,b)=>valueOf(b)-valueOf(a)).slice(0,50);
-  if(!stale.length)return;
+  /* Prefer never-priced; use soft cache (force:false) so repeats stay free. */
+  const need=state.cards.filter(c=>c.csId&&c.status==='have'&&priceAgeDays(c)>=14)
+    .sort((a,b)=>{
+      const a0=!(a.prices&&a.prices.length), b0=!(b.prices&&b.prices.length);
+      if(a0!==b0)return a0?-1:1;
+      return valueOf(b)-valueOf(a);
+    }).slice(0,100);
+  if(!need.length)return;
   const last=state.meta.lastAutoPrice||0;
-  if(Date.now()-last<6*3600e3)return; /* at most every 6h */
+  if(Date.now()-last<6*3600e3)return;
   state.meta._priceBusy=true;
   try{
-    showToast('Updating values for '+stale.length+' cards…');
-    const map=await csBulkPriceByIds(stale.map(c=>c.csId),{force:true});
+    const map=await csBulkPriceByIds(need.map(c=>c.csId),{force:false});
     let n=0;
-    for(const c of stale){if(map[c.csId]!=null&&applyCsPrice(c,map[c.csId],'cardsight'))n++;}
+    for(const c of need){if(map[c.csId]!=null&&applyCsPrice(c,map[c.csId],'cardsight'))n++;}
     state.meta.lastAutoPrice=Date.now();save();
-    if(n)showToast('💰 Updated '+n+' values');
+    if(n)showToast('💰 Filled '+n+' values (cached when possible)');
   }catch(e){}
   finally{state.meta._priceBusy=false;}
 };
@@ -5171,7 +5299,11 @@ async function init(){
     state.meta.seenWelcome=1; save();
     setTimeout(()=>showToast('Type a player in search to browse cards'), 600);
   }
-  setTimeout(()=>{ if(typeof autoRefreshPricesIfNeeded==='function' && tab==='dash') autoRefreshPricesIfNeeded(); }, 2000);
+  setTimeout(()=>{ if(typeof autoRefreshPricesIfNeeded==='function' && tab==='dash') autoRefreshPricesIfNeeded();
+    const up=(state.cards||[]).filter(c=>c.status!=='sold'&&(!c.prices||!c.prices.length)).length;
+    if(up>=5 && typeof fillVaultData==='function' && Date.now()-(state.meta.lastFillData||0)>864e5)
+      fillVaultData({maxLink:8,maxPriceBatches:3,silent:true}).catch(()=>{});
+  }, 2500);
   $('q').oninput=e=>{
     q=e.target.value;
     clearTimeout(window.__qPropTimer);
@@ -5213,7 +5345,7 @@ async function init(){
   };
   $('btnIm').onclick=()=>$('fileIn').click();
   $('btnMenu').onclick=e=>{e.stopPropagation();openMenu(e.target);};
-  document.addEventListener('click',e=>{const t=e.target&&e.target.closest&&e.target.closest('#btnBackupNow');if(t){e.preventDefault();doBackup(false);}});
+  document.addEventListener('click',e=>{const t=e.target&&e.target.closest&&e.target.closest('#btnBackupNow');if(t){e.preventDefault();doBackup(false);}const f=e.target&&e.target.closest&&e.target.closest('#btnFillDataBanner,#btnFillData');if(f){e.preventDefault();if(typeof fillVaultData==='function')fillVaultData();}});
   $('fileIn').onchange=e=>{const f=e.target.files[0];e.target.value='';if(f)handleImportFile(f);};
   $('sheetBk').onclick=closeSheet;
   window.addEventListener('resize',()=>{if(tab==='dash')renderDash();});

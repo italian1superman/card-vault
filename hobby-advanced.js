@@ -93,6 +93,121 @@ window.fillMissingPhotos=async function fillMissingPhotos({concurrency=6,max=80,
   return done;
 };
 
+
+/** One-tap vault fill: free photos + PSA pop, then bulk prices (≤100 IDs / 1 billed call). */
+window.fillVaultData=async function fillVaultData({
+  maxPhoto=120,
+  maxLink=12,
+  maxPriceBatches=8,
+  link=true,
+  silent=false
+}={}){
+  if(typeof csKey!=='function'||!csKey()){
+    if(!silent)showToast('CardSight key needed to fill catalog data');
+    return {photos:0,linked:0,priced:0,pop:0};
+  }
+  if(state.meta._fillBusy){ if(!silent)showToast('Already filling…'); return null; }
+  state.meta._fillBusy=true;
+  const out={photos:0,linked:0,priced:0,pop:0,callsEst:0};
+  try{
+    if(!silent)showToast('Filling photos · pop · prices…');
+
+    /* 1) Free photos */
+    if(typeof fillMissingPhotos==='function'){
+      out.photos=await fillMissingPhotos({concurrency:6,max:maxPhoto,silent:true})||0;
+    }
+
+    /* 2) Free PSA pop onto cards missing it */
+    const needPop=state.cards.filter(c=>c.csId&&c.status!=='sold'&&c.psaPop==null).slice(0,80);
+    for(const c of needPop){
+      try{
+        const pop=await csCardPop(c.csId);
+        if(pop&&pop.total_population!=null){
+          c.psaPop=+pop.total_population;
+          out.pop++;
+        }
+      }catch(e){}
+    }
+
+    /* 3) Link unlinked cards that already have year/brand/# (billed search, capped) */
+    if(link && typeof csSearchBaseballCards==='function'){
+      const needLink=state.cards.filter(c=>c.status!=='sold'&&!c.csId&&(c.player||'').trim().length>=2&&(c.year||c.brand||c.num))
+        .slice(0,maxLink);
+      for(const c of needLink){
+        try{
+          const bits=[c.player,c.year,c.brand,c.num?('#'+c.num):''].filter(Boolean).join(' ');
+          const j=await csSearchBaseballCards(bits,{take:8,skip:0});
+          out.callsEst++;
+          const cards=j.cards||[];
+          if(!cards.length)continue;
+          const scoreHit=h=>{
+            let s=0;
+            const hy=String(h.year||h.releaseYear||'');
+            const hb=String(h.brand||h.manufacturerName||'').toLowerCase();
+            const hn=String(h.num||h.number||'').replace(/^#/,'').toLowerCase();
+            const cy=String(c.year||''), cb=String(c.brand||'').toLowerCase(), cn=String(c.num||'').replace(/^#/,'').toLowerCase();
+            if(cy&&hy&&cy===hy)s+=50;
+            if(cb&&hb&&(hb.includes(cb)||cb.includes(hb)))s+=35;
+            if(cn&&hn&&cn===hn)s+=40;
+            return s;
+          };
+          const hit=[...cards].sort((a,b)=>scoreHit(b)-scoreHit(a))[0];
+          if(scoreHit(hit)<35 && (c.year||c.brand||c.num)) continue;
+          const id=hit.cardId||hit.id;
+          if(!id)continue;
+          c.csId=id;
+          if(!c.year&&(hit.year||hit.releaseYear))c.year=String(hit.year||hit.releaseYear).slice(0,4);
+          if(!c.brand&&(hit.brand||hit.manufacturerName))c.brand=hit.brand||hit.manufacturerName;
+          if(!c.setName&&hit.setName)c.setName=hit.setName;
+          if(!c.num&&(hit.num||hit.number))c.num=hit.num||hit.number;
+          out.linked++;
+        }catch(e){}
+      }
+    }
+
+    /* 4) Bulk price: never-priced first, then stale — soft cache = often $0 billed */
+    const needPrice=state.cards.filter(c=>c.csId&&c.status!=='sold'&&priceAgeDays(c)>=14)
+      .sort((a,b)=>{
+        const a0=!(a.prices&&a.prices.length), b0=!(b.prices&&b.prices.length);
+        if(a0!==b0)return a0?-1:1;
+        return valueOf(b)-valueOf(a);
+      });
+    const ids=[...new Set(needPrice.map(c=>c.csId))];
+    for(let b=0;b<maxPriceBatches && b*100<ids.length;b++){
+      const slice=ids.slice(b*100,(b+1)*100);
+      try{
+        const map=await csBulkPriceByIds(slice,{force:false});
+        out.callsEst++; /* at most 1 if cache miss */
+        for(const c of needPrice){
+          if(slice.includes(c.csId)&&map[c.csId]!=null&&applyCsPrice(c,map[c.csId],'cardsight'))
+            out.priced++;
+        }
+      }catch(e){ break; }
+    }
+
+    /* 5) Free MLB career onto cards missing team/mlbId */
+    if(typeof enrichPlayerFields==='function'){
+      const needMlb=state.cards.filter(c=>c.player&&!c.mlbId&&c.status!=='sold').slice(0,40);
+      for(const c of needMlb){
+        try{await enrichPlayerFields(c,c.player);}catch(e){}
+      }
+    }
+
+    save();
+    state.meta.lastFillData=Date.now();
+    save();
+    if(typeof logActivity==='function')
+      logActivity('fill','photos '+out.photos+' · linked '+out.linked+' · priced '+out.priced+' · pop '+out.pop);
+    if(!silent){
+      showToast(`Filled ✔ 🖼${out.photos} · 🔗${out.linked} · 💰${out.priced} · PSA ${out.pop}`);
+      if(tab==='dash'||tab==='have'||tab==='want')render();
+    }
+    return out;
+  }finally{
+    state.meta._fillBusy=false;
+  }
+};
+
 window.ownKey=function ownKey(csId,parallelId){
   return String(csId||'')+'|'+(parallelId||'');
 };
@@ -389,20 +504,23 @@ window.formatPsapop=function formatPsapop(pop){
 /* ---- Auto live-ish values ---- */
 window.autoRefreshPricesIfNeeded=async function autoRefreshPricesIfNeeded(){
   if(!csKey()||state.meta._priceBusy)return;
-  const days=3;
-  const stale=state.cards.filter(c=>c.csId&&c.status==='have'&&priceAgeDays(c)>=days)
-    .sort((a,b)=>valueOf(b)-valueOf(a)).slice(0,50);
-  if(!stale.length)return;
+  /* Prefer never-priced; use soft cache (force:false) so repeats stay free. */
+  const need=state.cards.filter(c=>c.csId&&c.status==='have'&&priceAgeDays(c)>=14)
+    .sort((a,b)=>{
+      const a0=!(a.prices&&a.prices.length), b0=!(b.prices&&b.prices.length);
+      if(a0!==b0)return a0?-1:1;
+      return valueOf(b)-valueOf(a);
+    }).slice(0,100);
+  if(!need.length)return;
   const last=state.meta.lastAutoPrice||0;
-  if(Date.now()-last<6*3600e3)return; /* at most every 6h */
+  if(Date.now()-last<6*3600e3)return;
   state.meta._priceBusy=true;
   try{
-    showToast('Updating values for '+stale.length+' cards…');
-    const map=await csBulkPriceByIds(stale.map(c=>c.csId),{force:true});
+    const map=await csBulkPriceByIds(need.map(c=>c.csId),{force:false});
     let n=0;
-    for(const c of stale){if(map[c.csId]!=null&&applyCsPrice(c,map[c.csId],'cardsight'))n++;}
+    for(const c of need){if(map[c.csId]!=null&&applyCsPrice(c,map[c.csId],'cardsight'))n++;}
     state.meta.lastAutoPrice=Date.now();save();
-    if(n)showToast('💰 Updated '+n+' values');
+    if(n)showToast('💰 Filled '+n+' values (cached when possible)');
   }catch(e){}
   finally{state.meta._priceBusy=false;}
 };
