@@ -331,21 +331,156 @@ details summary::-webkit-details-marker{display:none}
 .links a:last-child{border-bottom:0}
 .panel.insights .ct, .mlbPanel .ct{color:var(--mute);font-weight:400;text-transform:none;letter-spacing:0;font-size:13px}
 
+
+/* ========== iPhone layout fit ========== */
+html,body{width:100%;overflow-x:clip;max-width:100vw}
+@supports (height: 100dvh){
+  #sheet{max-height:90dvh}
+}
+.hdrTop{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%}
+.hdrActions{display:flex;align-items:center;gap:6px;flex:none}
+.hdrFilter{width:100%}
+#btnMenu{min-width:44px;min-height:44px;padding:0 12px;font-size:22px;line-height:1;background:transparent;color:var(--acc);font-weight:400}
+.footShort{display:none}.footLong{display:inline}
+#footSave{font-size:12px;color:var(--mute);text-align:center;padding:8px 16px 12px;line-height:1.35}
+
+@media(max-width:899px){
+  .deskOnly{display:none!important}
+  .footShort{display:inline}.footLong{display:none}
+  header{
+    display:flex;flex-direction:column;align-items:stretch;gap:8px;
+    padding:6px 12px 8px;padding-top:calc(6px + env(safe-area-inset-top));
+    padding-left:max(12px,env(safe-area-inset-left));
+    padding-right:max(12px,env(safe-area-inset-right));
+  }
+  h1{font-size:17px;font-weight:700}
+  .hdrFilter{
+    order:3;min-height:36px;padding:8px 12px;font-size:16px;border-radius:10px;background:#e5e5ea;
+  }
+  main{
+    padding:8px 12px;
+    padding-left:max(12px,env(safe-area-inset-left));
+    padding-right:max(12px,env(safe-area-inset-right));
+    padding-bottom:calc(100px + env(safe-area-inset-bottom));
+    max-width:100%;
+  }
+  #footSave{
+    padding:4px 12px calc(78px + env(safe-area-inset-bottom));
+    font-size:11px;
+  }
+  .panel{padding:12px;margin-bottom:10px;border-radius:12px}
+  .heroTitle{font-size:28px!important;letter-spacing:-.6px;line-height:1.1;word-break:break-word}
+  .heroPanel .heroTitle{font-size:32px!important}
+  .heroSub{font-size:13px;margin:0 0 10px}
+  .quickGrid{grid-template-columns:1fr 1fr;gap:8px}
+  .quickCard{min-height:64px;padding:12px}
+  .quickCard b{font-size:14px}
+  .quickCard span{font-size:12px}
+  .home-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .home-actions button{min-width:0;width:100%;font-size:15px}
+  .home-actions .homeMore{grid-column:span 1}
+  .chips{grid-template-columns:1fr 1fr;gap:8px}
+  .chipStat .v{font-size:18px}
+  .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .gcard .gt{padding:8px}
+  .gcard .gt .l1{font-size:13px}
+  .gcard .gt .l3{font-size:15px;margin-top:4px}
+  .gcard .gt .cardActs button{min-height:40px;font-size:13px}
+  .toolbar{gap:6px}
+  .toolbar select,.toolbar > button{flex:1 1 calc(50% - 6px);min-width:0;max-width:100%}
+  .toolbar .count{flex:1 1 100%;margin-left:0;order:99}
+  .viewtog{flex:none}
+  .g2{grid-template-columns:1fr 1fr;gap:8px}
+  .g3{grid-template-columns:1fr 1fr;gap:8px}
+  .g3 .f:last-child{grid-column:1 / -1}
+  .valueHero{grid-template-columns:1fr 1fr}
+  .vhCell{border-right:0;border-bottom:0.5px solid var(--sep)}
+  .vhCell:nth-child(odd){border-right:0.5px solid var(--sep)}
+  .vhCell:nth-last-child(-n+2){border-bottom:0}
+  .mlbGrid{grid-template-columns:repeat(3,1fr)}
+  .insightGrid{grid-template-columns:repeat(2,1fr)}
+  .photoBox{flex-direction:column;align-items:stretch}
+  .photoBox .pv{width:100%;height:auto;aspect-ratio:2.5/3.5;max-height:220px;margin:0 auto}
+  .photoBox .pbtns{width:100%}
+  .findSearch{flex-direction:row;gap:8px}
+  .findSearch input{min-width:0;flex:1}
+  .findSearch button{flex:none;min-width:72px;padding:12px 14px}
+  .actionBar{gap:8px}
+  .actionBar button{font-size:14px;min-height:44px}
+  .binderRow,.pill-row{margin-left:-12px;margin-right:-12px;padding-left:12px;padding-right:12px}
+  .row{padding:10px 0;gap:10px}
+  .rmain .l1{font-size:16px}
+  .rright{min-width:64px}
+  .rright .v{font-size:15px}
+  #navB{
+    padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);
+  }
+  #navB .nb{padding:8px 0 6px;font-size:9px;min-width:0;overflow:hidden}
+  #navB .nb .i{font-size:20px}
+  #fab{
+    right:max(14px,env(safe-area-inset-right));
+    bottom:calc(66px + env(safe-area-inset-bottom));
+    width:52px;height:52px;font-size:28px;
+  }
+  #fabMenu{
+    right:max(12px,env(safe-area-inset-right));
+    bottom:calc(126px + env(safe-area-inset-bottom));
+    left:auto;max-width:calc(100vw - 24px);
+  }
+  #toast{
+    bottom:calc(78px + env(safe-area-inset-bottom));
+    max-width:calc(100vw - 24px);font-size:14px;
+  }
+  /* Sheet: one padded column — no per-child margin hacks */
+  #sheet{
+    top:auto;left:0;right:0;bottom:0;width:100%;
+    max-height:min(92dvh,92vh);
+    border-radius:14px 14px 0 0;
+    padding:0 16px calc(20px + env(safe-area-inset-bottom));
+    padding-left:max(16px,env(safe-area-inset-left));
+    padding-right:max(16px,env(safe-area-inset-right));
+    background:var(--bg);
+  }
+  #sheet::before{margin:10px auto 12px}
+  #sheet .shead, #sheet .valueHero, #sheet .gradeChips, #sheet .photoBox, #sheet .f, #sheet .g2, #sheet .g3,
+  #sheet .casFields, #sheet .panel, #sheet .mlbPanel, #sheet .links, #sheet .deltas, #sheet .home-actions,
+  #sheet .prop-panel, #sheet .cascade-host, #sheet .phist, #sheet textarea, #sheet #csPop,
+  #sheet .vhActions{margin-left:0;margin-right:0}
+  #sheet .shead{position:sticky;top:0;background:var(--bg);z-index:2;padding:4px 0 10px;margin-bottom:8px}
+  #sheet .shead h2{font-size:18px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;white-space:normal}
+  .casGrid{grid-template-columns:repeat(2,minmax(0,1fr));max-height:40vh}
+  .boothBar{display:grid;grid-template-columns:72px 1fr 56px;gap:6px}
+  .boothBar #exBnGo,.boothBar #bnGo{grid-column:1 / -1;width:100%}
+  .warn{font-size:13px;padding:10px 12px}
+  .ios-banner{margin:8px 12px;padding:12px;border-radius:12px;background:var(--panel);font-size:14px}
+}
+
+@media(max-width:380px){
+  .heroPanel .heroTitle,.heroTitle{font-size:26px!important}
+  .quickGrid{grid-template-columns:1fr}
+  #navB .nb{font-size:8px}
+  .gcard .gt .cardActs{grid-template-columns:1fr}
+}
+
 </style>
 </head>
 <body>
 <header>
-  <h1><span>Card Vault</span></h1>
-  <div id="tabsTop"></div>
-  <input id="q" placeholder="🔎 Type a player — cards appear…" list="dlSearch">
-  <button class="bigxl" id="btnXl">Excel ⬇</button>
-  <button class="bigim" id="btnIm">Import ⬆</button>
-  <button id="btnAddTop">+ Card</button>
-  <button id="btnMenu">⋯</button>
+  <div class="hdrTop">
+    <h1><span>Card Vault</span></h1>
+    <div class="hdrActions">
+      <button type="button" class="deskOnly bigxl" id="btnXl">Excel</button>
+      <button type="button" class="deskOnly bigim" id="btnIm">Import</button>
+      <button type="button" class="deskOnly" id="btnAddTop">+ Card</button>
+      <button type="button" id="btnMenu" aria-label="Menu">⋯</button>
+    </div>
+  </div>
+  <div id="tabsTop" class="deskOnly"></div>
+  <input id="q" class="hdrFilter" placeholder="Filter collection…" list="dlSearch" enterkeyhint="search">
 </header>
 <div id="iosBanner" class="ios-banner" hidden></div>
 <main id="view"></main>
-<footer id="footSave">⚾ Auto-saves on <b>this phone</b> when you edit — open the Home Screen icon and your collection is already there. Off-phone safety: ⋯ → Backup.</footer>
+<footer id="footSave"><span class="footShort">Auto-saves on this phone · ⋯ Backup</span><span class="footLong">Auto-saves on this phone when you edit. Off-phone: ⋯ → Backup.</span></footer>
 <div id="navB"></div>
 <button id="fab">+</button>
 <div id="sheetBk"></div>
@@ -1267,7 +1402,7 @@ async function sdbSearch(name){
 }
 
 /* ---- rendering ---- */
-const TABS=[['dash','⌂','Home'],['have','▤','Collection'],['want','☆','Want'],['sold','$','Sold'],['sets','▦','Sets'],['explore','⌕','Search']];
+const TABS=[['dash','⌂','Home'],['have','▤','Have'],['want','☆','Want'],['sold','$','Sold'],['sets','▦','Sets'],['explore','⌕','Search']];
 function renderNav(){
   $('tabsTop').innerHTML=TABS.map(([k,i,l])=>`<div class="tab ${tab===k?'on':''}" data-t="${k}">${i} ${l}</div>`).join('');
   $('navB').innerHTML=TABS.map(([k,i,l])=>`<div class="nb ${tab===k?'on':''}" data-t="${k}"><span class="i">${i}</span>${l}</div>`).join('');
@@ -1420,12 +1555,12 @@ function renderDash(){
      <div class="heroTitle">${money0(s.val)}</div>
      <div class="heroSub">${s.have} in collection · ${s.want} wants${s.deals?` · <span class="pos">🔥 ${s.deals} deal${s.deals>1?'s':''}</span>`:''} · P/L <span class="${s.pl>=0?'pos':'neg'}">${s.pl>=0?'+':''}${money0(s.pl)}</span></div>
      <div class="home-actions">
-       <button type="button" id="btnGoFind" class="bigim">🔍 Find cards</button>
-       <button type="button" id="btnGoSets">📚 Sets</button>
-       <button type="button" id="btnFillPhotos">🖼 Fill photos</button>
-       <button type="button" id="btnMlbAll">⚾ MLB stats</button>
-       <button type="button" id="btnGh">⚾ Stats JSON</button>
-       <button type="button" id="btnStale">♻ Refresh values</button>
+       <button type="button" id="btnGoFind" class="bigim">Search</button>
+       <button type="button" id="btnGoSets">Sets</button>
+       <button type="button" id="btnFillPhotos" class="homeMore">Photos</button>
+       <button type="button" id="btnStale" class="homeMore">Refresh $</button>
+       <button type="button" id="btnMlbAll" class="deskOnly">MLB stats</button>
+       <button type="button" id="btnGh" class="deskOnly">Stats JSON</button>
      </div>
      <div class="ct" style="margin-top:12px">Jump to a player</div>
      <div class="pill-row">${qp.slice(0,8).map(n=>`<button type="button" class="pill" data-pl="${esc(n)}">⚾ ${esc(n)}</button>`).join('')}</div>
