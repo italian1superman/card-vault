@@ -1,13 +1,13 @@
 {
-  "name": "Card Vault",
+  "name": "Card Vault \u00b7 Astros",
   "short_name": "Card Vault",
-  "description": "Sports card collection \u2014 values, P/L, Excel export. On-device data.",
+  "description": "Houston Astros\u2013themed baseball card vault \u2014 values, sets, photos. On-device.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#0e1118",
-  "theme_color": "#0e1118",
+  "background_color": "#e9eef5",
+  "theme_color": "#002d62",
   "lang": "en",
   "icons": [
     {

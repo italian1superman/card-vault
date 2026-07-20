@@ -54,7 +54,7 @@
   ];
 
   const TEAM_ORDER = [
-    'NYY', 'BOS', 'LAD', 'CHC', 'ATL', 'HOU', 'PHI', 'NYM', 'SF', 'STL',
+    'HOU', 'NYY', 'LAD', 'BOS', 'ATL', 'CHC', 'PHI', 'NYM', 'SF', 'STL',
     'SEA', 'SD', 'TOR', 'TEX', 'MIN', 'CLE', 'DET', 'CWS', 'MIL', 'MIA',
     'TB', 'BAL', 'WSH', 'CIN', 'PIT', 'COL', 'ARI', 'KC', 'LAA', 'OAK'
   ];
