@@ -244,6 +244,7 @@ window.renderInsightsPanel=function renderInsightsPanel(){
       <div class="insightList dim">${i.activity.slice(0,6).map(a=>`<div class="insightRow static"><span>${esc(a.text)}</span><span class="m">${new Date(a.t).toLocaleDateString()}</span></div>`).join('')}</div>`:''}
     <div class="home-actions" style="margin-top:10px">
       <button type="button" class="bigim" id="iqShow">🃏 Show Mode</button>
+      <button type="button" id="iqPhotos">🖼 Fill photos</button>
       <button type="button" id="iqStale">♻ Refresh values</button>
       <button type="button" id="iqUnpriced">Price gaps</button>
     </div>
@@ -255,6 +256,7 @@ window.wireInsightsPanel=function wireInsightsPanel(){
     sel=state.cards.find(c=>c.id===b.dataset.id); if(sel)openSheet();
   });
   const s=$('iqShow'); if(s)s.onclick=()=>openShowMode();
+  const ph=$('iqPhotos'); if(ph)ph.onclick=()=>{if(typeof fillMissingPhotos==='function')fillMissingPhotos();};
   const r=$('iqStale'); if(r)r.onclick=()=>refreshStalePrices();
   const u=$('iqUnpriced'); if(u)u.onclick=()=>{window.BINDER_ID='noprice';tab='have';render();};
 };

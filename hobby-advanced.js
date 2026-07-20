@@ -21,6 +21,38 @@ window.csPrefetchImages=async function csPrefetchImages(ids,{concurrency=6,toast
   return done;
 };
 
+/** Persist free CardSight catalog images onto vault cards missing a photo. */
+window.fillMissingPhotos=async function fillMissingPhotos({concurrency=6,max=80}={}){
+  if(typeof csKey!=='function'||!csKey()){showToast('CardSight needed for free catalog photos');return 0;}
+  const need=state.cards.filter(c=>c.status!=='sold'&&c.csId&&!c.imgId&&!c.imgUrl).slice(0,max);
+  if(!need.length){showToast('All linked cards already have photos ✔');return 0;}
+  showToast('🖼 Filling '+need.length+' free photos…');
+  let i=0, done=0;
+  async function worker(){
+    while(i<need.length){
+      const c=need[i++];
+      try{
+        const url=csImgSrc(await csImageData(c.csId));
+        if(!url)continue;
+        if(url.startsWith('data:')){
+          c.imgId=c.id; imgCache.set(c.id,url); await idb.put(c.id,url);
+        }else{
+          c.imgUrl=url;
+        }
+        done++;
+        const t=typeof $==='function'?$('im-'+c.id):null;
+        if(t&&typeof fillThumb==='function')fillThumb(t,c);
+      }catch(e){}
+    }
+  }
+  await Promise.all(Array.from({length:Math.min(concurrency,need.length)},()=>worker()));
+  save();
+  if(typeof logActivity==='function')logActivity('photos','Filled '+done+' catalog photos');
+  showToast('🖼 Saved '+done+' free photos'+(need.length>=max?' (run again for more)':''));
+  if(tab==='have'||tab==='want'||tab==='dash')render();
+  return done;
+};
+
 window.ownKey=function ownKey(csId,parallelId){
   return String(csId||'')+'|'+(parallelId||'');
 };
@@ -609,6 +641,7 @@ window.openFabMenu=function openFabMenu(){
   const m=document.createElement('div'); m.id='fabMenu';
   m.innerHTML=`
     <button data-f="show">🃏 Show Mode</button>
+    <button data-f="photos">🖼 Fill photos</button>
     <button data-f="explore">🔍 Find a player</button>
     <button data-f="sets">📚 Build a set</button>
     <button data-f="add">＋ Blank card</button>
@@ -618,6 +651,7 @@ window.openFabMenu=function openFabMenu(){
     m.remove();
     const a=b.dataset.f;
     if(a==='show'){if(typeof openShowMode==='function')openShowMode();}
+    else if(a==='photos'){if(typeof fillMissingPhotos==='function')fillMissingPhotos();}
     else if(a==='explore'){tab='explore';render(); setTimeout(()=>{const i=$('exQ');if(i)i.focus();},100);}
     else if(a==='sets'){tab='sets';render();}
     else if(a==='add'){tab='have';addCard();}

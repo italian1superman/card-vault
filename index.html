@@ -267,6 +267,15 @@ footer{color:var(--dim);font-size:11.5px;text-align:center;padding:8px 14px 90px
 .gradeChips button{font-size:11px;padding:5px 8px}
 .proBadge{font-size:10px;font-weight:800;letter-spacing:.4px;color:var(--acc);border:1px solid var(--acc);border-radius:6px;padding:1px 6px;margin-left:6px;vertical-align:2px}
 
+
+.thumb,.gcard .gimg,.photoBox .pv,.casImg{background:linear-gradient(160deg,#1c2233 0%,#0f121a 100%)}
+.thumb img,.gcard .gimg img,.photoBox .pv img,.casImg img{object-fit:contain!important;background:transparent}
+.gcard .gimg{height:auto;aspect-ratio:2.5/3.5;min-height:150px}
+.thumbLoad{animation:pulseThumb 1.1s ease-in-out infinite}
+@keyframes pulseThumb{0%,100%{opacity:.55}50%{opacity:1}}
+.thumb.catalogHint::after{content:'CS';position:absolute;bottom:2px;right:2px;font-size:8px;font-weight:800;color:var(--acc);opacity:.7}
+.thumb{position:relative}
+
 </style>
 </head>
 <body>
@@ -1247,9 +1256,32 @@ function badges(c){
     b+='<span class="badge b-stale" title="Price may be stale">stale $</span>';
   return b;
 }
+async function resolveCardImg(c){
+  if(!c)return '';
+  try{
+    const own=await getImg(c);
+    if(own)return own;
+  }catch(e){}
+  if(c.csId && typeof csImageData==='function' && typeof csKey==='function' && csKey()){
+    try{
+      const url=typeof csImgSrc==='function'?csImgSrc(await csImageData(c.csId)):'';
+      if(url)return url;
+    }catch(e){}
+  }
+  if(c._pPhoto)return c._pPhoto;
+  return '';
+}
 async function fillThumb(el,c){
-  const src=await getImg(c);
-  if(src&&el)el.innerHTML=`<img src="${esc(src)}" loading="lazy" onerror="this.remove()">`;
+  if(!el||!c)return;
+  el.classList.add('thumbLoad');
+  try{
+    const src=await resolveCardImg(c);
+    if(src){
+      el.innerHTML=`<img src="${esc(src)}" loading="lazy" alt="" onerror="this.remove()">`;
+      if(!c.imgId&&!c.imgUrl&&c.csId)el.classList.add('catalogHint');
+      else el.classList.remove('catalogHint');
+    }
+  }finally{el.classList.remove('thumbLoad');}
 }
 function sportIcon(s){return {Baseball:'⚾',Basketball:'🏀',Football:'🏈',Hockey:'🏒',Soccer:'⚽',Golf:'⛳'}[s]||'🃏';}
 function groupLabel(c){
@@ -1293,7 +1325,8 @@ function afterListRender(cs){
   document.querySelectorAll('[data-id]').forEach(el=>el.onclick=()=>{
     sel=state.cards.find(c=>c.id===el.dataset.id);openSheet();});
   cs.forEach(c=>{
-    const t=$('im-'+c.id);if(t&&(c.imgId||c.imgUrl))fillThumb(t,c);
+    const t=$('im-'+c.id);
+    if(t&&(c.imgId||c.imgUrl||c.csId||c._pPhoto))fillThumb(t,c);
     const sp=$('sp-'+c.id);if(sp)spark(sp,(c.prices||[]).map(p=>p.v));
   });
 }
@@ -1328,6 +1361,7 @@ function renderDash(){
      <div class="home-actions">
        <button type="button" id="btnGoFind" class="bigim">🔍 Find cards</button>
        <button type="button" id="btnGoSets">📚 Sets</button>
+       <button type="button" id="btnFillPhotos">🖼 Fill photos</button>
        <button type="button" id="btnStale">♻ Refresh values</button>
      </div>
      <div class="ct" style="margin-top:12px">Jump to a player</div>
@@ -1358,6 +1392,7 @@ function renderDash(){
   const bf=$('btnGoFind'); if(bf) bf.onclick=()=>{tab='explore';render();};
   const bs=$('btnGoSets'); if(bs) bs.onclick=()=>{tab='sets';render();};
   const br=$('btnStale'); if(br) br.onclick=()=>refreshStalePrices();
+  const bp=$('btnFillPhotos'); if(bp) bp.onclick=()=>{if(typeof fillMissingPhotos==='function')fillMissingPhotos();};
   if(!empty){
     const have=cs.filter(c=>c.status==='have');
     chLine($('chPort'),portfolioSeries(cs),'#4da3ff',200);
@@ -1400,6 +1435,7 @@ function renderList(){
   $('vList').onclick=()=>{view='list';renderList();};
   $('vGrid').onclick=()=>{view='grid';renderList();};
   if(typeof wireBinderBar==='function') wireBinderBar(()=>renderList());
+  const blp=$('btnListPhotos'); if(blp) blp.onclick=()=>{if(typeof fillMissingPhotos==='function')fillMissingPhotos();};
   refreshList();
 }
 function refreshList(){
@@ -1808,8 +1844,11 @@ async function openSheet(){
    </div>`;
   requestAnimationFrame(()=>{$('sheet').classList.add('open');
     chLine($('cardChart'),(c.prices||[]).map(p=>({t:p.d,v:p.v})),'#3ecf7a',170);});
-  const pv=$('pv');const src=await getImg(c);
-  if(src)pv.innerHTML=`<img src="${esc(src)}" onerror="this.remove()">`;
+  const pv=$('pv');
+  if(pv){
+    const src=await (typeof resolveCardImg==='function'?resolveCardImg(c):getImg(c));
+    if(src)pv.innerHTML=`<img src="${esc(src)}" alt="" onerror="this.remove()">`;
+  }
   if(c.csId&&csKey()){
     csCardPop(c.csId).then(pop=>{
       const el=$('csPop'); if(!el||!pop)return;
@@ -2211,6 +2250,38 @@ window.csPrefetchImages=async function csPrefetchImages(ids,{concurrency=6,toast
   }
   await Promise.all(Array.from({length:Math.min(concurrency,list.length)},()=>worker()));
   if(toast)showToast('🖼 '+done+' photos ready · free');
+  return done;
+};
+
+/** Persist free CardSight catalog images onto vault cards missing a photo. */
+window.fillMissingPhotos=async function fillMissingPhotos({concurrency=6,max=80}={}){
+  if(typeof csKey!=='function'||!csKey()){showToast('CardSight needed for free catalog photos');return 0;}
+  const need=state.cards.filter(c=>c.status!=='sold'&&c.csId&&!c.imgId&&!c.imgUrl).slice(0,max);
+  if(!need.length){showToast('All linked cards already have photos ✔');return 0;}
+  showToast('🖼 Filling '+need.length+' free photos…');
+  let i=0, done=0;
+  async function worker(){
+    while(i<need.length){
+      const c=need[i++];
+      try{
+        const url=csImgSrc(await csImageData(c.csId));
+        if(!url)continue;
+        if(url.startsWith('data:')){
+          c.imgId=c.id; imgCache.set(c.id,url); await idb.put(c.id,url);
+        }else{
+          c.imgUrl=url;
+        }
+        done++;
+        const t=typeof $==='function'?$('im-'+c.id):null;
+        if(t&&typeof fillThumb==='function')fillThumb(t,c);
+      }catch(e){}
+    }
+  }
+  await Promise.all(Array.from({length:Math.min(concurrency,need.length)},()=>worker()));
+  save();
+  if(typeof logActivity==='function')logActivity('photos','Filled '+done+' catalog photos');
+  showToast('🖼 Saved '+done+' free photos'+(need.length>=max?' (run again for more)':''));
+  if(tab==='have'||tab==='want'||tab==='dash')render();
   return done;
 };
 
@@ -2802,6 +2873,7 @@ window.openFabMenu=function openFabMenu(){
   const m=document.createElement('div'); m.id='fabMenu';
   m.innerHTML=`
     <button data-f="show">🃏 Show Mode</button>
+    <button data-f="photos">🖼 Fill photos</button>
     <button data-f="explore">🔍 Find a player</button>
     <button data-f="sets">📚 Build a set</button>
     <button data-f="add">＋ Blank card</button>
@@ -2811,6 +2883,7 @@ window.openFabMenu=function openFabMenu(){
     m.remove();
     const a=b.dataset.f;
     if(a==='show'){if(typeof openShowMode==='function')openShowMode();}
+    else if(a==='photos'){if(typeof fillMissingPhotos==='function')fillMissingPhotos();}
     else if(a==='explore'){tab='explore';render(); setTimeout(()=>{const i=$('exQ');if(i)i.focus();},100);}
     else if(a==='sets'){tab='sets';render();}
     else if(a==='add'){tab='have';addCard();}
@@ -3235,6 +3308,7 @@ window.renderInsightsPanel=function renderInsightsPanel(){
       <div class="insightList dim">${i.activity.slice(0,6).map(a=>`<div class="insightRow static"><span>${esc(a.text)}</span><span class="m">${new Date(a.t).toLocaleDateString()}</span></div>`).join('')}</div>`:''}
     <div class="home-actions" style="margin-top:10px">
       <button type="button" class="bigim" id="iqShow">🃏 Show Mode</button>
+      <button type="button" id="iqPhotos">🖼 Fill photos</button>
       <button type="button" id="iqStale">♻ Refresh values</button>
       <button type="button" id="iqUnpriced">Price gaps</button>
     </div>
@@ -3246,6 +3320,7 @@ window.wireInsightsPanel=function wireInsightsPanel(){
     sel=state.cards.find(c=>c.id===b.dataset.id); if(sel)openSheet();
   });
   const s=$('iqShow'); if(s)s.onclick=()=>openShowMode();
+  const ph=$('iqPhotos'); if(ph)ph.onclick=()=>{if(typeof fillMissingPhotos==='function')fillMissingPhotos();};
   const r=$('iqStale'); if(r)r.onclick=()=>refreshStalePrices();
   const u=$('iqUnpriced'); if(u)u.onclick=()=>{window.BINDER_ID='noprice';tab='have';render();};
 };
