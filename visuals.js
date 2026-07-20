@@ -68,6 +68,70 @@
     COL: 'Rockies', ARI: 'Diamondbacks', KC: 'Royals', LAA: 'Angels', OAK: 'Athletics'
   };
 
+  const TEAM_FULL = {
+    NYY: 'New York Yankees', BOS: 'Boston Red Sox', LAD: 'Los Angeles Dodgers', CHC: 'Chicago Cubs',
+    ATL: 'Atlanta Braves', HOU: 'Houston Astros', PHI: 'Philadelphia Phillies', NYM: 'New York Mets',
+    SF: 'San Francisco Giants', STL: 'St. Louis Cardinals', SEA: 'Seattle Mariners', SD: 'San Diego Padres',
+    TOR: 'Toronto Blue Jays', TEX: 'Texas Rangers', MIN: 'Minnesota Twins', CLE: 'Cleveland Guardians',
+    DET: 'Detroit Tigers', CWS: 'Chicago White Sox', MIL: 'Milwaukee Brewers', MIA: 'Miami Marlins',
+    TB: 'Tampa Bay Rays', BAL: 'Baltimore Orioles', WSH: 'Washington Nationals', CIN: 'Cincinnati Reds',
+    PIT: 'Pittsburgh Pirates', COL: 'Colorado Rockies', ARI: 'Arizona Diamondbacks', KC: 'Kansas City Royals',
+    LAA: 'Los Angeles Angels', OAK: 'Oakland Athletics'
+  };
+
+  /** Search keys for vault cards + MLB career JSON team strings. */
+  window.teamSearchKeys = function teamSearchKeys(abbr) {
+    const a = String(abbr || '').toUpperCase();
+    const keys = new Set([a, TEAM_NAMES[a], TEAM_FULL[a]].filter(Boolean));
+    // nicknames / legacy
+    const extra = {
+      CLE: ['Guardians', 'Indians', 'Cleveland Indians', 'Cleveland Guardians'],
+      OAK: ["A's", 'Athletics', 'Oakland Athletics'],
+      TB: ['Rays', 'Devil Rays', 'Tampa Bay Devil Rays'],
+      LAA: ['Angels', 'Anaheim Angels', 'California Angels'],
+      WSH: ['Nationals', 'Expos', 'Montreal Expos'],
+      MIA: ['Marlins', 'Florida Marlins'],
+      CWS: ['White Sox', 'Chicago White Sox', 'CHW'],
+      SF: ['Giants', 'San Francisco Giants', 'SFG'],
+      SD: ['Padres', 'San Diego Padres', 'SDP'],
+      KC: ['Royals', 'Kansas City Royals', 'KCR']
+    };
+    (extra[a] || []).forEach((x) => keys.add(x));
+    return [...keys].map((k) => String(k).toLowerCase());
+  };
+
+  window.teamDisplayName = function teamDisplayName(abbr) {
+    const a = String(abbr || '').toUpperCase();
+    return TEAM_FULL[a] || TEAM_NAMES[a] || a;
+  };
+
+  window.cardMatchesTeam = function cardMatchesTeam(c, keys) {
+    const ks = (keys || []).filter(Boolean);
+    if (!c || !ks.length) return false;
+    const team = String(c.team || '').toLowerCase();
+    if (team) {
+      if (ks.some((k) => team === k || team.includes(k) || k.includes(team))) return true;
+    }
+    /* fallback: notes / set sometimes carry club names */
+    const blob = [c.notes, c.setName].map((x) => String(x || '').toLowerCase()).join(' | ');
+    return ks.some((k) => k.length > 3 && blob.includes(k));
+  };
+
+  window.mlbPlayersForTeam = function mlbPlayersForTeam(abbr, limit) {
+    const keys = teamSearchKeys(abbr);
+    const out = [];
+    if (typeof MLB_CAREER === 'undefined' || !MLB_CAREER.byId) return out;
+    for (const p of Object.values(MLB_CAREER.byId)) {
+      const t = String(p.team || '').toLowerCase();
+      if (!t) continue;
+      if (keys.some((k) => t === k || t.includes(k) || k.includes(t))) {
+        out.push(p);
+      }
+    }
+    out.sort((a, b) => String(a.fullName || '').localeCompare(String(b.fullName || '')));
+    return out.slice(0, limit || 60);
+  };
+
   function asset(path) {
     try {
       return new URL(path, document.baseURI || location.href).href;
@@ -180,18 +244,10 @@
     (root || document).querySelectorAll('.logoChip[data-team-abbr]').forEach((btn) => {
       btn.onclick = () => {
         const abbr = btn.getAttribute('data-team-abbr');
-        const name = TEAM_NAMES[abbr] || abbr;
-        if (typeof applyCollectionFilter === 'function') {
-          applyCollectionFilter(name, { status: 'have' });
-        } else {
-          const qEl = typeof $ === 'function' ? $('q') : null;
-          if (qEl) {
-            qEl.classList.remove('isHidden');
-            qEl.value = name;
-          }
-          if (typeof render === 'function') render();
+        if (typeof openTeamPage === 'function') openTeamPage(abbr);
+        else if (typeof applyCollectionFilter === 'function') {
+          applyCollectionFilter(TEAM_NAMES[abbr] || abbr, { status: 'have' });
         }
-        if (typeof showToast === 'function') showToast(name + ' · filter');
       };
     });
   };

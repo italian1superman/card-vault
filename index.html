@@ -346,6 +346,38 @@ details summary::-webkit-details-marker{display:none}
 
 
 
+
+/* Team page */
+.teamPage .teamHead{display:flex;gap:14px;align-items:center;margin-bottom:12px}
+.teamHeroLogo{
+  width:64px;height:64px;object-fit:contain;flex:none;
+  background:#fff;border-radius:16px;padding:8px;
+  box-shadow:var(--shadow);border:0.5px solid var(--sep);
+}
+.teamTitle{font-size:26px!important;line-height:1.15;margin:0}
+.teamHeadTxt{min-width:0;flex:1}
+.rosterList{display:flex;flex-direction:column;gap:0}
+.rosterRow{
+  display:flex;align-items:center;gap:12px;width:100%;
+  padding:10px 4px;border:0;border-bottom:0.5px solid var(--sep);
+  background:transparent;text-align:left;border-radius:0;color:var(--ink);
+}
+.rosterRow:last-child{border-bottom:0}
+.rosterRow:active{background:rgba(0,0,0,.04)}
+.rosterPic{
+  width:44px;height:44px;border-radius:50%;overflow:hidden;flex:none;
+  background:linear-gradient(180deg,#e8eef5,#d9e2ec);
+  display:flex;align-items:center;justify-content:center;
+}
+.rosterPic img{width:100%;height:100%;object-fit:cover}
+.rosterMain{flex:1;min-width:0}
+.rosterMain .l1{font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rosterMain .l2{font-size:12px;color:var(--mute);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rosterGo{color:var(--acc);font-weight:600;font-size:14px;flex:none}
+@media(max-width:899px){
+  .teamHeroLogo{width:56px;height:56px;border-radius:14px}
+  .teamTitle{font-size:22px!important}
+}
 /* ===== Cooler collector layer ===== */
 :root{
   --foil: linear-gradient(115deg, transparent 20%, rgba(255,255,255,.55) 40%, transparent 60%);
@@ -1771,6 +1803,7 @@ function syncPhoneFilter(){
 /** Used by visuals.js logo strip — let q/tab are not on window. */
 window.applyCollectionFilter=function applyCollectionFilter(text,{status='have'}={}){
   clearTimeout(window.__qPropTimer);
+  window.TEAM_PAGE=null;
   const qel=$('q');
   const v=String(text||'').trim();
   if(qel){ qel.classList.remove('isHidden'); qel.value=v; }
@@ -1778,10 +1811,129 @@ window.applyCollectionFilter=function applyCollectionFilter(text,{status='have'}
   if(status) tab=status;
   render();
 };
+window.TEAM_PAGE=null;
+
+window.openTeamPage=async function openTeamPage(abbr){
+  const a=String(abbr||'').toUpperCase();
+  if(!a)return;
+  clearTimeout(window.__qPropTimer);
+  window.TEAM_PAGE=a;
+  q='';
+  const qel=$('q'); if(qel){ qel.value=''; qel.classList.add('isHidden'); }
+  tab='dash';
+  try{
+    if(typeof loadMlbCareerJson==='function' && !(typeof MLB_CAREER!=='undefined' && MLB_CAREER.loaded))
+      await loadMlbCareerJson();
+  }catch(e){}
+  render();
+};
+
+window.clearTeamPage=function clearTeamPage(){
+  window.TEAM_PAGE=null;
+  q='';
+  const qel=$('q'); if(qel){ qel.value=''; }
+  render();
+};
+
+function teamShortName(a){
+  const map={NYY:'Yankees',BOS:'Red Sox',LAD:'Dodgers',CHC:'Cubs',ATL:'Braves',HOU:'Astros',PHI:'Phillies',NYM:'Mets',SF:'Giants',STL:'Cardinals',SEA:'Mariners',SD:'Padres',TOR:'Blue Jays',TEX:'Rangers',MIN:'Twins',CLE:'Guardians',DET:'Tigers',CWS:'White Sox',MIL:'Brewers',MIA:'Marlins',TB:'Rays',BAL:'Orioles',WSH:'Nationals',CIN:'Reds',PIT:'Pirates',COL:'Rockies',ARI:'Diamondbacks',KC:'Royals',LAA:'Angels',OAK:'Athletics'};
+  return map[a]||a;
+}
+
+function renderTeamPage(abbr){
+  const a=String(abbr||window.TEAM_PAGE||'').toUpperCase();
+  const keys=typeof teamSearchKeys==='function'?teamSearchKeys(a):[a.toLowerCase()];
+  const title=typeof teamDisplayName==='function'?teamDisplayName(a):a;
+  const logo=typeof teamLogoUrl==='function'?teamLogoUrl(a):('assets/teams/'+a+'.svg');
+  const mine=(state.cards||[]).filter(c=>typeof cardMatchesTeam==='function'?cardMatchesTeam(c,keys):String(c.team||'').toLowerCase().includes(a.toLowerCase()));
+  const have=mine.filter(c=>c.status==='have');
+  const want=mine.filter(c=>c.status==='want');
+  const roster=typeof mlbPlayersForTeam==='function'?mlbPlayersForTeam(a,80):[];
+  const short=teamShortName(a);
+
+  let mineHtml='';
+  if(!mine.length){
+    mineHtml='<div class="empty soft">No cards for this team yet — tap a player to search the catalog.</div>';
+  }else{
+    mineHtml='<div class="listWrap teamMine">'+mine.slice(0,50).map(c=>{
+      return '<div class="row" data-id="'+c.id+'">'+
+        (typeof cardThumb==='function'?cardThumb(c,'thumb'):('<div class="thumb" id="im-'+c.id+'">'+sportIcon(c.sport)+'</div>'))+
+        '<div class="rmain"><div class="l1">'+esc(c.player||c.setName||'—')+badges(c)+'</div>'+
+        '<div class="l2">'+esc([c.year,c.brand,c.num?'#'+c.num:'',c.status].filter(Boolean).join(' · '))+'</div></div>'+
+        '<div class="rright"><div class="v">'+money(valueOf(c))+'</div><div class="g">'+esc(c.status||'')+'</div></div></div>';
+    }).join('')+'</div>';
+  }
+
+  let rosterHtml='';
+  if(!roster.length){
+    rosterHtml='<div class="empty soft">No roster loaded yet. Check connection, then open this team again.</div>';
+  }else{
+    rosterHtml=roster.map(p=>{
+      const pid=p.mlbId||'';
+      const port=pid?('https://img.mlbstatic.com/mlb-photos/image/upload/w_120,q_auto:best/v1/people/'+encodeURIComponent(pid)+'/headshot/67/current'):'';
+      const hit=p.hitting, pit=p.pitching;
+      let line=p.pos||'';
+      if(hit) line=[p.pos, (hit.avg||'—')+' AVG', (hit.hr||0)+' HR'].filter(Boolean).join(' · ');
+      else if(pit) line=[p.pos, (pit.w||0)+'-'+(pit.l||0), (pit.era||'—')+' ERA'].filter(Boolean).join(' · ');
+      return '<button type="button" class="rosterRow" data-player="'+esc(p.fullName||'')+'">'+
+        '<div class="rosterPic">'+(port?'<img src="'+port+'" alt="" loading="lazy" decoding="async">':'⚾')+'</div>'+
+        '<div class="rosterMain"><div class="l1">'+esc(p.fullName||'')+'</div><div class="l2">'+esc(line)+'</div></div>'+
+        '<div class="rosterGo">Find</div></button>';
+    }).join('');
+  }
+
+  $('view').innerHTML=
+    '<div class="panel heroPanel coolHero teamPage">'+
+      '<div class="teamHead">'+
+        '<img class="teamHeroLogo" src="'+logo+'" alt="">'+
+        '<div class="teamHeadTxt">'+
+          '<div class="heroEyebrow"><span class="dot"></span> Team roster</div>'+
+          '<div class="heroTitle teamTitle">'+esc(title)+'</div>'+
+          '<div class="heroSub">'+have.length+' owned · '+want.length+' wants · '+roster.length+' players</div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="home-actions">'+
+        '<button type="button" class="bigim" id="teamFind">Find '+esc(short)+' cards</button>'+
+        '<button type="button" id="teamClear">All teams</button>'+
+      '</div>'+
+    '</div>'+
+    '<div class="panel"><div class="ct">Your cards</div>'+mineHtml+'</div>'+
+    '<div class="panel"><div class="ct">Players</div><div class="rosterList">'+rosterHtml+'</div></div>';
+
+  document.querySelectorAll('.teamMine .row[data-id], .teamPage + .panel .row[data-id]').forEach(el=>{
+    el.onclick=()=>{ sel=state.cards.find(c=>c.id===el.dataset.id); if(sel) openSheet(); };
+  });
+  // rows are inside listWrap inside panel - use view-wide
+  $('view').querySelectorAll('.row[data-id]').forEach(el=>{
+    el.onclick=()=>{ sel=state.cards.find(c=>c.id===el.dataset.id); if(sel) openSheet(); };
+  });
+  $('view').querySelectorAll('.rosterRow[data-player]').forEach(btn=>{
+    btn.onclick=()=>{
+      const name=btn.getAttribute('data-player')||'';
+      if(name && typeof goExplorePlayer==='function') goExplorePlayer(name);
+    };
+  });
+  const tf=$('teamFind');
+  if(tf) tf.onclick=()=>{
+    window.TEAM_PAGE=null;
+    if(typeof goExplorePlayer==='function') goExplorePlayer(short+' baseball');
+    else { tab='explore'; q=short; render(); }
+  };
+  const tc=$('teamClear');
+  if(tc) tc.onclick=()=>clearTeamPage();
+
+  // thumbs for owned cards
+  mine.slice(0,50).forEach(c=>{
+    const t=$('im-'+c.id); if(!t) return;
+    if(c.imgId||c.imgUrl||c.csId||c._pPhoto) fillThumb(t,c);
+    else if(typeof applyPortraitFallback==='function') applyPortraitFallback(t,c);
+  });
+}
+
 function renderNav(){
   $('tabsTop').innerHTML=TABS.map(([k,i,l])=>`<div class="tab ${tab===k?'on':''}" data-t="${k}">${i} ${l}</div>`).join('');
   $('navB').innerHTML=TABS.map(([k,i,l])=>`<div class="nb ${tab===k?'on':''}" data-t="${k}"><span class="i">${i}</span><span class="nl">${l}</span></div>`).join('');
-  document.querySelectorAll('[data-t]').forEach(el=>el.onclick=()=>{tab=el.dataset.t;render();});
+  document.querySelectorAll('[data-t]').forEach(el=>el.onclick=()=>{window.TEAM_PAGE=null;tab=el.dataset.t;render();});
   syncPhoneFilter();
 }
 function filtered(){
@@ -1972,7 +2124,7 @@ function renderDash(){
       <div class="heroTitle">Card Vault</div>
       <div class="heroSub">Values, sets, and photos — built for your collection.</div>
       <div class="floatLogos">
-        ${['NYY','LAD','BOS','CHC','ATL'].map(a=>`<img src="assets/teams/${a}.svg" alt="${a}">`).join('')}
+        ${['NYY','LAD','BOS','CHC','ATL'].map(a=>`<button type="button" class="logoChip" data-team-abbr="${a}" title="${a}"><img src="assets/teams/${a}.svg" alt="${a}"></button>`).join('')}
       </div>
       <div class="quickGrid">
         <button type="button" class="quickCard" data-go="explore"><b>🔍 Find a player</b><span>Browse catalog cards</span></button>
@@ -2090,6 +2242,7 @@ function refreshList(){
 }
 function render(){
   renderNav();
+  if(window.TEAM_PAGE){ renderTeamPage(window.TEAM_PAGE); return; }
   if(tab==='dash')renderDash();
   else if(tab==='explore')renderExplore();
   else if(tab==='sets'){ if(typeof renderSets==='function') renderSets(); else $('view').innerHTML='<div class="empty">Loading Sets…</div>'; }
@@ -2151,7 +2304,8 @@ async function fillPropStrip(player){
   box.innerHTML='<div class="ct">⚾ Cards for '+esc(q)+'</div><div class="prop-scroll" id="propRow"><div style="color:var(--dim);padding:12px">Loading catalog…</div></div>';
 }
 
-function goExplorePlayer(name, {toast=true}={}){
+function goExplorePlayer(name, {
+  window.TEAM_PAGE=null;toast=true}={}){
   const q=String(name||'').trim();
   if(q.length<2)return;
   EX.q=q; EX.skip=0; EX.items=[]; EX.prices={};
