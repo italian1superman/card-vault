@@ -1,12 +1,13 @@
 /* Card Vault service worker */
-const CACHE = 'card-vault-v6-cache';
+const CACHE = 'card-vault-v7-hobby';
 const ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',
-  './icons/apple-touch-icon.png'
+  './icons/apple-touch-icon.png',
+  './hobby-advanced.js'
 ];
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting()));
