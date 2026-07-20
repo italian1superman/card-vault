@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#002d62">
 <title>Card Vault · Astros</title>
 
@@ -352,6 +352,80 @@ details summary::-webkit-details-marker{display:none}
 
 
 
+
+
+/* ===== Astros deep theme + iPhone v28 ===== */
+.brandHou{
+  width:22px;height:22px;object-fit:contain;flex:none;
+  background:#fff;border-radius:6px;padding:2px;
+  box-shadow:0 0 0 1.5px var(--astros-orange);
+}
+.brandBall{display:none!important}
+header{
+  background:linear-gradient(180deg, #002d62, #003a7a)!important;
+  border-bottom:0!important;color:#fff;
+  backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
+}
+header h1, header .brandLockup > span:not(.brandTeam){color:#fff!important}
+.brandTeam{background:var(--astros-orange)!important;color:#fff!important}
+#btnMenu{color:#fff!important}
+.hdrFilter{
+  background:rgba(255,255,255,.14)!important;color:#fff!important;
+  box-shadow:inset 0 0 0 0.5px rgba(255,255,255,.22)!important;
+}
+.hdrFilter::placeholder{color:rgba(255,255,255,.55)}
+.astroPill{
+  background:linear-gradient(180deg,#fff,#fff4ec)!important;
+  border-color:rgba(235,110,31,.4)!important;
+  color:var(--astros-navy)!important;font-weight:700!important;
+}
+.sheetSticky{
+  position:sticky;bottom:0;z-index:5;
+  display:grid;grid-template-columns:1.2fr 1fr auto auto;gap:6px;
+  margin:12px -2px 0;padding:10px 2px calc(10px + env(safe-area-inset-bottom));
+  background:linear-gradient(180deg, rgba(238,241,246,0), var(--bg) 30%);
+}
+.sheetSticky button{min-height:46px;border-radius:12px;font-weight:700;font-size:14px;padding:8px 10px}
+.sheetSticky .bigxl{background:var(--astros-navy)!important;color:#fff!important}
+.sheetSticky .bigim{font-size:13px}
+#inPlayer{
+  min-height:48px;font-size:17px;font-weight:600;border-radius:12px;background:#fff;
+  box-shadow:0 0 0 2px rgba(235,110,31,.28);
+}
+.casCard:active{border-color:var(--astros-orange)}
+.heroPanel.coolHero{
+  background:
+    url('assets/teams/HOU.svg') right -10px top -6px / 88px no-repeat,
+    linear-gradient(135deg, rgba(235,110,31,.12) 0%, transparent 42%),
+    linear-gradient(180deg, #fff 0%, #f5f7fb 100%)!important;
+}
+@media(max-width:899px){
+  header{padding:4px 10px 8px!important;padding-top:max(6px, env(safe-area-inset-top))!important}
+  h1{font-size:15px!important}
+  .brandHou{width:20px;height:20px}
+  .hdrFilter{min-height:38px;font-size:16px;border-radius:11px}
+  main{padding:8px 10px!important;padding-bottom:calc(92px + env(safe-area-inset-bottom))!important}
+  .home-actions button{min-height:48px;font-size:15px;border-radius:12px}
+  .pill{min-height:34px;padding:8px 12px;font-size:13px}
+  #navB{background:rgba(0,45,98,.95)!important;border-top:0!important;box-shadow:0 -6px 20px rgba(0,45,98,.25)}
+  #navB .nb{color:rgba(255,255,255,.55);padding:7px 0 6px}
+  #navB .nb .i{font-size:21px;color:inherit}
+  #navB .nb .nl{font-size:10px;font-weight:600;color:inherit}
+  #navB .nb.on{color:#fff}
+  #navB .nb.on .i{color:var(--astros-orange)!important;filter:none!important}
+  #fab{width:54px;height:54px;bottom:calc(70px + env(safe-area-inset-bottom));
+    background:linear-gradient(145deg,#ff9a4a,var(--astros-orange),#c44a08)!important}
+  #sheet{max-height:min(94dvh,94vh);border-radius:16px 16px 0 0;
+    padding-left:max(12px,env(safe-area-inset-left))!important;
+    padding-right:max(12px,env(safe-area-inset-right))!important}
+  .photoBox .pbtns button{min-height:44px;border-radius:11px}
+  .casGrid{max-height:42vh;gap:8px}
+  .casImg{height:110px}
+}
+@media(max-width:390px){
+  .sheetSticky{grid-template-columns:1fr 1fr}
+  .sheetSticky #btnDup,.sheetSticky #btnDel{display:none}
+}
 
 .brandTeam{
   margin-left:6px;font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;
@@ -919,7 +993,7 @@ html,body{
 <body class="cv-cool">
 <header>
   <div class="hdrTop">
-    <h1><span class="brandLockup"><span class="brandBall" aria-hidden="true"></span><span>Card Vault</span><span class="brandTeam">Astros</span></span></h1>
+    <h1><span class="brandLockup"><img class="brandHou" src="assets/teams/HOU.svg" alt=""><span>Card Vault</span><span class="brandTeam">Astros</span></span></h1>
     <div class="hdrActions">
       <button type="button" class="deskOnly bigxl" id="btnXl">Excel</button>
       <button type="button" class="deskOnly bigim" id="btnIm">Import</button>
@@ -2197,7 +2271,7 @@ function renderDash(){
   const qp=(typeof QUICK_PLAYERS!=='undefined'?QUICK_PLAYERS:['Ken Griffey Jr','Shohei Ohtani','Mike Trout','Aaron Judge']);
   $('view').innerHTML=`
    ${empty?`<div class="panel heroPanel coolHero emptyCool">
-      <div class="heroEyebrow"><span class="dot"></span> Houston Astros vault</div>
+      <div class="heroEyebrow"><span class="dot"></span> Houston Astros · Card Vault</div>
       <div class="heroTitle">Card Vault</div>
       <div class="heroSub">Track Astros (and every club) — values, sets, and photos on this phone.</div>
       <div class="floatLogos">
@@ -2211,12 +2285,14 @@ function renderDash(){
         <button type="button" class="quickCard" data-go="show"><b>🃏 Show Mode</b><span>Check if you already have it</span></button>
       </div>
       ${typeof mlbLogoStripHtml==='function'?`<div class="ct" style="margin-top:14px">MLB teams</div>${mlbLogoStripHtml()}`:''}
-      <div class="ct" style="margin-top:14px">Try a legend</div>
-      <div class="pill-row">${qp.slice(0,6).map(n=>`<button type="button" class="pill" data-pl="${esc(n)}">⚾ ${esc(n)}</button>`).join('')}</div>
+      <div class="ct" style="margin-top:14px">Add an Astro</div>
+      <div class="pill-row astrosPills">${['Jose Altuve','Yordan Alvarez','Kyle Tucker','Alex Bregman','Framber Valdez','Jeremy Peña','Craig Biggio','Jeff Bagwell','Nolan Ryan'].slice(0,6).map(n=>`<button type="button" class="pill astroPill" data-add-player="${esc(n)}">🧡 ${esc(n)}</button>`).join('')}</div>
+      <div class="ct" style="margin-top:14px">Or find anyone</div>
+      <div class="pill-row">${qp.slice(0,4).map(n=>`<button type="button" class="pill" data-pl="${esc(n)}">⚾ ${esc(n)}</button>`).join('')}</div>
     </div>`:''}
    ${(cs.length&&(backupAge===null||backupAge>7))?`<div class="warn">💾 ${backupAge===null?'Tip: make a Backup from ⋯ so a phone wipe can’t erase your vault.':'Last backup '+backupAge+' days ago — ⋯ → Backup when you can.'}</div>`:''}
    ${!empty?`<div class="panel heroPanel coolHero">
-     <div class="heroEyebrow"><span class="dot"></span> Astros collection</div>
+     <div class="heroEyebrow"><span class="dot"></span> Astros collection · Crush City</div>
      <div class="heroTitle">${money0(s.val)}</div>
      <div class="heroSub">${s.have} owned · ${s.want} wants${s.deals?` · <span class="pos">🔥 ${s.deals} deal${s.deals>1?'s':''}</span>`:''}</div>
      <div class="plBar ${s.pl>=0?'pos':'neg'}">${s.pl>=0?'▲':'▼'} ${s.pl>=0?'+':''}${money0(s.pl)} unrealized</div>
@@ -2231,8 +2307,10 @@ function renderDash(){
        <button type="button" id="btnGh" class="deskOnly">Stats JSON</button>
      </div>
      ${typeof mlbLogoStripHtml==='function'?`<div class="ct">Teams</div>${mlbLogoStripHtml()}`:''}
-     <div class="ct" style="margin-top:12px">Jump to a player</div>
-     <div class="pill-row">${qp.slice(0,8).map(n=>`<button type="button" class="pill" data-pl="${esc(n)}">⚾ ${esc(n)}</button>`).join('')}</div>
+     <div class="ct" style="margin-top:12px">Astros stars — tap to add</div>
+     <div class="pill-row astrosPills">${['Jose Altuve','Yordan Alvarez','Kyle Tucker','Alex Bregman','Framber Valdez','Jeremy Peña','Craig Biggio','Jeff Bagwell','Nolan Ryan'].map(n=>`<button type="button" class="pill astroPill" data-add-player="${esc(n)}">🧡 ${esc(n)}</button>`).join('')}</div>
+     <div class="ct" style="margin-top:12px">Jump to Find</div>
+     <div class="pill-row">${qp.slice(0,6).map(n=>`<button type="button" class="pill" data-pl="${esc(n)}">⚾ ${esc(n)}</button>`).join('')}</div>
    </div>`:''}
    ${!empty&&typeof renderInsightsPanel==='function'?renderInsightsPanel():''}
    ${!empty?`<div class="panel"><div class="chips statPulse">
@@ -2256,6 +2334,9 @@ function renderDash(){
     else if(g==='want'){tab='want';addCard();} else if(g==='show'){if(typeof openShowMode==='function')openShowMode();}
   });
   document.querySelectorAll('[data-pl]').forEach(b=>b.onclick=()=>goExplorePlayer(b.dataset.pl));
+  document.querySelectorAll('[data-add-player]').forEach(b=>b.onclick=()=>{
+    addCard({player:b.getAttribute('data-add-player'), team:'Houston Astros', status:'have'});
+  });
   if(typeof wireLogoStrip==='function')wireLogoStrip($('view'));
   if(typeof wireHomeShowcase==='function')wireHomeShowcase();
   const ba=$('btnAstrosHome'); if(ba) ba.onclick=()=>{ if(typeof openTeamPage==='function') openTeamPage('HOU'); };
@@ -2798,10 +2879,11 @@ async function openSheet(){
    <p class="bb-lock">⚾ Pick from the catalog chips above — year / brand / set / # only show cards that actually exist for this player.</p>
    <canvas class="chart" id="cardChart" style="margin-top:10px"></canvas>
    <div class="phist" id="phist"></div>
-   <div style="display:flex;gap:8px;margin-top:14px">
-    <button class="bigxl" id="btnSave" style="flex:1;box-shadow:none">Save</button>
-    <button id="btnDup">Duplicate</button>
-    <button id="btnDel" style="color:var(--red)">Delete</button>
+   <div class="sheetSticky">
+    <button class="bigim" id="btnQuickMatch" type="button">🔎 Auto-match</button>
+    <button class="bigxl" id="btnSave" type="button">Save</button>
+    <button id="btnDup" type="button">Dup</button>
+    <button id="btnDel" type="button" style="color:var(--red)">Del</button>
    </div>`;
   requestAnimationFrame(()=>{$('sheet').classList.add('open');
     chLine($('cardChart'),(c.prices||[]).map(p=>({t:p.d,v:p.v})),'#3ecf7a',170);});
@@ -2855,6 +2937,21 @@ async function openSheet(){
   $('phist').querySelectorAll('.x').forEach(x=>x.onclick=e=>{e.stopPropagation();
     c.prices.splice(+x.dataset.i,1);save();openSheet();});
   $('btnSave').onclick=()=>{save();closeSheet();render();};
+  const bqm=$('btnQuickMatch');
+  if(bqm) bqm.onclick=async()=>{
+    const q=(c.player||'').trim();
+    if(q.length<2) return alert('Type a player name first');
+    bqm.disabled=true; bqm.textContent='…';
+    try{
+      const bits=[c.player,c.year,c.brand,c.num?('#'+c.num):''].filter(Boolean).join(' ')||q;
+      const j=await csSearchBaseballCards(bits,{take:8,skip:0});
+      const hit=(j.cards||[])[0];
+      if(!hit) throw new Error('No catalog hit — try Match in catalog for options');
+      await applyCatalogToSheet(hit,c,{skipPicker:true});
+      showToast('Auto-matched ✔');
+    }catch(e){ alert(e.message||e); }
+    bqm.disabled=false; bqm.textContent='🔎 Auto-match';
+  };
   $('btnDup').onclick=()=>{const n=JSON.parse(JSON.stringify(c));n.id=uid();n.created=Date.now();
     delete n.imgId;state.cards.push(n);sel=n;save();openSheet();};
   $('btnDel').onclick=()=>{
@@ -3008,8 +3105,8 @@ async function openSheet(){
       if(inP.value.trim()!==v)return;
       const rs=mlb.slice(0,5);
       paint(local,bbSearch(list,v,5),rs,sug);
-      if(v.length>=3 && csKey()){
-        window.__propTimer=setTimeout(()=>{ if(inP.value.trim()===v) fillPropStrip(v); }, 350);
+      if(v.length>=2 && csKey()){
+        window.__propTimer=setTimeout(()=>{ if(inP.value.trim()===v) fillPropStrip(v); }, 280);
       }
     });
   };
@@ -3028,7 +3125,9 @@ async function openSheet(){
       c.player=r.name;inP.value=r.name;
       c.sport=BB_SPORT;
       if(r.mlbId)c.mlbId=r.mlbId;
-      const t=$('sheet').querySelector('[data-k="team"]');if(t&&!t.value&&r.team){t.value=r.team;c.team=r.team;}
+      const t=$('sheet').querySelector('[data-k="team"]');
+      if(r.team){ c.team=r.team; if(t) t.value=r.team; }
+      else if(!c.team){ c.team='Houston Astros'; if(t) t.value=c.team; }
       if(r.img){c._pPhoto=r.img;const b=$('btnPPhoto');b.style.display='block';
         b.onclick=()=>{c.imgUrl=r.img;c.imgId='';save();openSheet();};}
       ac.style.display='none';
@@ -3064,11 +3163,26 @@ function showToast(msg,undo){
 }
 
 /* ---- add / import / export ---- */
-function addCard(){
-  const c={id:uid(),created:Date.now(),status:tab==='want'?'want':'have',qty:1,rookie:false,prices:[],sport:BB_SPORT};
-  FIELDS.forEach(k=>{if(!(k in c))c[k]=k==='qty'?1:'';});
+function addCard(preset){
+  const c={id:uid(),created:Date.now(),status:tab==='want'?'want':'have',qty:1,rookie:false,prices:[],sport:BB_SPORT,team:'Houston Astros'};
+  FIELDS.forEach(k=>{if(!(k in c))c[k]=k==='qty'?1:(k==='team'?'Houston Astros':'');});
   c.sport=BB_SPORT;
+  c.team=c.team||'Houston Astros';
+  if(preset&&typeof preset==='object'){
+    if(preset.player) c.player=preset.player;
+    if(preset.team) c.team=preset.team;
+    if(preset.status) c.status=preset.status;
+    if(preset.mlbId) c.mlbId=preset.mlbId;
+  }
   state.cards.push(c);sel=c;save();openSheet();
+  if(c.player){
+    setTimeout(()=>{
+      try{
+        enrichPlayerFields(c,c.player);
+        fillPropStrip(c.player);
+      }catch(e){}
+    }, 80);
+  }
 }
 function download(name,content,mime){
   const a=document.createElement('a');
@@ -4019,7 +4133,7 @@ window.renderPlayerCascade=async function renderPlayerCascade(player,c){
   if(q.length<2){box.hidden=true;box.innerHTML='';return;}
   box.hidden=false;
   box.innerHTML=`<div class="cascade">
-    <div class="ct">Real cards for ${esc(q)} — pick year → brand → set → card</div>
+    <div class="ct">Tap a card below to auto-fill everything</div>
     <div class="empty soft" id="casLoad">Loading catalog…</div>
   </div>`;
   try{
@@ -4055,7 +4169,7 @@ function paintCascade(box,c){
       <button type="button" class="pill ${setAllOn}" data-s="">All</button>
       ${opt.sets.slice(0,40).map(s=>`<button type="button" class="pill ${PCAT.setName===s?'on':''}" data-s="${esc(s)}">${esc(s.length>28?s.slice(0,27)+'…':s)}</button>`).join('')}
     </div>
-    <div class="casLabel">${cards.length} card${cards.length===1?'':'s'} — tap one to fill year, brand, set, #, parallel, photo, price</div>
+    <div class="casLabel">${cards.length} card${cards.length===1?'':'s'} — one tap fills fields + photo</div>
     <div class="casGrid" id="casGrid">
       ${cards.length?cards.map((x,i)=>{
         const rc=(x.attributes||[]).some(a=>/^rc$|rookie/i.test(a));
@@ -4085,7 +4199,7 @@ function paintCascade(box,c){
   };
   const ex=$('casExplore'); if(ex) ex.onclick=()=>{closeSheet();goExplorePlayer(PCAT.q);};
   const list=opt.cards.slice(0,60);
-  box.querySelectorAll('.casCard').forEach(b=>b.onclick=()=>applyCatalogToSheet(list[+b.dataset.i],c));
+  box.querySelectorAll('.casCard').forEach(b=>b.onclick=()=>applyCatalogToSheet(list[+b.dataset.i],c,{skipPicker:true}));
   list.forEach(async(x,i)=>{
     const el=$('cas-img-'+i); if(!el)return;
     const url=csImgSrc(await csImageData(x.id));
