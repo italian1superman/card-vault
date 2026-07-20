@@ -637,9 +637,12 @@ const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 let state={cards:[],meta:{lastBackup:0}},tab='dash',q='',view='list',sel=null,lastDeleted=null,toastT=null;
 const imgCache=new Map();
 
-/* ---- IndexedDB: photos + network cache ---- */
-const CS_STATS={hits:0,misses:0,free:0,billed:0};
-const CS_TTL_CAT=14*864e5, CS_TTL_PRICE=3*864e5, CS_TTL_FREE=30*864e5;
+/* ---- IndexedDB: photos + hardened network cache ---- */
+const CS_STATS={hits:0,misses:0,stale:0,saved:0,free:0,billed:0};
+/** Catalog rarely changes; prices soft-kept until explicit ♻; free endpoints long-lived. */
+const CS_TTL_CAT=90*864e5, CS_TTL_CARD=365*864e5, CS_TTL_PRICE=14*864e5, CS_TTL_FREE=120*864e5;
+const CS_STALE_MAX=365*864e5; /* serve soft-stale up to 1y without re-billing */
+const netMem=new Map();
 const idb={db:null,
   open(){return new Promise(res=>{try{
     const r=indexedDB.open('cardVaultImgs',2);
@@ -656,8 +659,16 @@ const idb={db:null,
   get(k){return idb.op('imgs','readonly',s=>s.get(k));},
   del(k){return idb.op('imgs','readwrite',s=>s.delete(k));},
   keys(){return idb.op('imgs','readonly',s=>s.getAllKeys());},
-  netPut(k,v){return idb.op('net','readwrite',s=>s.put(v,k));},
-  netGet(k){return idb.op('net','readonly',s=>s.get(k));}
+  async netPut(k,v){netMem.set(k,v);return idb.op('net','readwrite',s=>s.put(v,k));},
+  async netGet(k){
+    if(netMem.has(k))return netMem.get(k);
+    const v=await idb.op('net','readonly',s=>s.get(k));
+    if(v!=null)netMem.set(k,v);
+    return v;
+  },
+  async netDel(k){netMem.delete(k);return idb.op('net','readwrite',s=>s.delete(k));},
+  async netClear(){netMem.clear();return idb.op('net','readwrite',s=>s.clear());},
+  netKeys(){return idb.op('net','readonly',s=>s.getAllKeys());}
 };
 async function getImg(c){
   if(!c)return null;
@@ -785,13 +796,26 @@ function csIsFreePath(path){
     || /^\/v1\/identify\/(list|check)\b/.test(p)
     || /^\/v1\/catalog\/parallels\b/.test(p);
 }
+function csNormPath(path){
+  const s=String(path||'');
+  const i=s.indexOf('?');
+  if(i<0)return s;
+  const q=s.slice(i+1).split('&').filter(Boolean).sort().join('&');
+  return s.slice(0,i)+(q?('?'+q):'');
+}
 function csCacheKey(path,opts={}){
   const method=(opts.method||'GET').toUpperCase();
   let body=opts.body==null?'':opts.body;
   if(typeof body!=='string')body=JSON.stringify(body);
   let h=0;
   for(let i=0;i<body.length;i++)h=((h<<5)-h)+body.charCodeAt(i)|0;
-  return method+':'+path+(body?(':'+(h>>>0).toString(36)):'');
+  return method+':'+csNormPath(path)+(body?(':'+(h>>>0).toString(36)):'');
+}
+function csCacheFresh(hit,ttl){
+  return !!(hit&&hit.t&&(Date.now()-hit.t)<ttl);
+}
+function csCacheSoftOk(hit){
+  return !!(hit&&hit.t&&(Date.now()-hit.t)<CS_STALE_MAX&&hit.j!=null);
 }
 async function csFetch(path,opts={},meta={}){
   if(!csKey())throw new Error('no key');
@@ -809,17 +833,25 @@ async function csFetch(path,opts={},meta={}){
   if(!r.ok)throw new Error('CardSight '+r.status+(r.status===401?' — key rejected, re-check it in ⋯ → 🔑':r.status===429?' — rate limited, wait a minute':''));
   return r.json();
 }
+/** Permanent-leaning cache: after TTL, keep serving soft-stale (no re-bill) until force or 1y. Offline → last good response. */
 async function csFetchCached(path,opts={},meta={}){
   const ttl=meta.ttlMs!=null?meta.ttlMs:CS_TTL_CAT;
+  const soft=meta.soft!==false;
   const key=csCacheKey(path,opts);
-  if(!meta.force){
-    const hit=await idb.netGet(key);
-    if(hit&&hit.t&&(Date.now()-hit.t)<ttl){CS_STATS.hits++;return hit.j;}
+  const hit=await idb.netGet(key);
+  if(!meta.force&&hit&&hit.j!=null){
+    if(csCacheFresh(hit,ttl)){CS_STATS.hits++;return hit.j;}
+    if(soft&&csCacheSoftOk(hit)){CS_STATS.hits++;CS_STATS.stale++;return hit.j;}
   }
-  CS_STATS.misses++;
-  const j=await csFetch(path,opts,{free:!!meta.free});
-  try{await idb.netPut(key,{t:Date.now(),j});}catch(e){}
-  return j;
+  try{
+    CS_STATS.misses++;
+    const j=await csFetch(path,opts,{free:!!meta.free});
+    try{await idb.netPut(key,{t:Date.now(),j});}catch(e){}
+    return j;
+  }catch(e){
+    if(hit&&hit.j!=null){CS_STATS.hits++;CS_STATS.stale++;return hit.j;}
+    throw e;
+  }
 }
 function priceAgeDays(c){
   if(!c||!c.prices||!c.prices.length)return 999;
@@ -836,17 +868,43 @@ function applyCsPrice(c,v,src){
   c.prices.sort((a,b)=>a.d<b.d?-1:1);
   return true;
 }
+async function csPriceCacheGet(id){
+  const hit=await idb.netGet('price:'+id);
+  if(!hit||hit.v==null||!hit.t)return null;
+  return hit;
+}
+async function csPriceCachePut(id,v){
+  if(v==null)return;
+  try{await idb.netPut('price:'+id,{t:Date.now(),v:+v});}catch(e){}
+}
+/** Per-ID price vault: only bills for IDs not already cached (order-independent). */
 async function csBulkPriceByIds(ids,{force=false}={}){
-  const card_ids=[...new Set((ids||[]).filter(Boolean))].slice(0,100);
+  const card_ids=[...new Set((ids||[]).filter(Boolean).map(String))].slice(0,100);
   if(!card_ids.length)return {};
-  const j=await csFetchCached('/v1/pricing/',{
+  const out={};
+  const need=[];
+  for(const id of card_ids){
+    if(!force){
+      const hit=await csPriceCacheGet(id);
+      if(hit&&csCacheFresh(hit,CS_TTL_PRICE)){out[id]=hit.v;CS_STATS.hits++;continue;}
+      if(hit&&(Date.now()-hit.t)<CS_STALE_MAX){out[id]=hit.v;CS_STATS.hits++;CS_STATS.stale++;continue;}
+    }
+    need.push(id);
+  }
+  if(!need.length){CS_STATS.saved+=card_ids.length;return out;}
+  need.sort();
+  const j=await csFetch('/v1/pricing/',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({card_ids,period:'1y',listing_type:'both',limit:25})
-  },{ttlMs:CS_TTL_PRICE,force});
-  const out={};
-  for(const r of (j.results||[]))
-    if(r.success&&r.data){const v=csPriceFromPricing(r.data);if(v!=null)out[r.card_id]=v;}
+    body:JSON.stringify({card_ids:need,period:'1y',listing_type:'both',limit:25})
+  });
+  for(const r of (j.results||[])){
+    if(r.success&&r.data){
+      const v=csPriceFromPricing(r.data);
+      if(v!=null){out[r.card_id]=v;await csPriceCachePut(r.card_id,v);}
+    }
+  }
+  CS_STATS.saved+=card_ids.length-need.length;
   return out;
 }
 async function csAutoPrice(c){
@@ -863,22 +921,31 @@ async function csAutoPrice(c){
     v=csPriceSmart(j,c.grade);
     if(v==null)v=csPrice(j);
     if(v==null)throw new Error('no sales found for "'+q+'"');
+    if(c.csId&&v!=null)await csPriceCachePut(c.csId,v);
   }
   applyCsPrice(c,v,'cardsight');save();
   return v;
 }
 async function refreshStalePrices(){
   if(!csKey())return alert('CardSight key unavailable');
-  const stale=state.cards.filter(c=>c.csId&&c.status!=='sold'&&priceAgeDays(c)>=3).slice(0,100);
-  if(!stale.length)return showToast('No stale prices — need linked catalog IDs with prices ≥3 days old');
+  const days=Math.round(CS_TTL_PRICE/864e5);
+  const stale=state.cards.filter(c=>c.csId&&c.status!=='sold'&&priceAgeDays(c)>=days).slice(0,100);
+  if(!stale.length)return showToast('No stale prices — need linked catalog IDs with prices ≥'+days+' days old');
   showToast('Refreshing '+stale.length+' prices (1 call)…');
   try{
     const map=await csBulkPriceByIds(stale.map(c=>c.csId),{force:true});
     let n=0;
     for(const c of stale){if(map[c.csId]!=null&&applyCsPrice(c,map[c.csId],'cardsight'))n++;}
     save();render();
-    showToast('Refreshed '+n+' of '+stale.length+' cards (1 billed call · cache warmed)');
+    showToast('Refreshed '+n+' of '+stale.length+' cards (1 billed call · per-ID cache warmed)');
   }catch(e){alert('Refresh failed: '+e.message);}
+}
+async function csCacheReport(){
+  const keys=await idb.netKeys()||[];
+  const prices=keys.filter(k=>String(k).startsWith('price:')).length;
+  const imgs=keys.filter(k=>String(k).startsWith('img:')).length;
+  const other=keys.length-prices-imgs;
+  return {keys:keys.length,prices,imgs,other};
 }
 async function csAutocompleteCards(q){
   const name=String(q||'').trim();
@@ -1020,7 +1087,7 @@ function renderDash(){
   const best=cs.filter(c=>c.status==='have').sort((a,b)=>valueOf(b)*(b.qty||1)-valueOf(a)*(a.qty||1))[0];
   $('view').innerHTML=`
    ${(cs.length&&(backupAge===null||backupAge>7))?`<div class="warn">💾 ${backupAge===null?'No backup yet':'Last backup '+backupAge+' days ago'} — use ⋯ → Backup. On iPhone the system can wipe browser storage without warning.</div>`:''}
-   <div class="panel" style="padding:10px 12px;font-size:13px;color:var(--dim)">Online stack: local MLB register + MLB Stats + CardSight (images/autocomplete/pop free · catalog/price use 750/mo). Cache ${CS_STATS.hits} hits. <button type="button" id="btnStale" style="margin-left:6px">♻ Refresh stale prices</button></div>
+   <div class="panel" style="padding:10px 12px;font-size:13px;color:var(--dim)">Online stack: MLB + CardSight · cache ${CS_STATS.hits}h/${CS_STATS.stale}s/${CS_STATS.misses}m · saved ${CS_STATS.saved} price lookups. <button type="button" id="btnStale" style="margin-left:6px">♻ Refresh stale prices</button></div>
    <div class="panel"><div class="chips">
     <div class="chipStat"><div class="k">Collection value</div><div class="v">${money0(s.val)}</div><div class="s">${s.have} cards · ${s.qty} qty</div></div>
     <div class="chipStat"><div class="k">Cost basis</div><div class="v">${money0(s.cost)}</div></div>
@@ -1079,7 +1146,7 @@ function render(){
   const n=(state.cards||[]).length;
   const f=$('footSave');
   if(f){
-    const cs=csKey()?(' · CardSight '+csUseN()+'/750 · cache '+CS_STATS.hits+'h/'+CS_STATS.misses+'m'):'';
+    const cs=csKey()?(' · CS '+csUseN()+'/750 · cache '+CS_STATS.hits+'h/'+CS_STATS.stale+'s/'+CS_STATS.misses+'m'):'';
     f.innerHTML='⚾ <b>Auto-saved</b> · '+n+' card'+(n===1?'':'s')+cs+' · Home Screen icon keeps collection. ⋯ → Backup for off-phone.';
   }
 }
@@ -1174,15 +1241,28 @@ function goExplorePlayer(name, {toast=true}={}){
 /* ---- Explore: player -> cards with pictures & prices (CardSight catalog) ---- */
 const EX={q:'',skip:0,total:0,items:[],prices:{},imgs:new Map()};
 async function csImageData(id){
+  if(!id)return null;
   if(EX.imgs.has(id))return EX.imgs.get(id);
+  const ck='img:'+id;
+  try{
+    const hit=await idb.netGet(ck);
+    if(hit&&hit.j!=null&&(Date.now()-hit.t)<CS_STALE_MAX){
+      CS_STATS.hits++;
+      if(!csCacheFresh(hit,CS_TTL_FREE))CS_STATS.stale++;
+      EX.imgs.set(id,hit.j);
+      return hit.j;
+    }
+  }catch(e){}
   try{  /* image endpoint is free per CardSight docs — bypass the local billed-call counter */
     const key=csKey();
     if(!key)return null;
+    CS_STATS.free++;
     const r=await fetch(CS_BASE+'/v1/images/cards/'+id+'?format=json&default=true',{headers:{'X-API-Key':key}});
     if(!r.ok)return null;
     const j=await r.json();
     const d=(j&&j.data)!=null?j.data:j;
     EX.imgs.set(id,d);
+    try{await idb.netPut(ck,{t:Date.now(),j:d});}catch(e){}
     return d;
   }catch(e){return null;}
 }
@@ -1291,7 +1371,7 @@ async function exLoadPrices(){
     let n=0;
     for(const id of Object.keys(map)){EX.prices[id]=map[id];n++;}
     paintEx();
-    showToast('Prices loaded for '+n+' of '+EX.items.length+' cards (1 call · cached '+CS_TTL_PRICE/864e5+'d)');
+    showToast('Prices for '+n+'/'+EX.items.length+' · billed only missing IDs · soft-cache '+Math.round(CS_TTL_PRICE/864e5)+'d+');
   }catch(e){alert('Pricing failed: '+e.message);}
   b.disabled=false;b.textContent='💲 Load prices (1 call for all)';
 }
@@ -1463,7 +1543,7 @@ async function openSheet(){
     c.sport=BB_SPORT;
     save();
     if(x.cardId&&x._cat){try{
-      const d=await csFetchCached('/v1/catalog/cards/'+x.cardId,{},{ttlMs:CS_TTL_CAT});
+      const d=await csFetchCached('/v1/catalog/cards/'+x.cardId,{},{ttlMs:CS_TTL_CARD});
       if(d){if(d.number)c.num=d.number;
         if(d.releaseYear)c.year=d.releaseYear;
         if((d.attributes||[]).some(a=>/rookie|^rc$/i.test(a)))c.rookie=true;
@@ -1697,7 +1777,8 @@ function openMenu(anchor){
    <button data-a="cskey">🔑 CardSight AI key ✔</button>
    ${csKey()?`<button data-a="csrefresh">♻ Refresh stale prices (ID bulk)</button>
    <button data-a="csbulk">🤖 Auto-price top 10 (CardSight)</button>
-   <button data-a="csusage">📈 CardSight usage + cache</button>`:''}`;
+   <button data-a="csusage">📈 CardSight usage + cache</button>
+   <button data-a="csclear">🗑 Clear online cache</button>`:''}`;
   const r=anchor.getBoundingClientRect();
   m.style.display='block';
   m.style.top=(r.bottom+6)+'px';
@@ -1739,10 +1820,22 @@ function openMenu(anchor){
       render();
     }
     else if(a==='csusage'){
-      const local='Local meter: '+csUseN()+'/750 billed this month\nCache this session: '+CS_STATS.hits+' hits · '+CS_STATS.misses+' misses\nFree endpoint calls (not billed locally): '+CS_STATS.free;
-      csFetch('/v1/subscription/')
-        .then(j=>alert(local+'\n\nCardSight server: '+(j.calls!=null?j.calls:'?')+' of 750 free'))
-        .catch(e=>alert(local+'\n\nServer usage check failed: '+e.message));
+      (async()=>{
+        const rep=await csCacheReport();
+        const local='Local meter: '+csUseN()+'/750 billed this month\nSession: '+CS_STATS.hits+' hits · '+CS_STATS.stale+' soft-stale · '+CS_STATS.misses+' misses · '+CS_STATS.saved+' price IDs reused\nFree calls (not billed locally): '+CS_STATS.free+'\nIndexedDB net cache: '+rep.keys+' entries ('+rep.prices+' prices · '+rep.imgs+' images · '+rep.other+' other)\nSoft-cache keeps results up to 1 year without re-billing; ♻ forces fresh prices.';
+        try{
+          const j=await csFetch('/v1/subscription/');
+          alert(local+'\n\nCardSight server: '+(j.calls!=null?j.calls:'?')+' of 750 free');
+        }catch(e){alert(local+'\n\nServer usage check failed: '+e.message);}
+      })();
+    }
+    else if(a==='csclear'){
+      if(!confirm('Clear IndexedDB online cache (catalog/prices/images)?\nYour collection and photos stay. Next searches may use billed calls again.'))return;
+      idb.netClear().then(()=>{
+        EX.imgs.clear();EX.prices={};
+        showToast('Online cache cleared');
+        render();
+      });
     }
     else if(a==='csbulk'){
       (async()=>{
