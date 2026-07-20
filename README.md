@@ -1,30 +1,25 @@
 # Card Vault ⚾
 
-Baseball card collection PWA.
+Baseball card collection PWA with a free multi-layer online data stack.
 
 **Live:** https://italian1superman.github.io/card-vault/
 
-## Seamless save (same phone) — already built
+## Online data (free + efficient)
 
-| | |
-|--|--|
-| **Where** | On **this device**, in the browser/app storage for Card Vault |
-| **Cards & prices** | `localStorage` key `cardVault.v2` |
-| **Photos** | IndexedDB database `cardVaultImgs` |
-| **How** | Every edit calls `save()` immediately. Opening the page calls `load()` — no login, no upload |
+| Layer | Source | Cost |
+|-------|--------|------|
+| Device cache | IndexedDB `net` store | Free — catalog 14d, prices 3d |
+| Players | Embedded MLB register + MLB Stats API + TheSportsDB | Free |
+| Images / autocomplete / PSA pop | CardSight free endpoints | Free (not billed) |
+| Catalog + market prices + photo ID | CardSight | 750 calls/mo free |
+| Verify | eBay sold / TCDB / PriceCharting links | Free |
 
-**Do this once:** Safari → Share → **Add to Home Screen**, then always open that icon.
+Catalog adds store a `csId` so later pricing uses bulk ID calls (accurate, 1 call ≤100 cards). Use **⋯ → Refresh stale prices** for cards with prices older than 3 days.
 
-That is the seamless path. Your collection is waiting whenever you open the app on that phone.
+## Seamless save (same phone)
 
-### What is *not* automatic
+Cards auto-save in `localStorage`; photos in IndexedDB. Add to Home Screen once.
 
-- A **different phone**, **Chrome vs Safari**, or **Private tab** = empty vault (different / wiped storage)
-- **GitHub Pages** hosts the app code only — it does **not** store your cards
-- iOS may clear site data for rarely used *browser tabs*; the Home Screen app is much safer
+## Off-phone backup
 
-### Off-phone copy (optional safety net)
-
-⋯ → **Backup + photos** → JSON file → private GitHub / iCloud → ⋯ → Restore on a new device.
-
-Cross-device *auto* sync (open anywhere, same collection) needs a cloud account — say if you want that next.
+⋯ → Backup + photos → private GitHub / iCloud → Restore on a new device.
