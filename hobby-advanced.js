@@ -529,20 +529,8 @@ window.autoRefreshPricesIfNeeded=async function autoRefreshPricesIfNeeded(){
   finally{state.meta._priceBusy=false;}
 };
 
-window.confettiBurst=function confettiBurst(){
-  const layer=document.createElement('div');
-  layer.className='confetti';
-  const colors=['#4da3ff','#3ecf7a','#ffb84d','#ff5d5d','#c99cff'];
-  for(let i=0;i<18;i++){
-    const p=document.createElement('i');
-    p.style.left=(20+Math.random()*60)+'%';
-    p.style.background=colors[i%colors.length];
-    p.style.animationDelay=(Math.random()*0.2)+'s';
-    layer.appendChild(p);
-  }
-  document.body.appendChild(layer);
-  setTimeout(()=>layer.remove(),900);
-};
+/* confettiBurst / haptic provided by index.html */
+
 
 window.SETS=window.SETS||{year:String(new Date().getFullYear()),q:'',releases:[],release:null,sets:[],set:null,cards:[],skip:0,total:0,loading:false};
 window.QUICK_PLAYERS=QUICK_PLAYERS;

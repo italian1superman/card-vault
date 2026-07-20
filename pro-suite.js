@@ -123,6 +123,7 @@ window.renderValueHero=function renderValueHero(c){
 };
 
 window.openShowMode=function openShowMode(){
+  if(typeof haptic==='function')haptic('light');
   const bk=document.createElement('div');
   bk.className='showModeBk';
   bk.innerHTML=`<div class="showMode">

@@ -1147,6 +1147,123 @@ html,body{
 img.portraitFallback.wikiShot{object-fit:cover;filter:saturate(1.05)}
 img.portraitFallback.mlbShot{object-fit:cover}
 
+
+/* ===== Binder · front/back · widget Home · iPhone (v32) ===== */
+.viewtog button{min-width:40px;min-height:36px}
+.binderWrap{margin:0 -2px}
+.binderPageHead{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:4px 2px 10px;position:sticky;top:0;z-index:5;
+  background:linear-gradient(180deg,var(--bg) 70%,transparent);
+}
+.binderPageHead .bpTitle{font-size:13px;font-weight:800;color:var(--astros-navy,#002d62);letter-spacing:.04em;text-transform:uppercase}
+.binderPageHead .bpNav{display:flex;gap:8px;align-items:center}
+.binderPageHead .bpNav button{
+  min-width:44px;min-height:44px;border-radius:12px;font-weight:800;font-size:18px;
+  background:var(--panel2);border:0.5px solid var(--sep);color:var(--ink);
+}
+.binderPageHead .bpNav button:disabled{opacity:.35}
+.binderGrid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:8px;
+  padding:2px;touch-action:pan-y;
+}
+.binderPocket{
+  position:relative;aspect-ratio:2.5/3.5;border-radius:10px;overflow:hidden;
+  background:linear-gradient(160deg,#0a1e3d 0%,#123a6b 55%,#0c2748 100%);
+  border:1px solid rgba(255,255,255,.14);
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.25), 0 4px 12px rgba(0,45,98,.2);
+  padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent;
+}
+.binderPocket.empty{
+  background:repeating-linear-gradient(-45deg,rgba(0,45,98,.06),rgba(0,45,98,.06) 6px,rgba(0,45,98,.02) 6px,rgba(0,45,98,.02) 12px);
+  border-style:dashed;border-color:rgba(0,45,98,.22);box-shadow:none;
+}
+.binderPocket .bpFace{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  transition:transform .35s cubic-bezier(.2,.8,.2,1),opacity .25s;
+  backface-visibility:hidden;
+}
+.binderPocket .bpFace img{width:100%;height:100%;object-fit:contain;background:#0a1422}
+.binderPocket .bpFace.back{transform:rotateY(180deg);opacity:0;pointer-events:none}
+.binderPocket.flipped .bpFace.front{transform:rotateY(180deg);opacity:0;pointer-events:none}
+.binderPocket.flipped .bpFace.back{transform:rotateY(0);opacity:1;pointer-events:auto}
+.binderPocket .bpCap{
+  position:absolute;left:0;right:0;bottom:0;z-index:2;padding:6px 5px 5px;
+  background:linear-gradient(transparent,rgba(0,0,0,.72));
+  color:#fff;font-size:10px;font-weight:700;line-height:1.15;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.binderPocket .bpFlipHint{
+  position:absolute;top:5px;right:5px;z-index:3;font-size:9px;font-weight:800;
+  background:rgba(235,110,31,.9);color:#fff;border-radius:999px;padding:2px 6px;
+}
+.binderPocket:active{transform:scale(.97)}
+
+.photoBox.dual .pvWrap{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.photoBox .pv{min-height:140px;border-radius:12px;overflow:hidden;position:relative;
+  background:var(--panel3);display:flex;align-items:center;justify-content:center}
+.photoBox .pv img{width:100%;height:100%;object-fit:contain}
+.photoBox .pvLab{
+  position:absolute;top:6px;left:6px;z-index:2;font-size:10px;font-weight:800;
+  letter-spacing:.05em;text-transform:uppercase;background:rgba(0,45,98,.75);color:#fff;
+  padding:3px 7px;border-radius:999px;
+}
+.sideTog{display:flex;gap:6px;margin:0 0 8px}
+.sideTog button{flex:1;min-height:40px;border-radius:10px;font-weight:700;border:0.5px solid var(--sep);background:var(--panel2)}
+.sideTog button.on{background:var(--astros-navy,#002d62);color:#fff;border-color:transparent}
+
+.widgetHome{
+  display:flex;gap:12px;align-items:stretch;margin:0 0 10px;
+  padding:12px;border-radius:18px;overflow:hidden;
+  background:linear-gradient(135deg,#071428 0%,#0c2a56 50%,#123a6b 100%);
+  color:#fff;border:0.5px solid rgba(255,255,255,.12);
+  box-shadow:0 10px 28px rgba(0,45,98,.28);
+}
+.widgetHome .whMain{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center}
+.widgetHome .whK{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,200,150,.85)}
+.widgetHome .whVal{font-size:34px;font-weight:900;letter-spacing:-1px;line-height:1.05;margin:4px 0}
+.widgetHome .whMeta{font-size:13px;color:rgba(255,255,255,.65);font-weight:600}
+.widgetHome .whRare{
+  flex:none;width:92px;border-radius:12px;overflow:hidden;position:relative;
+  background:#0a1422;border:1px solid rgba(255,215,140,.35);
+  box-shadow:0 0 0 1px rgba(235,110,31,.3);
+}
+.widgetHome .whRare img{width:100%;height:100%;object-fit:contain;min-height:118px}
+.widgetHome .whRare .whTag{
+  position:absolute;left:0;right:0;bottom:0;padding:5px;
+  background:linear-gradient(transparent,rgba(0,0,0,.8));
+  font-size:10px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.widgetHome button.whTap{all:unset;cursor:pointer;display:flex;gap:12px;width:100%;align-items:stretch}
+
+.confetti{position:fixed;inset:0;pointer-events:none;z-index:200;overflow:hidden}
+.confetti i{
+  position:absolute;top:-12px;width:8px;height:12px;border-radius:2px;
+  animation:confettiFall 1s ease-in forwards;
+}
+@keyframes confettiFall{
+  0%{transform:translateY(0) rotate(0);opacity:1}
+  100%{transform:translateY(100vh) rotate(540deg);opacity:0}
+}
+
+@media(max-width:899px){
+  .widgetHome{margin:0 0 8px;padding:10px;border-radius:16px}
+  .widgetHome .whVal{font-size:30px}
+  .widgetHome .whRare{width:84px}
+  .widgetHome .whRare img{min-height:108px}
+  .binderGrid{gap:6px}
+  .binderPocket{border-radius:8px}
+  .photoBox.dual .pv{min-height:120px}
+  .coolHero .heroTitle{font-size:28px!important}
+  .home-actions{gap:6px}
+  .home-actions button{min-height:42px}
+  /* tighter sheet on iPhone */
+  #sheet.sheetEasy{padding-bottom:calc(10px + env(safe-area-inset-bottom))}
+  .sideTog button,.binderPageHead .bpNav button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+  html,body{overscroll-behavior-y:none}
+  *{ -webkit-tap-highlight-color:rgba(0,45,98,.08) }
+}
+
 </style>
 </head>
 <body class="cv-cool">
@@ -1721,7 +1838,38 @@ const money=n=>'$'+(+n||0).toLocaleString(undefined,{minimumFractionDigits:2,max
 const money0=n=>'$'+Math.round(+n||0).toLocaleString();
 const today=()=>new Date().toISOString().slice(0,10);
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
-let state={cards:[],meta:{lastBackup:0}},tab='dash',q='',view=(window.matchMedia&&matchMedia('(max-width:899px)').matches)?'grid':'list',listGroup='',sel=null,lastDeleted=null,toastT=null;
+
+function haptic(kind){
+  try{
+    if(!navigator.vibrate)return;
+    if(kind==='light')navigator.vibrate(8);
+    else if(kind==='success')navigator.vibrate([10,30,12]);
+    else if(kind==='warn')navigator.vibrate([24,36,24]);
+    else navigator.vibrate(14);
+  }catch(e){}
+}
+function confettiBurst(opts){
+  const n=(opts&&opts.n)||28;
+  const colors=(opts&&opts.colors)||['#eb6e1f','#002d62','#ffc48a','#ffffff','#f5a623','#0a3d7a'];
+  const layer=document.createElement('div');
+  layer.className='confetti';
+  for(let i=0;i<n;i++){
+    const p=document.createElement('i');
+    p.style.left=(8+Math.random()*84)+'%';
+    p.style.background=colors[i%colors.length];
+    p.style.animationDelay=(Math.random()*0.25)+'s';
+    p.style.animationDuration=(0.85+Math.random()*0.45)+'s';
+    p.style.width=(6+Math.random()*6)+'px';
+    p.style.height=(8+Math.random()*10)+'px';
+    layer.appendChild(p);
+  }
+  document.body.appendChild(layer);
+  haptic('success');
+  setTimeout(()=>layer.remove(),1400);
+}
+window.confettiBurst=confettiBurst;
+window.haptic=haptic;
+let state={cards:[],meta:{lastBackup:0}},tab='dash',q='',view=(window.matchMedia&&matchMedia('(max-width:899px)').matches)?'binder':'list',listGroup='',sel=null,lastDeleted=null,toastT=null,binderPage=0,photoSide='front';
 /* BINDER_ID lives on window from pro-suite */
 const imgCache=new Map();
 
@@ -1758,12 +1906,23 @@ const idb={db:null,
   async netClear(){netMem.clear();return idb.op('net','readwrite',s=>s.clear());},
   netKeys(){return idb.op('net','readonly',s=>s.getAllKeys());}
 };
-async function getImg(c){
+async function getImg(c, side){
   if(!c)return null;
+  const back=side==='back';
+  if(back){
+    const id=c.imgIdBack||(c.id?c.id+'-back':'');
+    if(c.imgIdBack){
+      if(imgCache.has(c.imgIdBack))return imgCache.get(c.imgIdBack);
+      const d=await idb.get(c.imgIdBack);if(d)imgCache.set(c.imgIdBack,d);return d;
+    }
+    return c.imgUrlBack||null;
+  }
   if(c.imgId){if(imgCache.has(c.imgId))return imgCache.get(c.imgId);
     const d=await idb.get(c.imgId);if(d)imgCache.set(c.imgId,d);return d;}
   return c.imgUrl||null;
 }
+function hasBackPhoto(c){return !!(c&&(c.imgIdBack||c.imgUrlBack));}
+
 function load(){
   try{const j=JSON.parse(localStorage.getItem(LS2));if(j&&Array.isArray(j.cards)){state=j;state.meta=state.meta||{lastBackup:0};return;}}catch(e){}
   try{const v1=JSON.parse(localStorage.getItem(LS1));
@@ -2364,6 +2523,35 @@ function groupLabel(c){
 }
 function renderListPanel(cs){
   if(!cs.length)return `<div class="empty soft"><b>Nothing here yet</b><div class="bigActs"><button type="button" class="bigim" id="emptyFind">🔍 Find a player</button><button type="button" id="emptySets">📚 Build a set</button><button type="button" id="emptyAdd">＋ Add blank card</button></div></div>`;
+  if(view==='binder'){
+    const per=9;
+    const pages=Math.max(1, Math.ceil(cs.length/per));
+    if(binderPage>=pages)binderPage=pages-1;
+    if(binderPage<0)binderPage=0;
+    const slice=cs.slice(binderPage*per, binderPage*per+per);
+    while(slice.length<per)slice.push(null);
+    const pockets=slice.map((c,i)=>{
+      if(!c)return `<div class="binderPocket empty" aria-hidden="true"></div>`;
+      const back=hasBackPhoto(c)?'<span class="bpFlipHint">FLIP</span>':'';
+      return `<button type="button" class="binderPocket" data-id="${c.id}" data-idx="${i}">
+        ${back}
+        <div class="bpFace front" id="bf-${c.id}">${typeof sportIcon==='function'?sportIcon(c.sport):'🃏'}</div>
+        <div class="bpFace back" id="bb-${c.id}">${hasBackPhoto(c)?'':'—'}</div>
+        <div class="bpCap">${esc(c.player||c.setName||'Card')}</div>
+      </button>`;
+    }).join('');
+    return `<div class="binderWrap">
+      <div class="binderPageHead">
+        <div class="bpTitle">Binder · page ${binderPage+1}/${pages}</div>
+        <div class="bpNav">
+          <button type="button" id="bpPrev" ${binderPage<=0?'disabled':''} aria-label="Previous">‹</button>
+          <button type="button" id="bpNext" ${binderPage>=pages-1?'disabled':''} aria-label="Next">›</button>
+        </div>
+      </div>
+      <div class="binderGrid" id="binderGrid">${pockets}</div>
+      <div class="teach-hint" style="margin-top:8px;font-size:12px;color:var(--mute)">Tap to flip (if back photo) · double-tap to edit · swipe for pages</div>
+    </div>`;
+  }
   if(view==='grid'){
     return `<div class="grid">${cs.map(c=>`
       <div class="gcard" data-id="${c.id}" data-status="${esc(c.status||'have')}">
@@ -2397,8 +2585,65 @@ function renderListPanel(cs){
   return html;
 }
 function afterListRender(cs){
-  document.querySelectorAll('[data-id]').forEach(el=>el.onclick=()=>{
-    sel=state.cards.find(c=>c.id===el.dataset.id);openSheet();});
+  if(view==='binder'){
+    const grid=$('binderGrid');
+    const paintPocket=async(c)=>{
+      if(!c)return;
+      const front=$('bf-'+c.id), back=$('bb-'+c.id);
+      try{
+        let src=await getImg(c,'front');
+        if(!src&&typeof resolveCardImg==='function')src=await resolveCardImg(c);
+        if(src&&front){front.innerHTML='<img src="'+src+'" alt="" decoding="async">';}
+        else if(front&&typeof applyPortraitFallback==='function')applyPortraitFallback(front,c);
+      }catch(e){}
+      if(hasBackPhoto(c)&&back){
+        try{
+          const bsrc=await getImg(c,'back');
+          if(bsrc)back.innerHTML='<img src="'+bsrc+'" alt="" decoding="async">';
+        }catch(e){}
+      }
+    };
+    /* tap = flip if back exists, else open; double-tap always opens */
+    document.querySelectorAll('.binderPocket[data-id]').forEach(btn=>{
+      let taps=0, tmr=null;
+      btn.onclick=()=>{
+        const c=state.cards.find(x=>x.id===btn.dataset.id); if(!c)return;
+        taps++;
+        clearTimeout(tmr);
+        tmr=setTimeout(()=>{
+          if(taps>=2){sel=c;haptic('light');openSheet();}
+          else if(hasBackPhoto(c)){btn.classList.toggle('flipped');haptic('light');}
+          else {sel=c;haptic('light');openSheet();}
+          taps=0;
+        },220);
+      };
+    });
+    const prev=$('bpPrev'), next=$('bpNext');
+    if(prev)prev.onclick=()=>{haptic('light');binderPage--;renderList();};
+    if(next)next.onclick=()=>{haptic('light');binderPage++;renderList();};
+    /* swipe pages */
+    if(grid){
+      let x0=null;
+      grid.ontouchstart=e=>{x0=e.changedTouches[0].clientX;};
+      grid.ontouchend=e=>{
+        if(x0==null)return;
+        const dx=e.changedTouches[0].clientX-x0; x0=null;
+        if(Math.abs(dx)<48)return;
+        if(dx<0){binderPage++;haptic('light');renderList();}
+        else if(binderPage>0){binderPage--;haptic('light');renderList();}
+      };
+    }
+    (cs||[]).slice(binderPage*9,binderPage*9+9).forEach(paintPocket);
+    /* celebrate full page */
+    const pageCards=(cs||[]).slice(binderPage*9,binderPage*9+9);
+    if(pageCards.length===9&&pageCards.every(Boolean)&&!state.meta['_bpCongrats_'+binderPage]){
+      state.meta['_bpCongrats_'+binderPage]=1; save();
+      confettiBurst({n:36});
+    }
+    return;
+  }
+  document.querySelectorAll('.row[data-id], .gcard[data-id]').forEach(el=>el.onclick=()=>{
+    sel=state.cards.find(c=>c.id===el.dataset.id);haptic('light');openSheet();});
   const thumbGo=(c)=>{
     const t=$('im-'+c.id);
     if(!t)return;
@@ -2434,6 +2679,23 @@ function afterListRender(cs){
   });
 }
 
+function widgetHomeHtml(cards, s){
+  const top=(cards||[]).filter(c=>c.status==='have')
+    .map(c=>({c,r:typeof rarityScore==='function'?rarityScore(c):valueOf(c)}))
+    .sort((a,b)=>b.r-a.r||valueOf(b.c)-valueOf(a.c))[0];
+  const rare=top&&top.c;
+  const faceId=rare?('wh-'+rare.id):'';
+  return `<div class="widgetHome"><button type="button" class="whTap" id="btnWidgetHome">
+    <div class="whMain">
+      <div class="whK">Vault</div>
+      <div class="whVal">${money0(s.val)}</div>
+      <div class="whMeta">${s.have} owned · ${s.want} want${rare?(' · ✦ '+(rare.player||'card').split(' ').slice(-1)[0]):''}</div>
+    </div>
+    <div class="whRare" id="${faceId}">${rare?(typeof sportIcon==='function'?sportIcon(rare.sport):'🃏'):'🃏'}
+      ${rare?`<div class="whTag">${esc((rare.player||'Rarest').split(' ').slice(0,2).join(' '))}</div>`:''}
+    </div>
+  </button></div>`;
+}
 function rarityScore(c){
   if(!c) return 0;
   let s = 0;
@@ -2545,10 +2807,10 @@ function renderDash(){
     </div>`:''}
    ${(cs.length&&(backupAge===null||backupAge>7))?`<div class="backupBanner"><div class="bbTxt">💾 ${backupAge===null?'Weekly tip: Backup saves a JSON you can drop in iCloud Drive / Files — a phone wipe can’t erase the vault.':'Last backup '+backupAge+' days ago. One tap downloads a fresh JSON for iCloud.'}</div><button type="button" id="btnBackupNow">Backup now</button></div>`:''}
    ${(cs.length&&(unpriced>=3||unlinked>=3))?`<div class="backupBanner" style="background:linear-gradient(135deg,rgba(0,45,98,.12),rgba(235,110,31,.1))"><div class="bbTxt">⚡ ${unpriced?unpriced+' cards need prices':''}${unpriced&&unlinked?' · ':''}${unlinked?unlinked+' not linked to catalog':''}. Photos + PSA pop are free; prices bulk-fill ~100 per call (then cached).</div><button type="button" id="btnFillDataBanner">Fill data</button></div>`:''}
-   ${!empty?`<div class="panel heroPanel coolHero">
+   ${!empty?`${widgetHomeHtml(cs,s)}
+   <div class="panel heroPanel coolHero">
      <div class="heroEyebrow"><span class="dot"></span> Astros collection · Crush City</div>
-     <div class="heroTitle">${money0(s.val)}</div>
-     <div class="heroSub">${s.have} owned · ${s.want} wants${s.deals?` · <span class="pos">🔥 ${s.deals} deal${s.deals>1?'s':''}</span>`:''}</div>
+     <div class="heroSub deskOnly">${s.have} owned · ${s.want} wants${s.deals?` · <span class="pos">🔥 ${s.deals} deal${s.deals>1?'s':''}</span>`:''}</div>
      <div class="plBar ${s.pl>=0?'pos':'neg'}">${s.pl>=0?'▲':'▼'} ${s.pl>=0?'+':''}${money0(s.pl)} unrealized</div>
      ${homeShowcaseHtml(cs)}
      <div class="home-actions">
@@ -2598,7 +2860,30 @@ function renderDash(){
   const bf=$('btnGoFind'); if(bf) bf.onclick=()=>{tab='explore';render();};
   const bs=$('btnGoSets'); if(bs) bs.onclick=()=>{tab='sets';render();};
   const br=$('btnStale'); if(br) br.onclick=()=>refreshStalePrices();
-  const bfd=$('btnFillData'); if(bfd) bfd.onclick=()=>{if(typeof fillVaultData==='function')fillVaultData();};
+  const bfd=$('btnFillData'); if(bfd) bfd.onclick=()=>{if(typeof fillVaultData==='function'){haptic('light');fillVaultData();}};
+  const bwh=$('btnWidgetHome');
+  if(bwh) bwh.onclick=()=>{
+    haptic('light');
+    const top=(state.cards||[]).filter(c=>c.status==='have')
+      .map(c=>({c,r:typeof rarityScore==='function'?rarityScore(c):valueOf(c)}))
+      .sort((a,b)=>b.r-a.r)[0];
+    if(top){sel=top.c;openSheet();}
+    else {tab='have';view='binder';render();}
+  };
+  /* paint rarest face */
+  (async()=>{
+    const top=(state.cards||[]).filter(c=>c.status==='have')
+      .map(c=>({c,r:typeof rarityScore==='function'?rarityScore(c):valueOf(c)}))
+      .sort((a,b)=>b.r-a.r)[0];
+    if(!top)return;
+    const el=$('wh-'+top.c.id); if(!el)return;
+    try{
+      let src=await getImg(top.c);
+      if(!src&&typeof resolveCardImg==='function')src=await resolveCardImg(top.c);
+      if(src){el.innerHTML='<img src="'+src+'" alt=""><div class="whTag">'+esc((top.c.player||'Rarest').split(' ').slice(0,2).join(' '))+'</div>';}
+      else if(typeof applyPortraitFallback==='function')applyPortraitFallback(el,top.c);
+    }catch(e){}
+  })();
   const bp=$('btnFillPhotos'); if(bp) bp.onclick=()=>{if(typeof fillMissingPhotos==='function')fillMissingPhotos();};
   const bm=$('btnMlbAll'); if(bm) bm.onclick=()=>{if(typeof importAllMlbStats==='function')importAllMlbStats().catch(e=>alert(e.message));};
   const bg=$('btnGh'); if(bg) bg.onclick=()=>{if(typeof openGitHubPanel==='function')openGitHubPanel();};
@@ -2634,15 +2919,16 @@ function renderList(){
       <option value="recent">Newest</option><option value="rarity">✦ Rarest</option><option value="value">Value ↓</option>
       <option value="gain">Gain % ↓</option><option value="d30">30-day Δ ↓</option>
       <option value="player">Player A–Z</option><option value="year">Year</option></select>
-     <div class="viewtog"><button id="vList" class="${view==='list'?'on':''}">☰</button><button id="vGrid" class="${view==='grid'?'on':''}">▦</button></div>
+     <div class="viewtog"><button id="vList" class="${view==='list'?'on':''}" aria-label="List">☰</button><button id="vGrid" class="${view==='grid'?'on':''}" aria-label="Grid">▦</button><button id="vBinder" class="${view==='binder'?'on':''}" aria-label="Binder">📒</button></div>
      <span class="count" id="cnt"></span>
     </div>
     <div id="listBody"></div>
    </div>`;
   if(listGroup)$('fGroup').value=listGroup;
   $('fSport').onchange=refreshList;$('fSort').onchange=refreshList;$('fGroup').onchange=refreshList;
-  $('vList').onclick=()=>{view='list';renderList();};
-  $('vGrid').onclick=()=>{view='grid';renderList();};
+  $('vList').onclick=()=>{haptic('light');view='list';renderList();};
+  $('vGrid').onclick=()=>{haptic('light');view='grid';renderList();};
+  const vb=$('vBinder'); if(vb) vb.onclick=()=>{haptic('light');view='binder';binderPage=0;renderList();};
   if(typeof wireBinderBar==='function') wireBinderBar(()=>renderList());
   const blp=$('btnListPhotos'); if(blp) blp.onclick=()=>{if(typeof fillMissingPhotos==='function')fillMissingPhotos();};
   refreshList();
@@ -3073,14 +3359,22 @@ async function openSheet(){
    <div class="gradeChips" id="gradeChips">
      ${['Raw','PSA 8','PSA 9','PSA 10','BGS 9.5','SGC 10'].map(g=>`<button type="button" data-g="${esc(g)}" class="${String(c.grade||'')===g?'on':''}">${esc(g)}</button>`).join('')}
    </div>
-   <div class="photoBox">
-    <div class="pv" id="pv">${sportIcon(c.sport)}${typeof teamBadgeHtml==='function'?teamBadgeHtml(c.team):''}</div>
+   <div class="photoBox dual">
+    <div class="sideTog">
+      <button type="button" id="sideFront" class="on">Front</button>
+      <button type="button" id="sideBack">Back</button>
+    </div>
+    <div class="pvWrap">
+      <div class="pv" id="pvFront"><span class="pvLab">Front</span>${sportIcon(c.sport)}${typeof teamBadgeHtml==='function'?teamBadgeHtml(c.team):''}</div>
+      <div class="pv" id="pvBack"><span class="pvLab">Back</span>${hasBackPhoto(c)?'':'📷'}</div>
+    </div>
     <div class="pbtns">
-     <button id="btnPhoto">📷 Upload / take photo</button>
-     ${csKey()?'<button id="btnCsId">📷 Identify photo</button><button id="btnCsCat" class="bigim">🔎 Match in catalog</button>':''}
+     <button id="btnPhoto">📷 Photo (this side)</button>
+     ${csKey()?'<button id="btnCsId">📷 Identify front</button><button id="btnCsCat" class="bigim">🔎 Match in catalog</button>':''}
      <button id="btnPPhoto" style="display:none">👤 Use player photo</button>
-     <button id="btnRmPhoto">Remove photo</button>
-     ${F('or image URL','imgUrl',c.imgUrl)}
+     <button id="btnRmPhoto">Remove this side</button>
+     ${F('Front image URL','imgUrl',c.imgUrl)}
+     ${F('Back image URL','imgUrlBack',c.imgUrlBack||'')}
     </div>
    </div>
    <div class="f" style="position:relative"><label>Player — type a name, then pick a real card below</label>
@@ -3157,12 +3451,15 @@ async function openSheet(){
    </div>`;
   requestAnimationFrame(()=>{$('sheet').classList.add('open');
     chLine($('cardChart'),(c.prices||[]).map(p=>({t:p.d,v:p.v})),'#3ecf7a',170);});
-  const pv=$('pv');
-  if(pv){
-    const raw=await (typeof resolveCardImg==='function'?resolveCardImg(c):getImg(c));
+  /* front/back previews */
+  {
+    const pf=$('pvFront'), pb=$('pvBack');
+    const raw=await (typeof resolveCardImg==='function'?resolveCardImg(c):getImg(c,'front'));
     const src=raw?(typeof csDisplayUrl==='function'?csDisplayUrl(raw):raw):'';
-    if(src&&typeof setImgEl==='function')setImgEl(pv,src);
-    else if(src){const img=document.createElement('img');img.alt='';img.src=src;pv.textContent='';pv.appendChild(img);}
+    if(pf&&src) pf.innerHTML='<span class="pvLab">Front</span><img class="cardPhoto" alt="" src="'+src+'">';
+    const braw=await getImg(c,'back');
+    const bsrc=braw?(typeof csDisplayUrl==='function'?csDisplayUrl(braw):braw):'';
+    if(pb&&bsrc) pb.innerHTML='<span class="pvLab">Back</span><img class="cardPhoto" alt="" src="'+bsrc+'">';
   }
   if(c.csId&&csKey()){
     csCardPop(c.csId).then(pop=>{
@@ -3185,7 +3482,8 @@ async function openSheet(){
     c[k]=k==='rookie'?!!inp.value:(inp.type==='number'?(inp.value===''?'':+inp.value):inp.value);
     if(k==='status'){$('wantRow').style.display=c.status==='want'?'grid':'none';
       $('soldRow').style.display=c.status==='sold'?'grid':'none';}
-    if(k==='imgUrl'&&inp.value)fillThumb(pv,c);
+    if(k==='imgUrl'&&inp.value){const pf=$('pvFront');if(pf){pf.innerHTML='<span class="pvLab">Front</span><img src="'+inp.value+'" alt="">';}}
+    if(k==='imgUrlBack'&&inp.value){const pb=$('pvBack');if(pb){pb.innerHTML='<span class="pvLab">Back</span><img src="'+inp.value+'" alt="">';}c.imgUrlBack=inp.value;}
   });
   $('shClose').onclick=closeSheet;
   if(typeof wireMlbPanel==='function')wireMlbPanel(c);
@@ -3206,7 +3504,7 @@ async function openSheet(){
     `<div><span>${p.d}${p.src&&p.src!=='manual'?' · '+esc(p.src):''}</span><b>${money(p.v)}</b><span class="x" data-i="${c.prices.length-1-i}">✕</span></div>`).join('');
   $('phist').querySelectorAll('.x').forEach(x=>x.onclick=e=>{e.stopPropagation();
     c.prices.splice(+x.dataset.i,1);save();openSheet();});
-  $('btnSave').onclick=()=>{save();closeSheet();render();};
+  $('btnSave').onclick=()=>{save();haptic('success');confettiBurst({n:20});closeSheet();render();};
   const bqm=$('btnQuickMatch');
   if(bqm) bqm.onclick=async()=>{
     const q=(c.player||'').trim();
@@ -3359,6 +3657,30 @@ async function openSheet(){
     try{const v=await csAutoPrice(c);showToast('CardSight: '+money(v)+' logged ✔');openSheet();}
     catch(e){alert('Auto-price failed: '+e.message);bCsP.textContent='🤖$';bCsP.disabled=false;}
   };
+  photoSide=photoSide||'front';
+  const syncSideTog=()=>{
+    const sf=$('sideFront'), sb=$('sideBack');
+    if(sf) sf.classList.toggle('on', photoSide==='front');
+    if(sb) sb.classList.toggle('on', photoSide==='back');
+    const bp=$('btnPhoto'); if(bp) bp.textContent=photoSide==='back'?'📷 Back photo':'📷 Front photo';
+  };
+  syncSideTog();
+  const sf=$('sideFront'), sb=$('sideBack');
+  if(sf) sf.onclick=()=>{photoSide='front';haptic('light');syncSideTog();};
+  if(sb) sb.onclick=()=>{photoSide='back';haptic('light');syncSideTog();};
+  async function paintSheetPhotos(){
+    const pf=$('pvFront'), pb=$('pvBack');
+    try{
+      let src=await getImg(c,'front');
+      if(!src&&typeof resolveCardImg==='function')src=await resolveCardImg(c);
+      if(src&&pf) pf.innerHTML='<span class="pvLab">Front</span><img src="'+src+'" alt="">';
+    }catch(e){}
+    try{
+      const bsrc=await getImg(c,'back');
+      if(bsrc&&pb) pb.innerHTML='<span class="pvLab">Back</span><img src="'+bsrc+'" alt="">';
+    }catch(e){}
+  }
+  paintSheetPhotos();
   $('btnPhoto').onclick=()=>$('photoIn').click();
   $('photoIn').onchange=async e=>{
     const f=e.target.files[0];e.target.value='';if(!f)return;
@@ -3369,12 +3691,28 @@ async function openSheet(){
       const cv=document.createElement('canvas');cv.width=img.width*sc;cv.height=img.height*sc;
       cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
       const d=cv.toDataURL('image/jpeg',0.72);
-      c.imgId=c.id;imgCache.set(c.id,d);await idb.put(c.id,d);save();openSheet();
+      if(photoSide==='back'){
+        const id=c.id+'-back';
+        c.imgIdBack=id; imgCache.set(id,d); await idb.put(id,d);
+        haptic('success'); confettiBurst({n:16});
+      }else{
+        c.imgId=c.id;imgCache.set(c.id,d);await idb.put(c.id,d);
+        haptic('success');
+      }
+      save();openSheet();
     };
     img.src=url;
   };
-  $('btnRmPhoto').onclick=async()=>{if(c.imgId){await idb.del(c.imgId);imgCache.delete(c.imgId);}
-    c.imgId='';c.imgUrl='';save();openSheet();};
+  $('btnRmPhoto').onclick=async()=>{
+    if(photoSide==='back'){
+      if(c.imgIdBack){await idb.del(c.imgIdBack);imgCache.delete(c.imgIdBack);}
+      c.imgIdBack='';c.imgUrlBack='';
+    }else{
+      if(c.imgId){await idb.del(c.imgId);imgCache.delete(c.imgId);}
+      c.imgId='';c.imgUrl='';
+    }
+    haptic('warn');save();openSheet();
+  };
   /* player lookup: own cards + full MLB register (offline) + web lookup for photos/other sports */
   const inP=$('inPlayer'),ac=$('autoc');
   function paint(local,bb,rs,csSug){
@@ -3487,7 +3825,10 @@ async function doBackup(withPhotos){
   const out={cards:state.cards,meta:{...state.meta,lastBackup:Date.now()},v:2};
   if(withPhotos){
     out.photos={};
-    for(const c of state.cards)if(c.imgId){const d=await getImg(c);if(d)out.photos[c.imgId]=d;}
+    for(const c of state.cards){
+      if(c.imgId){const d=await getImg(c,'front');if(d)out.photos[c.imgId]=d;}
+      if(c.imgIdBack){const d=await getImg(c,'back');if(d)out.photos[c.imgIdBack]=d;}
+    }
   }
   state.meta.lastBackup=Date.now();save();
   download('card-vault-backup-'+today()+(withPhotos?'-with-photos':'')+'.json',JSON.stringify(out),'application/json');
@@ -4281,20 +4622,8 @@ window.autoRefreshPricesIfNeeded=async function autoRefreshPricesIfNeeded(){
   finally{state.meta._priceBusy=false;}
 };
 
-window.confettiBurst=function confettiBurst(){
-  const layer=document.createElement('div');
-  layer.className='confetti';
-  const colors=['#4da3ff','#3ecf7a','#ffb84d','#ff5d5d','#c99cff'];
-  for(let i=0;i<18;i++){
-    const p=document.createElement('i');
-    p.style.left=(20+Math.random()*60)+'%';
-    p.style.background=colors[i%colors.length];
-    p.style.animationDelay=(Math.random()*0.2)+'s';
-    layer.appendChild(p);
-  }
-  document.body.appendChild(layer);
-  setTimeout(()=>layer.remove(),900);
-};
+/* confettiBurst defined early — Astros colors + haptic */
+
 
 window.SETS=window.SETS||{year:String(new Date().getFullYear()),q:'',releases:[],release:null,sets:[],set:null,cards:[],skip:0,total:0,loading:false};
 window.QUICK_PLAYERS=QUICK_PLAYERS;
@@ -4876,6 +5205,7 @@ window.renderValueHero=function renderValueHero(c){
 };
 
 window.openShowMode=function openShowMode(){
+  if(typeof haptic==='function')haptic('light');
   const bk=document.createElement('div');
   bk.className='showModeBk';
   bk.innerHTML=`<div class="showMode">
