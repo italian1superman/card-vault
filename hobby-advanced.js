@@ -1,5 +1,5 @@
 /* Card Vault — advanced hobbyist layer (prefetch, parallels, Sets, booth, pop, filters)
-   Friendlier UX pass: soft dupes, richer parallel sheet, celebrations. */
+   Parallels, sets, booth, photos. */
 (function(){
 'use strict';
 if(typeof window==='undefined')return;

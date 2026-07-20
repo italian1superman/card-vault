@@ -1,4 +1,4 @@
-/* Card Vault Pro suite — beat paid apps on-device (binders, show mode, insights, share) */
+/* Card Vault — binders, show mode, insights, share */
 (function(){
 'use strict';
 if(typeof window==='undefined')return;
@@ -129,7 +129,7 @@ window.openShowMode=function openShowMode(){
     <div class="casHead">
       <div>
         <div class="heroTitle" style="font-size:18px">🃏 Show Mode</div>
-        <div class="heroSub" style="margin:0">Do I own this? Search like BinderIQ — free, unlimited, on-device.</div>
+        <div class="heroSub" style="margin:0">Type a player (and optional #) to see if it’s already in your vault.</div>
       </div>
       <button type="button" id="smClose">✕</button>
     </div>
@@ -226,7 +226,7 @@ window.renderInsightsPanel=function renderInsightsPanel(){
   const i=collectionInsights();
   if(!i.have&&!i.want)return '';
   return `<div class="panel insights">
-    <div class="ct">Collection IQ <span style="font-weight:500;text-transform:none">(beats $10/mo apps — free, on-device)</span></div>
+    <div class="ct">Collection</div>
     <div class="insightGrid">
       <div class="insight"><b>${i.gradedPct}%</b><span>graded</span></div>
       <div class="insight"><b>${i.conc}%</b><span>in ${esc(i.topPlayer)}</span></div>

@@ -280,7 +280,7 @@ footer{color:var(--dim);font-size:11.5px;text-align:center;padding:8px 14px 90px
 </head>
 <body>
 <header>
-  <h1>⚾ <span>Card Vault</span><span class="proBadge">PRO</span></h1>
+  <h1>⚾ <span>Card Vault</span></h1>
   <div id="tabsTop"></div>
   <input id="q" placeholder="🔎 Type a player — cards appear…" list="dlSearch">
   <button class="bigxl" id="btnXl">Excel ⬇</button>
@@ -1343,13 +1343,13 @@ function renderDash(){
   $('view').innerHTML=`
    ${empty?`<div class="panel heroPanel">
       <div class="heroTitle">⚾ Your baseball card vault</div>
-      <div class="heroSub">Search a player, finish a set checklist, or snap a card. Everything auto-saves on this phone — fun first, serious collector tools underneath.</div>
+      <div class="heroSub">Search a player, work a set checklist, or add a card. Saves on this phone.</div>
       <div class="quickGrid">
-        <button type="button" class="quickCard" data-go="explore"><b>🔍 Find a player</b><span>Photos + parallels fill in</span></button>
-        <button type="button" class="quickCard" data-go="sets"><b>📚 Build a set</b><span>TCDB-style checklist %</span></button>
-        <button type="button" class="quickCard" data-go="add"><b>📷 Add a card</b><span>Blank sheet or AI identify</span></button>
-        <button type="button" class="quickCard" data-go="want"><b>⭐ Start a want</b><span>Deal alerts when price dips</span></button>
-        <button type="button" class="quickCard" data-go="show"><b>🃏 Show Mode</b><span>Do I own this? — free forever</span></button>
+        <button type="button" class="quickCard" data-go="explore"><b>🔍 Find a player</b><span>Browse catalog cards</span></button>
+        <button type="button" class="quickCard" data-go="sets"><b>📚 Build a set</b><span>Checklist + completion %</span></button>
+        <button type="button" class="quickCard" data-go="add"><b>📷 Add a card</b><span>Blank sheet or photo match</span></button>
+        <button type="button" class="quickCard" data-go="want"><b>⭐ Start a want</b><span>Track a target price</span></button>
+        <button type="button" class="quickCard" data-go="show"><b>🃏 Show Mode</b><span>Check if you already have it</span></button>
       </div>
       <div class="ct" style="margin-top:14px">Try a legend</div>
       <div class="pill-row">${qp.slice(0,6).map(n=>`<button type="button" class="pill" data-pl="${esc(n)}">⚾ ${esc(n)}</button>`).join('')}</div>
@@ -1757,7 +1757,7 @@ async function openSheet(){
   $('sheetBk').style.display='block';
   const gp=gainPct(c);
   $('sheet').innerHTML=`
-   <div class="shead"><h2>${c.player?esc(c.player):'New card'} ${badges(c)}<span class="proBadge">PRO</span></h2>
+   <div class="shead"><h2>${c.player?esc(c.player):'New card'} ${badges(c)}</h2>
     <button id="shClose">✕</button></div>
    ${typeof renderValueHero==='function'?renderValueHero(c):''}
    <div class="gradeChips" id="gradeChips">
@@ -2231,7 +2231,7 @@ function openMenu(anchor){
 
 /* ---- hobbyist advanced (inlined) ---- */
 /* Card Vault — advanced hobbyist layer (prefetch, parallels, Sets, booth, pop, filters)
-   Friendlier UX pass: soft dupes, richer parallel sheet, celebrations. */
+   Parallels, sets, booth, photos. */
 (function(){
 'use strict';
 if(typeof window==='undefined')return;
@@ -3062,7 +3062,7 @@ window.syncSheetCascadeFields=function syncSheetCascadeFields(opt,c){
 })();
 
 /* ---- pro suite (inlined) ---- */
-/* Card Vault Pro suite — beat paid apps on-device (binders, show mode, insights, share) */
+/* Card Vault — binders, show mode, insights, share */
 (function(){
 'use strict';
 if(typeof window==='undefined')return;
@@ -3193,7 +3193,7 @@ window.openShowMode=function openShowMode(){
     <div class="casHead">
       <div>
         <div class="heroTitle" style="font-size:18px">🃏 Show Mode</div>
-        <div class="heroSub" style="margin:0">Do I own this? Search like BinderIQ — free, unlimited, on-device.</div>
+        <div class="heroSub" style="margin:0">Type a player (and optional #) to see if it’s already in your vault.</div>
       </div>
       <button type="button" id="smClose">✕</button>
     </div>
@@ -3290,7 +3290,7 @@ window.renderInsightsPanel=function renderInsightsPanel(){
   const i=collectionInsights();
   if(!i.have&&!i.want)return '';
   return `<div class="panel insights">
-    <div class="ct">Collection IQ <span style="font-weight:500;text-transform:none">(beats $10/mo apps — free, on-device)</span></div>
+    <div class="ct">Collection</div>
     <div class="insightGrid">
       <div class="insight"><b>${i.gradedPct}%</b><span>graded</span></div>
       <div class="insight"><b>${i.conc}%</b><span>in ${esc(i.topPlayer)}</span></div>
@@ -3350,7 +3350,7 @@ async function init(){
   }
   if(!state.meta.seenWelcome){
     state.meta.seenWelcome=1; save();
-    setTimeout(()=>showToast('Tip: type a player in the search bar — catalog + photos appear'), 600);
+    setTimeout(()=>showToast('Type a player in search to browse cards'), 600);
   }
   setTimeout(()=>{ if(typeof autoRefreshPricesIfNeeded==='function' && tab==='dash') autoRefreshPricesIfNeeded(); }, 2000);
   $('q').oninput=e=>{
