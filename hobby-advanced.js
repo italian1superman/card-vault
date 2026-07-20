@@ -17,8 +17,44 @@ window.csPrefetchImages=async function csPrefetchImages(ids,{concurrency=6,toast
     }
   }
   await Promise.all(Array.from({length:Math.min(concurrency,list.length)},()=>worker()));
-  if(toast)showToast('🖼 '+done+' photos ready · free');
+  if(toast)showToast('🖼 '+done+' photos ready');
   return done;
+};
+
+/** Page through a set checklist and cache free CardSight photos for every card in it. */
+window.setsLoadAllPhotos=async function setsLoadAllPhotos(){
+  const s=SETS.set; if(!s||!s.id)return showToast('Open a set checklist first');
+  if(!csKey())return showToast('CardSight needed for catalog photos');
+  showToast('Loading full checklist…');
+  const take=50;
+  let skip=SETS.cards.length, total=SETS.total||s.cardCount||0;
+  const seen=new Set(SETS.cards.map(c=>c.id));
+  /* pull remaining pages into SETS.cards */
+  while(SETS.cards.length<(total||1e9) && skip<2000){
+    const j=await csFetchCached('/v1/catalog/sets/'+s.id+'/cards?take='+take+'&skip='+skip,{},{ttlMs:CS_TTL_CAT});
+    const batch=j.cards||[];
+    total=j.total_count||total||batch.length;
+    SETS.total=total;
+    if(!batch.length)break;
+    for(const c of batch){ if(!seen.has(c.id)){ seen.add(c.id); SETS.cards.push(c);} }
+    skip+=batch.length;
+    if(batch.length<take)break;
+  }
+  SETS.skip=SETS.cards.length;
+  await setsPaintChecklist();
+  const ids=SETS.cards.map(c=>c.id).filter(Boolean);
+  showToast('🖼 Caching '+ids.length+' set photos…');
+  const n=await csPrefetchImages(ids,{concurrency:8,toast:false});
+  /* paint thumbs now that cache is warm */
+  SETS.cards.forEach(async(x,i)=>{
+    const el=$('ck-'+i); if(!el)return;
+    try{
+      const url=csImgSrc(await csImageData(x.id));
+      if(url&&$('ck-'+i))$('ck-'+i).innerHTML=`<img src="${esc(url)}" loading="lazy" alt="">`;
+    }catch(e){}
+  });
+  showToast('🖼 '+n+' photos cached for this set');
+  return n;
 };
 
 /** Persist free CardSight catalog images onto vault cards missing a photo. */
@@ -389,7 +425,7 @@ window.renderSets=async function renderSets(){
   const S=SETS;
   $('view').innerHTML=`<div class="panel heroPanel">
     <div class="heroTitle">📚 Build a set</div>
-    <div class="heroSub">Search a release (like Topps Chrome), open a checklist, tap Have / Want. Progress saves automatically.</div>
+    <div class="heroSub">Search a release, open a checklist, tap Have / Want. Photos load free from the catalog as you browse (All photos caches the whole set).</div>
     <div class="boothBar">
       <input id="setYear" type="number" inputmode="numeric" placeholder="Year" value="${esc(S.year||'')}" style="width:88px">
       <input id="setQ" placeholder="Try: Topps Chrome, Bowman, Heritage…" value="${esc(S.q||'')}" autocomplete="off" style="flex:1">
@@ -550,6 +586,7 @@ window.setsPaintChecklist=async function setsPaintChecklist(){
     <div class="toolbar">
       <button type="button" id="setWantMiss" class="bigim">⭐ Missing → Want</button>
       <button type="button" id="setHaveAll">+ Loaded → Have</button>
+      <button type="button" id="setAllPhotos">🖼 All photos</button>
       <a href="${tcdbSetUrl(r&&r.year, (r&&r.name||'')+' '+(s.name||''))}" target="_blank" rel="noopener">TCDB ↗</a>
       <span class="count">${SETS.cards.length}${SETS.cards.length<tot?' / '+tot:''}</span>
     </div>
@@ -598,6 +635,7 @@ window.setsPaintChecklist=async function setsPaintChecklist(){
     confettiBurst();showToast('⭐ '+miss.length+' on your want list');
     setsPaintChecklist();
   };
+  $('setAllPhotos').onclick=()=>setsLoadAllPhotos();
   $('setHaveAll').onclick=async()=>{
     if(!confirm('Add all '+SETS.cards.length+' loaded base cards to Have?'))return;
     for(const x of SETS.cards)await addFromCatalogAdvanced(x,'have',{skipPicker:true,parallel:null,quiet:true});

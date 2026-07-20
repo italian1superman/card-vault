@@ -48,9 +48,9 @@ window.loadMlbCareerJson=async function loadMlbCareerJson(){
 window.mlbLookupCached=function mlbLookupCached(c){
   if(!c)return null;
   if(c.mlbId&&MLB_CAREER.byId[String(c.mlbId)])return MLB_CAREER.byId[String(c.mlbId)];
-  const n=String(c.player||'').trim().toLowerCase();
-  if(n&&MLB_CAREER.byName[n]&&MLB_CAREER.byId[MLB_CAREER.byName[n]])
-    return MLB_CAREER.byId[MLB_CAREER.byName[n]];
+  const n=mlbNameKey(c.player);
+  const id=n&&(MLB_CAREER.byName[n]||MLB_CAREER.byName[String(c.player||'').trim().toLowerCase()]);
+  if(id&&MLB_CAREER.byId[id])return MLB_CAREER.byId[id];
   return null;
 };
 
