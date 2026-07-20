@@ -1,5 +1,5 @@
 /* Card Vault service worker */
-const CACHE = 'card-vault-v20-iphone';
+const CACHE = 'card-vault-v21-iphone';
 const ASSETS = [
   './',
   './index.html',
