@@ -1,25 +1,26 @@
 # Card Vault ⚾
 
-Baseball card collection PWA with a free multi-layer online data stack.
+Baseball card collection PWA.
 
 **Live:** https://italian1superman.github.io/card-vault/
 
-## Online data (free + efficient)
+## Data
 
-| Layer | Source | Cost |
-|-------|--------|------|
-| Device cache | IndexedDB `net` store | Free — catalog 14d, prices 3d |
-| Players | Embedded MLB register + MLB Stats API + TheSportsDB | Free |
-| Images / autocomplete / PSA pop | CardSight free endpoints | Free (not billed) |
-| Catalog + market prices + photo ID | CardSight | 750 calls/mo free |
-| Verify | eBay sold / TCDB / PriceCharting links | Free |
+| Layer | Source |
+|-------|--------|
+| Player names | Embedded MLB register (offline) |
+| Career stats | [MLB Stats API](https://statsapi.mlb.com) — Import from ⋯ or each card sheet |
+| Catalog / prices / photos | CardSight (750 catalog calls/mo; images free) |
+| Collection backup | This phone + optional **GitHub vault** push/pull |
 
-Catalog adds store a `csId` so later pricing uses bulk ID calls (accurate, 1 call ≤100 cards). Use **⋯ → Refresh stale prices** for cards with prices older than 3 days.
+## GitHub vault
 
-## Seamless save (same phone)
+1. Create a **private** repo (e.g. `card-vault-data`).
+2. Create a fine-grained PAT with Contents read/write on that repo.
+3. In Card Vault: **⋯ → GitHub vault → Configure** → Push.
 
-Cards auto-save in `localStorage`; photos in IndexedDB. Add to Home Screen once.
+Your cards, MLB stats, and prices sync as `vault/collection.json`. Photos are optional (file size).
 
-## Off-phone backup
+## Local save
 
-⋯ → Backup + photos → private GitHub / iCloud → Restore on a new device.
+Cards auto-save in `localStorage`; photos in IndexedDB. Add to Home Screen on your phone.

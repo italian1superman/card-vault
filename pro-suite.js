@@ -245,6 +245,8 @@ window.renderInsightsPanel=function renderInsightsPanel(){
     <div class="home-actions" style="margin-top:10px">
       <button type="button" class="bigim" id="iqShow">🃏 Show Mode</button>
       <button type="button" id="iqPhotos">🖼 Fill photos</button>
+      <button type="button" id="iqMlb">⚾ MLB stats</button>
+      <button type="button" id="iqGh">☁ GitHub</button>
       <button type="button" id="iqStale">♻ Refresh values</button>
       <button type="button" id="iqUnpriced">Price gaps</button>
     </div>
@@ -257,6 +259,8 @@ window.wireInsightsPanel=function wireInsightsPanel(){
   });
   const s=$('iqShow'); if(s)s.onclick=()=>openShowMode();
   const ph=$('iqPhotos'); if(ph)ph.onclick=()=>{if(typeof fillMissingPhotos==='function')fillMissingPhotos();};
+  const im=$('iqMlb'); if(im)im.onclick=()=>{if(typeof importAllMlbStats==='function')importAllMlbStats().catch(e=>alert(e.message));};
+  const ig=$('iqGh'); if(ig)ig.onclick=()=>{if(typeof openGitHubPanel==='function')openGitHubPanel();};
   const r=$('iqStale'); if(r)r.onclick=()=>refreshStalePrices();
   const u=$('iqUnpriced'); if(u)u.onclick=()=>{window.BINDER_ID='noprice';tab='have';render();};
 };
