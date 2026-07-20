@@ -285,9 +285,143 @@ canvas.chart{width:100%;background:var(--panel2);border:0;border-radius:12px;dis
 .autoc>div{display:flex;gap:10px;align-items:center;padding:12px;border-bottom:0.5px solid var(--sep);cursor:pointer}
 .autoc>div:active{background:var(--panel2)}
 .autoc .m{font-size:13px;color:var(--mute)}
-#menu{position:fixed;z-index:50;background:var(--panel);border-radius:14px;padding:6px;min-width:240px;
-  box-shadow:0 8px 28px rgba(0,0,0,.18);display:none;border:0.5px solid var(--sep)}
-#menu button{display:block;width:100%;text-align:left;background:transparent;border:0;padding:14px;border-radius:10px;font-weight:400;font-size:17px;color:var(--acc)}
+#menuBk{
+  position:fixed;inset:0;z-index:49;background:rgba(10,18,32,.48);
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:none;
+}
+#menu{
+  position:fixed;z-index:50;left:0;right:0;bottom:0;top:auto;width:100%;
+  max-height:min(88dvh,88vh);overflow:auto;-webkit-overflow-scrolling:touch;
+  background:var(--panel);border-radius:18px 18px 0 0;padding:0 0 calc(14px + env(safe-area-inset-bottom));
+  box-shadow:0 -12px 40px rgba(0,45,98,.28);display:none;border:0;min-width:0;
+  transform:translateY(110%);transition:transform .28s cubic-bezier(.2,.8,.2,1);
+}
+#menu.open{transform:none}
+#menu .menuGrab{
+  width:40px;height:5px;border-radius:99px;background:rgba(60,60,67,.22);
+  margin:10px auto 6px;
+}
+#menu .menuTitle{
+  font-size:20px;font-weight:800;letter-spacing:-.3px;padding:4px 18px 12px;color:var(--astros-navy,#002d62);
+}
+#menu .menuSec{
+  font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--mute);padding:10px 18px 6px;
+}
+#menu .menuGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 14px 12px}
+#menu button.menuItem{
+  display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:4px;
+  width:100%;text-align:left;background:var(--panel2,#f2f4f8);border:0.5px solid var(--sep);
+  padding:14px 12px;border-radius:14px;font-weight:700;font-size:14px;color:var(--ink);
+  min-height:72px;line-height:1.2;
+}
+#menu button.menuItem .miI{font-size:20px;line-height:1}
+#menu button.menuItem .miS{font-size:11px;font-weight:500;color:var(--mute);display:block;margin-top:2px}
+#menu button.menuItem.primary{
+  background:linear-gradient(145deg,var(--astros-orange,#eb6e1f),#d4550a);color:#fff;border-color:transparent;
+  grid-column:1 / -1;min-height:56px;flex-direction:row;align-items:center;gap:10px;
+}
+#menu button.menuItem.primary .miS{color:rgba(255,255,255,.88)}
+#menu button.menuItem.danger{color:var(--red,#c0392b)}
+@media(min-width:900px){
+  #menu{
+    left:auto;right:16px;bottom:auto;top:64px;width:min(380px,92vw);
+    border-radius:16px;transform:none;max-height:80vh;
+    box-shadow:0 16px 40px rgba(0,45,98,.22);
+  }
+  #menu .menuGrab{display:none}
+}
+.menuBtn{
+  min-height:34px!important;min-width:auto!important;padding:6px 12px!important;
+  border-radius:999px!important;font-size:14px!important;font-weight:700!important;
+  background:rgba(255,255,255,.16)!important;color:#fff!important;
+  border:0.5px solid rgba(255,255,255,.28)!important;letter-spacing:.02em;
+}
+.menuBtn:active{opacity:.75}
+.backupBanner{
+  display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+  background:linear-gradient(135deg,rgba(235,110,31,.14),rgba(0,45,98,.08));
+  border:0.5px solid rgba(235,110,31,.32);border-radius:14px;padding:12px 14px;margin-bottom:10px;
+}
+.backupBanner .bbTxt{flex:1;min-width:160px;font-size:14px;color:var(--astros-navy,#002d62);font-weight:600;line-height:1.35}
+.backupBanner button{
+  min-height:40px;border-radius:10px;font-weight:700;padding:0 14px;
+  background:var(--astros-orange,#eb6e1f);color:#fff;border:0;
+}
+.rareVault{
+  position:relative;border-radius:18px;padding:14px 12px 16px;margin:8px 0 12px;overflow:hidden;
+  background:
+    radial-gradient(500px 180px at 80% -20%, rgba(235,110,31,.28), transparent 60%),
+    linear-gradient(160deg, #071428 0%, #0c2a56 45%, #123a6b 100%);
+  color:#fff;box-shadow:0 12px 32px rgba(0,45,98,.35);
+  border:0.5px solid rgba(255,255,255,.12);
+}
+.rareVault .rvHead{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:0 4px 10px}
+.rareVault .rvTitle{
+  font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--astros-orange,#eb6e1f);
+}
+.rareVault .rvSub{font-size:12px;color:rgba(255,255,255,.55);font-weight:500}
+.rareRail{
+  display:flex;gap:12px;overflow-x:auto;-webkit-overflow-scrolling:touch;
+  padding:4px 2px 8px;scrollbar-width:none;scroll-snap-type:x mandatory;
+}
+.rareRail::-webkit-scrollbar{display:none}
+.rareCard{
+  flex:none;width:132px;scroll-snap-align:start;position:relative;
+  background:linear-gradient(180deg, rgba(255,255,255,.1), rgba(255,255,255,.04));
+  border-radius:16px;overflow:hidden;border:1px solid rgba(255,215,140,.35);
+  box-shadow:0 0 0 1px rgba(235,110,31,.25), 0 10px 24px rgba(0,0,0,.35);
+  padding:0;text-align:left;color:#fff;cursor:pointer;
+}
+.rareCard:active{transform:scale(.97)}
+.rareCard .rk{
+  position:absolute;top:8px;left:8px;z-index:3;
+  width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:900;background:var(--astros-orange,#eb6e1f);color:#fff;
+  box-shadow:0 2px 8px rgba(0,0,0,.35);
+}
+.rareCard .rk.gold{background:linear-gradient(145deg,#ffe29a,#e6b422);color:#3a2a00}
+.rareCard .rk.silver{background:linear-gradient(145deg,#f0f0f0,#a8b0bc);color:#222}
+.rareCard .rk.bronze{background:linear-gradient(145deg,#f0c9a0,#b87333);color:#2a1500}
+.rareCard .rg{
+  height:158px;background:linear-gradient(180deg,#152238,#0a1422);
+  display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;
+}
+.rareCard .rg img{width:100%;height:100%;object-fit:contain}
+.rareCard .rg .shine{
+  position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(115deg, transparent 30%, rgba(255,255,255,.35) 48%, transparent 62%);
+  animation:foilSweep 2.8s ease-in-out infinite;
+}
+.rareCard .rm{padding:10px}
+.rareCard .rm .l1{font-size:13px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rareCard .rm .l2{font-size:11px;color:rgba(255,255,255,.6);margin-top:2px}
+.rareCard .rm .l3{font-size:14px;font-weight:800;margin-top:6px;color:#ffd59a}
+.rareCard .tag{
+  display:inline-block;margin-top:6px;font-size:10px;font-weight:700;letter-spacing:.04em;
+  text-transform:uppercase;padding:3px 7px;border-radius:999px;
+  background:rgba(235,110,31,.25);color:#ffc48a;
+}
+.rareListHero{
+  margin:0 0 12px;padding:14px;border-radius:16px;
+  background:linear-gradient(135deg,#0a1e3d,#123a6b);
+  color:#fff;border:0.5px solid rgba(255,215,140,.3);
+}
+.rareListHero h3{margin:0 0 4px;font-size:18px;font-weight:800;color:#ffc48a}
+.rareListHero p{margin:0;font-size:13px;color:rgba(255,255,255,.65)}
+.gcard.rareRank,.row.rareRank{position:relative}
+.gcard .rareN,.row .rareN{
+  position:absolute;top:6px;left:6px;z-index:2;
+  width:22px;height:22px;border-radius:50%;font-size:11px;font-weight:900;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--astros-orange,#eb6e1f);color:#fff;
+}
+@media(max-width:899px){
+  .rareCard{width:122px}
+  .rareCard .rg{height:146px}
+}
+
 .prop-panel,.cascade-host{margin:8px 0}
 .prop-scroll{display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px}
 .casGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;max-height:320px;overflow:auto}
@@ -368,7 +502,7 @@ header{
 }
 header h1, header .brandLockup > span:not(.brandTeam){color:#fff!important}
 .brandTeam{background:var(--astros-orange)!important;color:#fff!important}
-#btnMenu{color:#fff!important}
+/* btnMenu uses .menuBtn */
 .hdrFilter{
   background:rgba(255,255,255,.14)!important;color:#fff!important;
   box-shadow:inset 0 0 0 0.5px rgba(255,255,255,.22)!important;
@@ -782,7 +916,7 @@ html,body{
 .hdrTop{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-width:0}
 .hdrActions{display:flex;align-items:center;gap:6px;flex:none}
 .hdrFilter{width:100%;min-width:0}
-#btnMenu{min-width:44px;min-height:44px;padding:0 10px;font-size:22px;line-height:1;background:transparent;color:var(--acc);font-weight:400}
+/* legacy #btnMenu sizing — .menuBtn wins */
 .footShort{display:none}.footLong{display:inline}
 #footSave{font-size:12px;color:var(--mute);text-align:center;padding:8px 16px 12px;line-height:1.35}
 #navB .nb .nl{display:block;line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;padding:0 1px}
@@ -998,7 +1132,7 @@ html,body{
       <button type="button" class="deskOnly bigxl" id="btnXl">Excel</button>
       <button type="button" class="deskOnly bigim" id="btnIm">Import</button>
       <button type="button" class="deskOnly" id="btnAddTop">+ Card</button>
-      <button type="button" id="btnMenu" aria-label="Menu">⋯</button>
+      <button type="button" id="btnMenu" class="menuBtn" aria-label="Menu">Menu</button>
     </div>
   </div>
   <div id="tabsTop" class="deskOnly"></div>
@@ -1011,7 +1145,7 @@ html,body{
 <button id="fab">+</button>
 <div id="sheetBk"></div>
 <div id="sheet"></div>
-<div id="menu"></div>
+<div id="menuBk"></div><div id="menu"></div>
 <div id="toast"><span id="toastMsg"></span><button id="toastBtn">Undo</button></div>
 <datalist id="dlBrand"></datalist><datalist id="dlSet"></datalist><datalist id="dlSport"></datalist>
 <datalist id="dlGrade"></datalist><datalist id="dlVar"></datalist><datalist id="dlTeam"></datalist>
@@ -1168,28 +1302,28 @@ function bbSearch(list,q,limit=6){
   return out.slice(0,limit).map(x=>x[1]);
 }
 const HSYN={
- player:['player','playername','name','cardname','athlete'],
- year:['year','season'],
- brand:['brand','manufacturer','make','company'],
- setName:['set','setname','product','series','release'],
- num:['num','no','number','cardnumber','card','cardno'],
- team:['team','club'],
- variant:['variant','parallel','insert','subset','type'],
- serial:['serial','serialnumber','numbered','printrun'],
- grade:['grade','grading','condition','gradecompany'],
- qty:['qty','quantity','count','copies','owned'],
- cost:['cost','paid','costpaid','purchaseprice','pricepaid','buyprice','acquisitioncost'],
- value:['value','currentvalue','marketvalue','price','comp','comps','estvalue','worth','lastvalue','currentprice','latest'],
- status:['status','list','type2','ownership'],
- rookie:['rookie','rc','isrookie'],
- notes:['notes','note','comments','description'],
- location:['location','box','binder','storage','where'],
+ player:['player','playername','name','cardname','athlete','fullname','subject','fullnameplayer'],
+ year:['year','season','yr','cardyear','setyear'],
+ brand:['brand','manufacturer','make','company','mfr','maker'],
+ setName:['set','setname','product','series','release','settitle','tcdbset','collection'],
+ num:['num','no','number','cardnumber','card','cardno','cardnum','#'],
+ team:['team','club','franchise'],
+ variant:['variant','parallel','insert','subset','type','finish','print'],
+ serial:['serial','serialnumber','numbered','printrun','printnumber','limited'],
+ grade:['grade','grading','condition','gradecompany','grader','cgc','psa','bgs','sgc'],
+ qty:['qty','quantity','count','copies','owned','have','qtyowned'],
+ cost:['cost','paid','costpaid','purchaseprice','pricepaid','buyprice','acquisitioncost','paidprice'],
+ value:['value','currentvalue','marketvalue','price','comp','comps','estvalue','worth','lastvalue','currentprice','latest','fmv'],
+ status:['status','list','type2','ownership','collectionstatus'],
+ rookie:['rookie','rc','isrookie','rookies'],
+ notes:['notes','note','comments','description','memo'],
+ location:['location','box','binder','storage','where','bin'],
  target:['target','targetprice','buybelow','maxprice','wishprice'],
  purchDate:['purchasedate','purchased','datepurchased','acquired','dateacquired','buydate'],
  salePrice:['saleprice','sold','soldprice','sale','soldfor'],
  saleDate:['saledate','datesold','solddate'],
  date:['date','pricedate','asof'],
- imgUrl:['image','imageurl','img','photo','picture','pictureurl']
+ imgUrl:['image','imageurl','img','photo','picture','pictureurl','frontimage']
 };
 function headerMap(headers){
   return headers.map(h=>{const raw=String(h==null?'':h).trim();
@@ -2107,6 +2241,7 @@ function filtered(){
   else if(listGroup==='team')cs.sort((a,b)=>String(a.team||'').localeCompare(b.team||'')||String(a.player||'').localeCompare(b.player||''));
   else if(listGroup==='parallel')cs.sort((a,b)=>String(a.variant||'').localeCompare(b.variant||'')||String(a.player||'').localeCompare(b.player||''));
   else if(listGroup==='grade')cs.sort((a,b)=>String(a.grade||'').localeCompare(b.grade||'')||String(a.player||'').localeCompare(b.player||''));
+  else if(m==='rarity')cs.sort((a,b)=>rarityScore(b)-rarityScore(a)||valueOf(b)*(b.qty||1)-valueOf(a)*(a.qty||1));
   else if(m==='value')cs.sort((a,b)=>valueOf(b)*(b.qty||1)-valueOf(a)*(a.qty||1));
   else if(m==='gain')cs.sort((a,b)=>g(b)-g(a));
   else if(m==='d30')cs.sort((a,b)=>(deltaDays(b,30)??-1e9)-(deltaDays(a,30)??-1e9));
@@ -2229,24 +2364,70 @@ function afterListRender(cs){
   });
 }
 
+function rarityScore(c){
+  if(!c) return 0;
+  let s = 0;
+  const v = valueOf(c) * (+c.qty || 1);
+  s += Math.min(40, Math.log10(Math.max(v, 1) + 1) * 18);
+  const g = String(c.grade || '').toUpperCase();
+  if (/PSA\s*10|SGC\s*10|BGS\s*10|GEM/.test(g)) s += 28;
+  else if (/PSA\s*9|BGS\s*9\.5|SGC\s*9/.test(g)) s += 18;
+  else if (/PSA\s*8|BGS\s*9|SGC\s*8/.test(g)) s += 10;
+  const ser = String(c.serial || '');
+  const m = ser.match(/(\d+)\s*\/\s*(\d+)/) || ser.match(/\/(\d+)/);
+  if (m) {
+    const den = +(m[2] || m[1] || 0);
+    if (den > 0 && den <= 10) s += 26;
+    else if (den <= 25) s += 20;
+    else if (den <= 99) s += 14;
+    else if (den <= 299) s += 8;
+  }
+  const varn = String(c.variant || c.setName || '');
+  if (/SSP|SUPER\s*SHORT|1\/1|ONE\s*OF\s*ONE/i.test(varn)) s += 22;
+  else if (/\bSP\b|SHORT\s*PRINT|REFRACTOR|GOLD|ORANGE/i.test(varn)) s += 10;
+  if (c.rookie) s += 8;
+  if (c.csId) s += 2;
+  return s;
+}
+function rarityTag(c){
+  const ser = String(c.serial || '');
+  const m = ser.match(/\/(\d+)/);
+  if (m && +m[1] <= 25) return '/' + m[1];
+  const g = String(c.grade || '');
+  if (g) return g;
+  if (c.rookie) return 'RC';
+  if (/SSP|1\/1/i.test(String(c.variant||''))) return 'SSP';
+  return 'KEY';
+}
 function homeShowcaseHtml(cards){
-  const top=(cards||[]).filter(c=>c.status==='have').sort((a,b)=>valueOf(b)*(b.qty||1)-valueOf(a)*(a.qty||1)).slice(0,8);
+  const top=(cards||[]).filter(c=>c.status==='have')
+    .map(c=>({c, r:rarityScore(c)}))
+    .sort((a,b)=>b.r-a.r || valueOf(b.c)-valueOf(a.c))
+    .slice(0,10);
   if(!top.length) return '';
-  return `<div class="ct">Showcase</div><div class="showcase" id="homeShowcase">`+
-    top.map(c=>`<button type="button" class="showCard" data-id="${c.id}">
-      <div class="sg" id="hs-${c.id}">${typeof sportIcon==='function'?sportIcon(c.sport):'🃏'}
+  const rkClass = (i)=> i===0?'gold':i===1?'silver':i===2?'bronze':'';
+  return `<div class="rareVault">
+    <div class="rvHead">
+      <div class="rvTitle">✦ Rarest in the vault</div>
+      <div class="rvSub">grade · serial · value</div>
+    </div>
+    <div class="rareRail" id="homeShowcase">`+
+    top.map(({c},i)=>`<button type="button" class="rareCard" data-id="${c.id}">
+      <span class="rk ${rkClass(i)}">${i+1}</span>
+      <div class="rg" id="hs-${c.id}">${typeof sportIcon==='function'?sportIcon(c.sport):'🃏'}
         <i class="shine" aria-hidden="true"></i>
         ${typeof teamBadgeHtml==='function'?teamBadgeHtml(c.team):''}
       </div>
-      <div class="sm">
+      <div class="rm">
         <div class="l1">${esc(c.player||c.setName||'Card')}</div>
         <div class="l2">${esc([c.year,c.brand].filter(Boolean).join(' · '))}</div>
         <div class="l3">${money0(valueOf(c))}</div>
+        <span class="tag">${esc(rarityTag(c))}</span>
       </div>
-    </button>`).join('')+`</div>`;
+    </button>`).join('')+`</div></div>`;
 }
 function wireHomeShowcase(){
-  document.querySelectorAll('#homeShowcase .showCard').forEach(btn=>{
+  document.querySelectorAll('#homeShowcase .rareCard, #homeShowcase .showCard').forEach(btn=>{
     btn.onclick=()=>{
       sel=state.cards.find(c=>c.id===btn.dataset.id);
       if(sel) openSheet();
@@ -2290,7 +2471,7 @@ function renderDash(){
       <div class="ct" style="margin-top:14px">Or find anyone</div>
       <div class="pill-row">${qp.slice(0,4).map(n=>`<button type="button" class="pill" data-pl="${esc(n)}">⚾ ${esc(n)}</button>`).join('')}</div>
     </div>`:''}
-   ${(cs.length&&(backupAge===null||backupAge>7))?`<div class="warn">💾 ${backupAge===null?'Tip: make a Backup from ⋯ so a phone wipe can’t erase your vault.':'Last backup '+backupAge+' days ago — ⋯ → Backup when you can.'}</div>`:''}
+   ${(cs.length&&(backupAge===null||backupAge>7))?`<div class="backupBanner"><div class="bbTxt">💾 ${backupAge===null?'Weekly tip: Backup saves a JSON you can drop in iCloud Drive / Files — a phone wipe can’t erase the vault.':'Last backup '+backupAge+' days ago. One tap downloads a fresh JSON for iCloud.'}</div><button type="button" id="btnBackupNow">Backup now</button></div>`:''}
    ${!empty?`<div class="panel heroPanel coolHero">
      <div class="heroEyebrow"><span class="dot"></span> Astros collection · Crush City</div>
      <div class="heroTitle">${money0(s.val)}</div>
@@ -2375,7 +2556,7 @@ function renderList(){
       <option value="grade">Group: Grade</option>
      </select>
      <select id="fSort">
-      <option value="recent">Newest</option><option value="value">Value ↓</option>
+      <option value="recent">Newest</option><option value="rarity">✦ Rarest</option><option value="value">Value ↓</option>
       <option value="gain">Gain % ↓</option><option value="d30">30-day Δ ↓</option>
       <option value="player">Player A–Z</option><option value="year">Year</option></select>
      <div class="viewtog"><button id="vList" class="${view==='list'?'on':''}">☰</button><button id="vGrid" class="${view==='grid'?'on':''}">▦</button></div>
@@ -2393,9 +2574,22 @@ function renderList(){
 }
 function refreshList(){
   const cs=filtered();
+  const sortM=($('fSort')||{}).value||'recent';
   $('cnt').textContent=cs.length+' cards · '+money0(cs.reduce((s,c)=>s+valueOf(c)*(+c.qty||1),0));
-  $('listBody').innerHTML=renderListPanel(cs);
+  let hero='';
+  if(sortM==='rarity'&&cs.length){
+    hero=`<div class="rareListHero"><h3>✦ Rarest first</h3><p>Ranked by gem grades, low serials, SSP/RC, and value — your vault’s crown jewels.</p></div>`;
+  }
+  $('listBody').innerHTML=hero+renderListPanel(cs);
   afterListRender(cs);
+  if(sortM==='rarity'){
+    cs.slice(0,12).forEach((c,i)=>{
+      const el=document.querySelector(`.gcard[data-id="${c.id}"], .row[data-id="${c.id}"]`);
+      if(!el||el.querySelector('.rareN')) return;
+      el.classList.add('rareRank');
+      const n=document.createElement('span'); n.className='rareN'; n.textContent=String(i+1); el.prepend(n);
+    });
+  }
   const ef=$('emptyFind'); if(ef) ef.onclick=()=>{tab='explore';render();};
   const es=$('emptySets'); if(es) es.onclick=()=>{tab='sets';render();};
   const ea=$('emptyAdd'); if(ea) ea.onclick=()=>addCard();
@@ -2412,7 +2606,7 @@ function render(){
   const f=$('footSave');
   if(f){
     const cs=csKey()?(' · CS '+csUseN()+'/750 · cache '+CS_STATS.hits+'h/'+CS_STATS.stale+'s/'+CS_STATS.misses+'m'):'';
-    f.innerHTML='⚾ <b>Auto-saved</b> · '+n+' card'+(n===1?'':'s')+cs+' · Home Screen icon keeps collection. ⋯ → Backup for off-phone.';
+    f.innerHTML='⚾ <b>Auto-saved</b> · '+n+' card'+(n===1?'':'s')+cs+' · Home Screen keeps collection. Menu → Backup for iCloud.';
   }
 }
 
@@ -2944,11 +3138,35 @@ async function openSheet(){
     bqm.disabled=true; bqm.textContent='…';
     try{
       const bits=[c.player,c.year,c.brand,c.num?('#'+c.num):''].filter(Boolean).join(' ')||q;
-      const j=await csSearchBaseballCards(bits,{take:8,skip:0});
-      const hit=(j.cards||[])[0];
-      if(!hit) throw new Error('No catalog hit — try Match in catalog for options');
+      const j=await csSearchBaseballCards(bits,{take:12,skip:0});
+      const cards=j.cards||[];
+      if(!cards.length) throw new Error('No catalog hit — try Match in catalog for options');
+      const scoreHit=h=>{
+        let s=0;
+        const hy=String(h.year||h.releaseYear||'');
+        const hb=String(h.brand||h.manufacturerName||'').toLowerCase();
+        const hn=String(h.num||h.number||'').replace(/^#/,'').toLowerCase();
+        const hp=String(h.player||h.name||'').toLowerCase();
+        const cy=String(c.year||'');
+        const cb=String(c.brand||'').toLowerCase();
+        const cn=String(c.num||'').replace(/^#/,'').toLowerCase();
+        const cp=String(c.player||'').toLowerCase();
+        if(cy&&hy&&cy===hy) s+=50;
+        else if(cy&&hy&&Math.abs(+cy-+hy)<=1) s+=20;
+        if(cb&&hb&&(hb.includes(cb)||cb.includes(hb))) s+=35;
+        if(cn&&hn&&cn===hn) s+=40;
+        if(cp&&hp&&(hp.includes(cp)||cp.includes(hp))) s+=25;
+        if(c.variant&&String(h.variant||h.parallelName||'').toLowerCase().includes(String(c.variant).toLowerCase())) s+=15;
+        return s;
+      };
+      const ranked=[...cards].sort((a,b)=>scoreHit(b)-scoreHit(a));
+      const hit=ranked[0];
+      const filled=[c.year,c.brand,c.num].filter(Boolean).length;
+      if(filled&&scoreHit(hit)<20){
+        throw new Error('No strong match for year/brand/# — open Match in catalog to pick');
+      }
       await applyCatalogToSheet(hit,c,{skipPicker:true});
-      showToast('Auto-matched ✔');
+      showToast(filled?'Auto-matched (prefer year/brand) ✔':'Auto-matched ✔');
     }catch(e){ alert(e.message||e); }
     bqm.disabled=false; bqm.textContent='🔎 Auto-match';
   };
@@ -3227,7 +3445,7 @@ async function handleImportFile(f){
     else if(mode==='ssml')sheets=parseSpreadsheetML(payload);
     else sheets={Sheet1:csvParse(payload)};
     const r=mapAllSheets(sheets);
-    if(!r.cards.length&&!r.prices.length)return alert('No recognizable columns found. Need headers like: Player, Year, Set, #, Grade, Qty, Cost, Value…');
+    if(!r.cards.length&&!r.prices.length)return alert('No recognizable columns found.\n\nTip: TCDB / spreadsheet exports work if the first row has headers like:\nPlayer (or Name), Year, Set, # / Card Number, Brand, Grade, Qty, Value…\n\nOr restore a Card Vault Backup JSON.');
     const keys=new Map(state.cards.map(c=>[keyOf(c),c]));
     let added=0,dup=0,priced=0;
     for(const c of r.cards){
@@ -3245,33 +3463,57 @@ async function handleImportFile(f){
     }
     save();render();
     alert(`Imported ✔\n· ${added} new cards\n· ${dup} duplicates skipped\n· ${priced} price points`+
-      (r.unmapped.length?`\n· Ignored columns: ${r.unmapped.slice(0,8).join(', ')}`:''));
+      (r.unmapped.length?`\n· Ignored columns: ${r.unmapped.slice(0,8).join(', ')}`:'')+
+      `\n\nTip: open a card → Auto-match to link catalog photos when year/brand/# are filled.`);
   }catch(e){alert('Import failed: '+e.message);}
 }
 
 /* ---- menu ---- */
+function closeMenu(){
+  const m=$('menu'), bk=$('menuBk');
+  if(m){m.classList.remove('open');m.style.display='none';}
+  if(bk){bk.style.display='none';bk.onclick=null;}
+}
 function openMenu(anchor){
-  const m=$('menu');
+  const m=$('menu'), bk=$('menuBk');
+  if(!m)return;
   m.innerHTML=`
-   <button data-a="bk">💾 Backup (JSON)</button>
-   <button data-a="bkp">💾 Backup + photos</button>
-   <button data-a="gh">⚾ MLB stats JSON</button>
-   <button data-a="mlb">⚾ Import MLB stats</button>
-   <button data-a="restore">📂 Restore / import file</button>
-   <button data-a="csv">📑 Export CSV</button>
-   <button data-a="prices">💲 Bulk price check (open eBay tabs)</button>
-   <button data-a="cskey">🔑 CardSight key</button>
-   ${csKey()?`<button data-a="csrefresh">♻ Refresh stale prices (ID bulk)</button>
-   <button data-a="csbulk">🤖 Auto-price top 10 (CardSight)</button>
-   <button data-a="csusage">📈 CardSight usage + cache</button>
-   <button data-a="csclear">🗑 Clear online cache</button>`:''}`;
-  const r=anchor.getBoundingClientRect();
+    <div class="menuGrab"></div>
+    <div class="menuTitle">Menu</div>
+    <div class="menuSec">Save your vault</div>
+    <div class="menuGrid">
+      <button type="button" class="menuItem primary" data-a="bk"><span class="miI">💾</span><span>Backup now<span class="miS">JSON for iCloud / Files</span></span></button>
+      <button type="button" class="menuItem" data-a="bkp"><span class="miI">🖼</span>Backup + photos<span class="miS">Larger download</span></button>
+      <button type="button" class="menuItem" data-a="restore"><span class="miI">📂</span>Import / restore<span class="miS">JSON · CSV · Excel · TCDB</span></button>
+      <button type="button" class="menuItem" data-a="csv"><span class="miI">📑</span>Export CSV<span class="miS">Spreadsheet</span></button>
+    </div>
+    <div class="menuSec">Cloud (optional)</div>
+    <div class="menuGrid">
+      <button type="button" class="menuItem" data-a="ghsetup"><span class="miI">🔑</span>GitHub setup<span class="miS">Private repo + token</span></button>
+      <button type="button" class="menuItem" data-a="ghpush"><span class="miI">☁</span>Push to GitHub<span class="miS">Upload vault JSON</span></button>
+      <button type="button" class="menuItem" data-a="ghpull"><span class="miI">⬇</span>Pull from GitHub<span class="miS">Restore from cloud</span></button>
+    </div>
+    <div class="menuSec">Baseball data</div>
+    <div class="menuGrid">
+      <button type="button" class="menuItem" data-a="gh"><span class="miI">⚾</span>MLB stats JSON<span class="miS">Public career file</span></button>
+      <button type="button" class="menuItem" data-a="mlb"><span class="miI">📊</span>Import MLB stats<span class="miS">Onto your cards</span></button>
+      <button type="button" class="menuItem" data-a="prices"><span class="miI">💲</span>Bulk eBay check<span class="miS">Open sold tabs</span></button>
+      <button type="button" class="menuItem" data-a="cskey"><span class="miI">🔑</span>CardSight key<span class="miS">Optional override</span></button>
+    </div>
+    ${csKey()?`<div class="menuSec">CardSight</div>
+    <div class="menuGrid">
+      <button type="button" class="menuItem" data-a="csrefresh"><span class="miI">♻</span>Refresh prices<span class="miS">Stale IDs</span></button>
+      <button type="button" class="menuItem" data-a="csbulk"><span class="miI">🤖</span>Auto-price top 10<span class="miS">Uses free tier</span></button>
+      <button type="button" class="menuItem" data-a="csusage"><span class="miI">📈</span>Usage + cache<span class="miS">Meter</span></button>
+      <button type="button" class="menuItem danger" data-a="csclear"><span class="miI">🗑</span>Clear cache<span class="miS">Keep collection</span></button>
+    </div>`:''}
+  `;
+  if(bk){bk.style.display='block';bk.onclick=()=>closeMenu();}
   m.style.display='block';
-  m.style.top=(r.bottom+6)+'px';
-  m.style.right=Math.max(8,innerWidth-r.right)+'px';
-  m.querySelectorAll('button').forEach(b=>b.onclick=()=>{
-    m.style.display='none';
+  requestAnimationFrame(()=>m.classList.add('open'));
+  m.querySelectorAll('button[data-a]').forEach(b=>b.onclick=()=>{
     const a=b.dataset.a;
+    closeMenu();
     if(a==='bk')doBackup(false);
     else if(a==='bkp')doBackup(true);
     else if(a==='gh'){if(typeof openGitHubPanel==='function')openGitHubPanel();}
@@ -3298,8 +3540,8 @@ function openMenu(anchor){
         fetch(CS_BASE+'/health/auth',{headers:{'X-API-Key':clean}})
           .then(r=>showToast(r.ok?'Custom CardSight key works ✔':'Key rejected ('+r.status+') — re-copy the full key'))
           .catch(e=>{
-            const m=String(e&&e.message||e);
-            showToast(/ISO-8859|headers|code point/i.test(m)
+            const msg=String(e&&e.message||e);
+            showToast(/ISO-8859|headers|code point/i.test(msg)
               ? 'Key still has bad characters — re-copy the FULL key'
               : 'Could not reach CardSight (offline?)');
           });
@@ -3335,10 +3577,95 @@ function openMenu(anchor){
         showToast(`CardSight: ${ok} priced ✔${fail?', '+fail+' not found':''} (${state.meta.csUse.n} calls this month)`);
       })();
     }
+    else if(a==='ghsetup')ghSetup();
+    else if(a==='ghpush')ghPushVault();
+    else if(a==='ghpull')ghPullVault();
   });
-  setTimeout(()=>document.addEventListener('click',function h(e){
-    if(!m.contains(e.target)){m.style.display='none';document.removeEventListener('click',h);}}),0);
 }
+
+/* ---- optional private GitHub vault sync ---- */
+function ghCreds(){
+  const m=state.meta||{};
+  return {token:(m.ghToken||'').trim(), repo:(m.ghRepo||'').trim(), path:(m.ghPath||'card-vault.json').trim()||'card-vault.json'};
+}
+function ghSetup(){
+  if(!state.meta)state.meta={};
+  const cur=ghCreds();
+  const repo=prompt('Private GitHub repo as owner/name\n(example: youruser/card-vault-private)', cur.repo||'');
+  if(repo===null)return;
+  const token=prompt('GitHub personal access token (repo scope).\nStored only on this phone in localStorage — never sent to Carmen Hub.', cur.token||'');
+  if(token===null)return;
+  const path=prompt('File path inside the repo', cur.path||'card-vault.json');
+  if(path===null)return;
+  state.meta.ghRepo=(repo||'').trim();
+  state.meta.ghToken=(token||'').trim();
+  state.meta.ghPath=(path||'card-vault.json').trim()||'card-vault.json';
+  save();
+  showToast(state.meta.ghToken&&state.meta.ghRepo?'GitHub sync saved ✔':'GitHub sync cleared');
+}
+async function ghApi(path,opts={}){
+  const {token,repo}=ghCreds();
+  if(!token||!repo) throw new Error('Menu → GitHub setup first (repo + token)');
+  const r=await fetch('https://api.github.com/repos/'+repo+path,{
+    ...opts,
+    headers:{
+      'Accept':'application/vnd.github+json',
+      'Authorization':'Bearer '+token,
+      'X-GitHub-Api-Version':'2022-11-28',
+      ...(opts.headers||{})
+    }
+  });
+  const t=await r.text();
+  let j=null; try{j=JSON.parse(t);}catch(e){}
+  if(!r.ok) throw new Error((j&&j.message)||('GitHub '+r.status));
+  return j;
+}
+function ghContentPath(path){
+  return '/contents/'+String(path||'card-vault.json').split('/').filter(Boolean).map(encodeURIComponent).join('/');
+}
+async function ghPushVault(){
+  try{
+    const {path}=ghCreds();
+    const body={cards:state.cards,meta:{...state.meta,lastBackup:Date.now()},v:2};
+    if(body.meta){ delete body.meta.ghToken; }
+    const content=btoa(unescape(encodeURIComponent(JSON.stringify(body))));
+    let sha;
+    try{
+      const cur=await ghApi(ghContentPath(path));
+      sha=cur&&cur.sha;
+    }catch(e){ /* file may not exist yet */ }
+    const payload={message:'Card Vault backup '+today(),content};
+    if(sha) payload.sha=sha;
+    await ghApi(ghContentPath(path),{
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload)
+    });
+    state.meta.lastBackup=Date.now();save();
+    showToast('Pushed to GitHub ✔');
+    render();
+  }catch(e){alert('GitHub push failed: '+(e.message||e));}
+}
+async function ghPullVault(){
+  try{
+    const {path}=ghCreds();
+    const j=await ghApi(ghContentPath(path));
+    if(!j||!j.content) throw new Error('Empty file');
+    const raw=decodeURIComponent(escape(atob(j.content.replace(/\n/g,''))));
+    const data=JSON.parse(raw);
+    if(!data||!Array.isArray(data.cards)) throw new Error('Not a Card Vault backup');
+    const replace=confirm(`Cloud has ${data.cards.length} cards. OK = REPLACE current ${state.cards.length} · Cancel = abort`);
+    if(!replace)return;
+    const keepToken=state.meta&&state.meta.ghToken;
+    const keepRepo=state.meta&&state.meta.ghRepo;
+    const keepPath=state.meta&&state.meta.ghPath;
+    state.cards=data.cards;
+    state.meta=Object.assign({}, data.meta||{}, {ghToken:keepToken,ghRepo:keepRepo,ghPath:keepPath,lastBackup:Date.now()});
+    save();render();
+    showToast('Pulled from GitHub ✔');
+  }catch(e){alert('GitHub pull failed: '+(e.message||e));}
+}
+
 
 
 /* ---- hobbyist advanced (inlined) ---- */
@@ -4886,6 +5213,7 @@ async function init(){
   };
   $('btnIm').onclick=()=>$('fileIn').click();
   $('btnMenu').onclick=e=>{e.stopPropagation();openMenu(e.target);};
+  document.addEventListener('click',e=>{const t=e.target&&e.target.closest&&e.target.closest('#btnBackupNow');if(t){e.preventDefault();doBackup(false);}});
   $('fileIn').onchange=e=>{const f=e.target.files[0];e.target.value='';if(f)handleImportFile(f);};
   $('sheetBk').onclick=closeSheet;
   window.addEventListener('resize',()=>{if(tab==='dash')renderDash();});
