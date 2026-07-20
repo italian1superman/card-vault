@@ -2304,8 +2304,8 @@ async function fillPropStrip(player){
   box.innerHTML='<div class="ct">⚾ Cards for '+esc(q)+'</div><div class="prop-scroll" id="propRow"><div style="color:var(--dim);padding:12px">Loading catalog…</div></div>';
 }
 
-function goExplorePlayer(name, {
-  window.TEAM_PAGE=null;toast=true}={}){
+function goExplorePlayer(name, {toast=true}={}){
+  window.TEAM_PAGE=null;
   const q=String(name||'').trim();
   if(q.length<2)return;
   EX.q=q; EX.skip=0; EX.items=[]; EX.prices={};

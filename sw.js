@@ -1,5 +1,5 @@
 /* Card Vault service worker */
-const CACHE = 'card-vault-v26-teams';
+const CACHE = 'card-vault-v26-teams-fix';
 const ASSETS = [
   './',
   './index.html',
