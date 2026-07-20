@@ -279,33 +279,101 @@
     return n;
   }
 
-  /**
-   * After thumbs fail to get a CardSight card image, paint MLB portrait + keep team badge.
-   */
-  window.applyPortraitFallback = function applyPortraitFallback(el, c) {
-    if (!el || !c) return false;
-    if (el.querySelector('img.cardPhoto')) return false;
-    const url = mlbPortraitUrl(c, 180);
-    if (!url) return false;
+  const wikiCache = new Map();
+
+  /** Wikimedia / Wikipedia page thumbnail — free, CORS-friendly with origin=*. */
+  window.wikiPortraitUrl = async function wikiPortraitUrl(player) {
+    const name = String(player || '').trim();
+    if (name.length < 3) return '';
+    const key = name.toLowerCase();
+    if (wikiCache.has(key)) return wikiCache.get(key);
+    try {
+      const titles = [name, name + ' (baseball)', name.replace(/\./g, '')];
+      for (const title of titles) {
+        const u = 'https://en.wikipedia.org/w/api.php?action=query&titles=' +
+          encodeURIComponent(title) +
+          '&prop=pageimages&format=json&pithumbsize=240&pilicense=any&origin=*';
+        const r = await fetch(u);
+        if (!r.ok) continue;
+        const j = await r.json();
+        const pages = (j.query && j.query.pages) || {};
+        for (const p of Object.values(pages)) {
+          if (p && p.thumbnail && p.thumbnail.source && !p.missing) {
+            wikiCache.set(key, p.thumbnail.source);
+            return p.thumbnail.source;
+          }
+        }
+      }
+    } catch (e) {}
+    wikiCache.set(key, '');
+    return '';
+  };
+
+  function paintPortraitEl(el, c, url, kind) {
+    if (!el || !url) return false;
     const img = document.createElement('img');
-    img.className = 'cardPhoto portraitFallback';
+    img.className = 'cardPhoto portraitFallback' + (kind ? (' ' + kind) : '');
     img.alt = '';
     img.decoding = 'async';
+    img.loading = 'lazy';
     img.src = url;
     el.classList.remove('imgMiss');
     el.classList.add('hasPortrait');
-    /* keep team badge if present */
     const badge = el.querySelector('.teamBadge');
     const badgeClone = badge ? badge.cloneNode(true) : null;
     el.innerHTML = '';
     el.appendChild(img);
     if (badgeClone) el.appendChild(badgeClone);
-    else if (c.team) {
+    else if (c && c.team) {
       const b = document.createElement('div');
       b.innerHTML = teamBadgeHtml(c.team);
       if (b.firstChild) el.appendChild(b.firstChild);
     }
     return true;
+  }
+
+  /**
+   * Free portrait chain: MLB headshot → cached _pPhoto → Wikimedia.
+   * Used when CardSight card image isn’t available.
+   */
+  window.applyPortraitFallback = function applyPortraitFallback(el, c) {
+    if (!el || !c) return false;
+    if (el.querySelector('img.cardPhoto')) return false;
+    const mlb = mlbPortraitUrl(c, 180);
+    if (mlb) {
+      paintPortraitEl(el, c, mlb, 'mlbShot');
+      const img = el.querySelector('img.cardPhoto');
+      if (img) {
+        img.onerror = () => {
+          if (c._pPhoto && c._pPhoto !== mlb) {
+            paintPortraitEl(el, c, c._pPhoto, 'sdbShot');
+            return;
+          }
+          wikiPortraitUrl(c.player).then((w) => {
+            if (w) paintPortraitEl(el, c, w, 'wikiShot');
+            else el.classList.add('imgMiss');
+          });
+        };
+      }
+      if (!c._pPhoto) c._pPhoto = mlb;
+      return true;
+    }
+    if (c._pPhoto) return paintPortraitEl(el, c, c._pPhoto, 'sdbShot');
+    /* async wiki — mark pending so caller knows we tried */
+    wikiPortraitUrl(c.player).then((w) => {
+      if (!w || el.querySelector('img.cardPhoto')) return;
+      paintPortraitEl(el, c, w, 'wikiShot');
+      c._pPhoto = w;
+    });
+    return false;
+  };
+
+  /** Ensure mlbId cards always have a free headshot URL on the card object. */
+  window.ensureMlbHeadshot = function ensureMlbHeadshot(c) {
+    if (!c) return '';
+    const u = mlbPortraitUrl(c, 240);
+    if (u && !c.imgId && !c.imgUrl) c._pPhoto = u;
+    return u;
   };
 
   window.warmGiftVisuals = async function warmGiftVisuals() {
@@ -323,6 +391,17 @@
       if (typeof fillMissingPhotos === 'function' && state && state.cards && state.cards.length) {
         const need = state.cards.filter((c) => c.status !== 'sold' && c.csId && !c.imgId && !c.imgUrl);
         if (need.length) await fillMissingPhotos({ concurrency: 5, max: 80, silent: true });
+      }
+    } catch (e) {}
+
+    try {
+      if (state && state.cards) {
+        for (const c of state.cards.filter((x) => x.status !== 'sold').slice(0, 80)) {
+          if (typeof ensureMlbHeadshot === 'function') ensureMlbHeadshot(c);
+          if (!c.mlbStats && typeof mlbEnrichCard === 'function' && c.player) {
+            mlbEnrichCard(c).catch(() => {});
+          }
+        }
       }
     } catch (e) {}
 

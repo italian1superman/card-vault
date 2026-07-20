@@ -1122,6 +1122,31 @@ html,body{
   #navB .nb .nl{display:none} /* icons only */
 }
 
+
+/* Free MLB chips + roster need */
+.mlbChips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:8px 0 4px}
+.mlbChipLab{
+  font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--astros-orange,#eb6e1f);padding:3px 7px;border-radius:999px;
+  background:rgba(235,110,31,.12);
+}
+.mlbChip{
+  font-size:12px;font-weight:700;padding:4px 8px;border-radius:999px;
+  background:rgba(0,45,98,.08);color:var(--astros-navy,#002d62);
+}
+.row .mlbChips,.gcard .mlbChips{margin:4px 0 0}
+.needPanel .ct{color:var(--astros-orange,#eb6e1f)}
+.rosterRow.need .rosterGo{
+  background:var(--astros-orange,#eb6e1f);color:#fff;font-weight:800;
+  border-radius:999px;padding:6px 10px;font-size:12px;
+}
+.rosterRow.have .rosterGo{
+  background:rgba(0,45,98,.1);color:var(--astros-navy,#002d62);font-weight:700;
+  border-radius:999px;padding:6px 10px;font-size:12px;
+}
+img.portraitFallback.wikiShot{object-fit:cover;filter:saturate(1.05)}
+img.portraitFallback.mlbShot{object-fit:cover}
+
 </style>
 </head>
 <body class="cv-cool">
@@ -2045,13 +2070,22 @@ async function enrichPlayerFields(c, name){
   const hit=mlb.find(p=>bbNorm(p.name)===bbNorm(name))||mlb[0]||sdb.find(p=>bbNorm(p.name)===bbNorm(name))||sdb[0];
   if(!hit)return;
   if(!c.team&&hit.team)c.team=hit.team;
-  if(hit.mlbId)c.mlbId=hit.mlbId;
+  if(hit.mlbId){
+    c.mlbId=hit.mlbId;
+    if(!c.imgUrl&&!c.imgId){
+      c._pPhoto='https://img.mlbstatic.com/mlb-photos/image/upload/w_240,q_auto:best/v1/people/'+
+        encodeURIComponent(hit.mlbId)+'/headshot/67/current';
+    }
+  }
   if(hit.pos){
     const tag='Pos: '+hit.pos;
     if(!c.notes)c.notes=tag;
     else if(!String(c.notes).includes(tag))c.notes=String(c.notes).trim()+' · '+tag;
   }
-  if(hit.img&&!c.imgUrl&&!c.imgId){c._pPhoto=hit.img;}
+  if(!c._pPhoto&&hit.img&&!c.imgUrl&&!c.imgId){c._pPhoto=hit.img;}
+  if(typeof mlbEnrichCard==='function'){
+    try{await mlbEnrichCard(c);}catch(e){}
+  }
   save();
 }
 /* ---- baseball register (embedded) ---- */
@@ -2135,37 +2169,53 @@ function renderTeamPage(abbr){
   const want=mine.filter(c=>c.status==='want');
   const roster=typeof mlbPlayersForTeam==='function'?mlbPlayersForTeam(a,80):[];
   const short=teamShortName(a);
+  const norm=typeof bbNorm==='function'?bbNorm:(s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,''));
+  const ownedNames=new Set();
+  for(const c of have){
+    if(c.player)ownedNames.add(norm(c.player));
+  }
+  const needRoster=[], haveRoster=[];
+  for(const p of roster){
+    const n=norm(p.fullName||'');
+    if(n&&ownedNames.has(n)) haveRoster.push(p);
+    else needRoster.push(p);
+  }
 
   let mineHtml='';
   if(!mine.length){
-    mineHtml='<div class="empty soft">No cards for this team yet — tap a player to search the catalog.</div>';
+    mineHtml='<div class="empty soft">No cards for this team yet — tap a Need player to search the catalog.</div>';
   }else{
     mineHtml='<div class="listWrap teamMine">'+mine.slice(0,50).map(c=>{
       return '<div class="row" data-id="'+c.id+'">'+
         (typeof cardThumb==='function'?cardThumb(c,'thumb'):('<div class="thumb" id="im-'+c.id+'">'+sportIcon(c.sport)+'</div>'))+
         '<div class="rmain"><div class="l1">'+esc(c.player||c.setName||'—')+badges(c)+'</div>'+
-        '<div class="l2">'+esc([c.year,c.brand,c.num?'#'+c.num:'',c.status].filter(Boolean).join(' · '))+'</div></div>'+
+        '<div class="l2">'+esc([c.year,c.brand,c.num?'#'+c.num:'',c.status].filter(Boolean).join(' · '))+'</div>'+
+        (typeof mlbChipsHtml==='function'?mlbChipsHtml(c):'')+
+        '</div>'+
         '<div class="rright"><div class="v">'+money(valueOf(c))+'</div><div class="g">'+esc(c.status||'')+'</div></div></div>';
     }).join('')+'</div>';
   }
 
-  let rosterHtml='';
-  if(!roster.length){
-    rosterHtml='<div class="empty soft">No roster loaded yet. Check connection, then open this team again.</div>';
-  }else{
-    rosterHtml=roster.map(p=>{
-      const pid=p.mlbId||'';
-      const port=pid?('https://img.mlbstatic.com/mlb-photos/image/upload/w_120,q_auto:best/v1/people/'+encodeURIComponent(pid)+'/headshot/67/current'):'';
-      const hit=p.hitting, pit=p.pitching;
-      let line=p.pos||'';
-      if(hit) line=[p.pos, (hit.avg||'—')+' AVG', (hit.hr||0)+' HR'].filter(Boolean).join(' · ');
-      else if(pit) line=[p.pos, (pit.w||0)+'-'+(pit.l||0), (pit.era||'—')+' ERA'].filter(Boolean).join(' · ');
-      return '<button type="button" class="rosterRow" data-player="'+esc(p.fullName||'')+'">'+
-        '<div class="rosterPic">'+(port?'<img src="'+port+'" alt="" loading="lazy" decoding="async">':'⚾')+'</div>'+
-        '<div class="rosterMain"><div class="l1">'+esc(p.fullName||'')+'</div><div class="l2">'+esc(line)+'</div></div>'+
-        '<div class="rosterGo">Find</div></button>';
-    }).join('');
+  function rosterRow(p, kind){
+    const pid=p.mlbId||'';
+    const port=pid?('https://img.mlbstatic.com/mlb-photos/image/upload/w_120,q_auto:best/v1/people/'+encodeURIComponent(pid)+'/headshot/67/current'):'';
+    const hit=p.hitting, pit=p.pitching;
+    let line=p.pos||'';
+    if(hit) line=[p.pos, (hit.avg||'—')+' AVG', (hit.hr||0)+' HR'].filter(Boolean).join(' · ');
+    else if(pit) line=[p.pos, (pit.w||0)+'-'+(pit.l||0), (pit.era||'—')+' ERA'].filter(Boolean).join(' · ');
+    const go=kind==='need'?'Need':'Have';
+    return '<button type="button" class="rosterRow '+kind+'" data-player="'+esc(p.fullName||'')+'">'+
+      '<div class="rosterPic">'+(port?'<img src="'+port+'" alt="" loading="lazy" decoding="async">':'⚾')+'</div>'+
+      '<div class="rosterMain"><div class="l1">'+esc(p.fullName||'')+'</div><div class="l2">'+esc(line)+'</div></div>'+
+      '<div class="rosterGo">'+go+'</div></button>';
   }
+
+  const needHtml=needRoster.length
+    ? needRoster.map(p=>rosterRow(p,'need')).join('')
+    : '<div class="empty soft">You own a card for every listed roster player — Crush City.</div>';
+  const gotHtml=haveRoster.length
+    ? haveRoster.map(p=>rosterRow(p,'have')).join('')
+    : '';
 
   $('view').innerHTML=
     '<div class="panel heroPanel coolHero teamPage">'+
@@ -2174,7 +2224,7 @@ function renderTeamPage(abbr){
         '<div class="teamHeadTxt">'+
           '<div class="heroEyebrow"><span class="dot"></span> Team roster</div>'+
           '<div class="heroTitle teamTitle">'+esc(title)+'</div>'+
-          '<div class="heroSub">'+have.length+' owned · '+want.length+' wants · '+roster.length+' players</div>'+
+          '<div class="heroSub">'+have.length+' owned · '+want.length+' wants · <b>'+needRoster.length+' need</b> of '+roster.length+'</div>'+
         '</div>'+
       '</div>'+
       '<div class="home-actions">'+
@@ -2183,12 +2233,10 @@ function renderTeamPage(abbr){
       '</div>'+
     '</div>'+
     '<div class="panel"><div class="ct">Your cards</div>'+mineHtml+'</div>'+
-    '<div class="panel"><div class="ct">Players</div><div class="rosterList">'+rosterHtml+'</div></div>';
+    '<div class="panel needPanel"><div class="ct">✦ Need (not in vault)</div><div class="rosterList">'+needHtml+'</div></div>'+
+    (gotHtml?('<div class="panel"><div class="ct">On roster · you have</div><div class="rosterList">'+gotHtml+'</div></div>'):'')+
+    (!roster.length?'<div class="panel"><div class="empty soft">No roster loaded yet. Check connection, then open this team again.</div></div>':'');
 
-  document.querySelectorAll('.teamMine .row[data-id], .teamPage + .panel .row[data-id]').forEach(el=>{
-    el.onclick=()=>{ sel=state.cards.find(c=>c.id===el.dataset.id); if(sel) openSheet(); };
-  });
-  // rows are inside listWrap inside panel - use view-wide
   $('view').querySelectorAll('.row[data-id]').forEach(el=>{
     el.onclick=()=>{ sel=state.cards.find(c=>c.id===el.dataset.id); if(sel) openSheet(); };
   });
@@ -2201,19 +2249,18 @@ function renderTeamPage(abbr){
   const tf=$('teamFind');
   if(tf) tf.onclick=()=>{
     window.TEAM_PAGE=null;
-    if(typeof goExplorePlayer==='function') goExplorePlayer(short+' baseball');
-    else { tab='explore'; q=short; render(); }
+    if(typeof applyCollectionFilter==='function') applyCollectionFilter(short||title,{status:'have'});
+    else { q=short||title; tab='have'; render(); }
   };
   const tc=$('teamClear');
-  if(tc) tc.onclick=()=>clearTeamPage();
-
-  // thumbs for owned cards
-  mine.slice(0,50).forEach(c=>{
-    const t=$('im-'+c.id); if(!t) return;
+  if(tc) tc.onclick=()=>{ if(typeof clearTeamPage==='function') clearTeamPage(); };
+  mine.forEach(c=>{
+    const t=$('im-'+c.id); if(!t)return;
     if(c.imgId||c.imgUrl||c.csId||c._pPhoto) fillThumb(t,c);
     else if(typeof applyPortraitFallback==='function') applyPortraitFallback(t,c);
   });
 }
+
 
 function renderNav(){
   $('tabsTop').innerHTML=TABS.map(([k,i,l])=>`<div class="tab ${tab===k?'on':''}" data-t="${k}">${i} ${l}</div>`).join('');
@@ -2272,7 +2319,17 @@ async function resolveCardImg(c){
       if(url)return url;
     }catch(e){}
   }
+  if(typeof mlbPortraitUrl==='function'){
+    const mlb=mlbPortraitUrl(c,240);
+    if(mlb){ if(!c._pPhoto)c._pPhoto=mlb; return mlb; }
+  }
   if(c._pPhoto)return c._pPhoto;
+  if(typeof wikiPortraitUrl==='function'&&c.player){
+    try{
+      const w=await wikiPortraitUrl(c.player);
+      if(w){c._pPhoto=w;return w;}
+    }catch(e){}
+  }
   return '';
 }
 async function fillThumb(el,c){
@@ -2329,6 +2386,7 @@ function renderListPanel(cs){
         <div class="rmain">
           <div class="l1">${esc(c.player||c.setName||'—')}${badges(c)}</div>
           <div class="l2">${typeof cardMetaLine==='function'?cardMetaLine(c,[c.year,c.brand,c.setName,c.num?'#'+c.num:'',c.variant,c.grade,c.gradeCert?('cert '+c.gradeCert):'',(+c.qty||1)>1?('×'+c.qty):'']):esc([c.year,c.brand,c.setName,c.num?'#'+c.num:'',c.variant,c.grade,c.gradeCert?('cert '+c.gradeCert):'',(+c.qty||1)>1?('×'+c.qty):''].filter(Boolean).join(' · '))}</div>
+          ${typeof mlbChipsHtml==='function'?mlbChipsHtml(c):''}
         </div>
         <canvas class="spark" id="sp-${c.id}"></canvas>
         <div class="rright"><div class="v">${money(valueOf(c))}</div>
@@ -2361,6 +2419,18 @@ function afterListRender(cs){
   }
   cs.forEach(c=>{
     const sp=$('sp-'+c.id);if(sp)spark(sp,(c.prices||[]).map(p=>p.v));
+  });
+
+  /* Quiet free MLB chips for first rows */
+  (cs||[]).slice(0,24).forEach(c=>{
+    if(!c.player||c.mlbStats) return;
+    if(typeof mlbEnrichCard==='function') mlbEnrichCard(c).then(st=>{
+      if(!st)return; save();
+      const row=document.querySelector('.row[data-id="'+c.id+'"] .rmain, .gcard[data-id="'+c.id+'"] .gt');
+      if(row&&typeof mlbChipsHtml==='function'&&!row.querySelector('.mlbChips')){
+        row.insertAdjacentHTML('beforeend', mlbChipsHtml(c));
+      }
+    }).catch(()=>{});
   });
 }
 
@@ -3055,6 +3125,7 @@ async function openSheet(){
     ${F('Sale date','saleDate',c.saleDate,'type="date"')}
    </div>
    <div class="f"><label>Notes</label><textarea data-k="notes" rows="2">${esc(c.notes)}</textarea></div>
+   ${typeof mlbChipsHtml==='function'?mlbChipsHtml(c):''}
    ${typeof renderMlbPanel==='function'?renderMlbPanel(c):''}
    ${typeof renderCardLinks==='function'?renderCardLinks(c):`<div class="links">
     <a href="${ebaySoldUrl(c)}" target="_blank" rel="noopener">eBay sold</a>
@@ -3866,11 +3937,15 @@ window.fillVaultData=async function fillVaultData({
       }catch(e){ break; }
     }
 
-    /* 5) Free MLB career onto cards missing team/mlbId */
-    if(typeof enrichPlayerFields==='function'){
-      const needMlb=state.cards.filter(c=>c.player&&!c.mlbId&&c.status!=='sold').slice(0,40);
+    /* 5) Free MLB headshots + season/career chips */
+    if(typeof enrichPlayerFields==='function'||typeof mlbEnrichCard==='function'){
+      const needMlb=state.cards.filter(c=>c.player&&c.status!=='sold'&&(!c.mlbId||!c.mlbStats)).slice(0,50);
       for(const c of needMlb){
-        try{await enrichPlayerFields(c,c.player);}catch(e){}
+        try{
+          if(typeof enrichPlayerFields==='function') await enrichPlayerFields(c,c.player);
+          else if(typeof mlbEnrichCard==='function') await mlbEnrichCard(c);
+          if(typeof ensureMlbHeadshot==='function') ensureMlbHeadshot(c);
+        }catch(e){}
       }
     }
 
@@ -5015,7 +5090,10 @@ window.mlbCachePut=function mlbCachePut(summary){
     birthDate:summary.birthDate||'',
     debutDate:summary.debutDate||'',
     hitting:summary.hitting||null,
-    pitching:summary.pitching||null
+    pitching:summary.pitching||null,
+    seasonYear:summary.seasonYear||'',
+    seasonHitting:summary.seasonHitting||null,
+    seasonPitching:summary.seasonPitching||null
   };
   if(summary.fullName)MLB_CAREER.byName[String(summary.fullName).toLowerCase()]=id;
   MLB_CAREER.count=Object.keys(MLB_CAREER.byId).length;
@@ -5052,7 +5130,43 @@ window.mlbFetchCareerGroup=async function mlbFetchCareerGroup(mlbId, group){
   return mlbPickStat(j, group);
 };
 
-window.mlbBuildSummary=function mlbBuildSummary(person, hitting, pitching){
+/** Season line for the card year (free MLB Stats API). */
+window.mlbFetchSeasonGroup=async function mlbFetchSeasonGroup(mlbId, group, season){
+  const id=String(mlbId||'').trim();
+  const yr=String(season||'').replace(/\D/g,'').slice(0,4);
+  if(!id||yr.length!==4)return null;
+  const ck='mlb:season:'+group+':'+id+':'+yr;
+  try{
+    const hit=await idb.netGet(ck);
+    if(hit&&hit.j!=null&&(Date.now()-hit.t)<MLB_STATS_TTL)return mlbPickStat(hit.j, group);
+  }catch(e){}
+  const r=await fetch(MLB_API+'/people/'+encodeURIComponent(id)+'/stats?stats=season&season='+encodeURIComponent(yr)+'&group='+encodeURIComponent(group));
+  if(!r.ok)return null;
+  const j=await r.json();
+  try{await idb.netPut(ck,{t:Date.now(),j});}catch(e){}
+  return mlbPickStat(j, group);
+};
+
+function mlbNormHit(hitting){
+  if(!hitting||!(+hitting.atBats||0))return null;
+  return {
+    g:+hitting.gamesPlayed||0, ab:+hitting.atBats||0, h:+hitting.hits||0,
+    hr:+hitting.homeRuns||0, rbi:+hitting.rbi||0, sb:+hitting.stolenBases||0,
+    bb:+hitting.baseOnBalls||0, so:+hitting.strikeOuts||0,
+    avg:hitting.avg||'', obp:hitting.obp||'', slg:hitting.slg||'', ops:hitting.ops||''
+  };
+}
+function mlbNormPit(pitching){
+  if(!pitching||!(+pitching.gamesPlayed||0))return null;
+  return {
+    g:+pitching.gamesPlayed||0, gs:+pitching.gamesStarted||0,
+    w:+pitching.wins||0, l:+pitching.losses||0, sv:+pitching.saves||0,
+    ip:pitching.inningsPitched||'', so:+pitching.strikeOuts||0, bb:+pitching.baseOnBalls||0,
+    era:pitching.era||'', whip:pitching.whip||''
+  };
+}
+
+window.mlbBuildSummary=function mlbBuildSummary(person, hitting, pitching, seasonHit, seasonPit, seasonYear){
   const pos=(person&&person.primaryPosition&&person.primaryPosition.abbreviation)||'';
   const team=(person&&person.currentTeam&&person.currentTeam.name)||'';
   const bats=person&&person.batSide&&person.batSide.code||'';
@@ -5064,25 +5178,12 @@ window.mlbBuildSummary=function mlbBuildSummary(person, hitting, pitching){
     pos, team, bats, throws,
     birthDate:person&&person.birthDate||'',
     debutDate:person&&person.mlbDebutDate||'',
-    hitting:null,
-    pitching:null
+    hitting:mlbNormHit(hitting),
+    pitching:mlbNormPit(pitching),
+    seasonYear:seasonYear||'',
+    seasonHitting:mlbNormHit(seasonHit),
+    seasonPitching:mlbNormPit(seasonPit)
   };
-  if(hitting&&(+hitting.atBats||0)>0){
-    out.hitting={
-      g:+hitting.gamesPlayed||0, ab:+hitting.atBats||0, h:+hitting.hits||0,
-      hr:+hitting.homeRuns||0, rbi:+hitting.rbi||0, sb:+hitting.stolenBases||0,
-      bb:+hitting.baseOnBalls||0, so:+hitting.strikeOuts||0,
-      avg:hitting.avg||'', obp:hitting.obp||'', slg:hitting.slg||'', ops:hitting.ops||''
-    };
-  }
-  if(pitching&&(+pitching.gamesPlayed||0)>0){
-    out.pitching={
-      g:+pitching.gamesPlayed||0, gs:+pitching.gamesStarted||0,
-      w:+pitching.wins||0, l:+pitching.losses||0, sv:+pitching.saves||0,
-      ip:pitching.inningsPitched||'', so:+pitching.strikeOuts||0, bb:+pitching.baseOnBalls||0,
-      era:pitching.era||'', whip:pitching.whip||''
-    };
-  }
   return out;
 };
 
@@ -5094,20 +5195,49 @@ function summaryFromCache(row){
     fullName:row.fullName||'',
     pos:row.pos||'', team:row.team||'', bats:row.bats||'', throws:row.throws||'',
     birthDate:row.birthDate||'', debutDate:row.debutDate||'',
-    hitting:row.hitting||null, pitching:row.pitching||null
+    hitting:row.hitting||null, pitching:row.pitching||null,
+    seasonYear:row.seasonYear||'', seasonHitting:row.seasonHitting||null, seasonPitching:row.seasonPitching||null
   };
 }
 
+window.mlbEnsureHeadshot=function mlbEnsureHeadshot(c){
+  if(!c||!c.mlbId||c.imgId||c.imgUrl)return;
+  c._pPhoto='https://img.mlbstatic.com/mlb-photos/image/upload/w_240,q_auto:best/v1/people/'+
+    encodeURIComponent(c.mlbId)+'/headshot/67/current';
+};
+
+/** Compact chips for sheet / list — prefers card-year season, else career. */
+window.mlbChipsHtml=function mlbChipsHtml(c){
+  const s=c&&c.mlbStats; if(!s)return '';
+  const yr=String(c.year||'').slice(0,4);
+  const useSea=yr&&s.seasonYear===yr&&(s.seasonHitting||s.seasonPitching);
+  const h=useSea?s.seasonHitting:s.hitting;
+  const p=useSea?s.seasonPitching:s.pitching;
+  const label=useSea?yr:'Career';
+  const bits=[];
+  if(h) bits.push(esc(h.avg||'—')+' AVG', (h.hr||0)+' HR', (h.rbi||0)+' RBI');
+  else if(p) bits.push((p.w||0)+'-'+(p.l||0), esc(p.era||'—')+' ERA', (p.so||0)+' SO');
+  if(!bits.length)return '';
+  return `<div class="mlbChips" title="Free MLB Stats API"><span class="mlbChipLab">${esc(label)}</span>${bits.map(b=>`<span class="mlbChip">${b}</span>`).join('')}</div>`;
+};
+
 window.mlbEnrichCard=async function mlbEnrichCard(c,{force=false}={}){
   if(!c||!c.player)return null;
-  if(!force&&c.mlbStats&&c.mlbStats.fetched&&(Date.now()-c.mlbStats.fetched)<MLB_STATS_TTL)return c.mlbStats;
-  if(!force){
+  const yr=String(c.year||'').replace(/\D/g,'').slice(0,4);
+  const fresh=c.mlbStats&&c.mlbStats.fetched&&(Date.now()-c.mlbStats.fetched)<MLB_STATS_TTL;
+  const seasonOk=!yr||(c.mlbStats&&c.mlbStats.seasonYear===yr);
+  if(!force&&fresh&&seasonOk){
+    mlbEnsureHeadshot(c);
+    return c.mlbStats;
+  }
+  if(!force&&!c.mlbStats){
     const cached=mlbLookupCached(c);
     if(cached){
       c.mlbStats=summaryFromCache(cached);
       if(cached.mlbId)c.mlbId=cached.mlbId;
       if(!c.team&&cached.team)c.team=cached.team;
-      return c.mlbStats;
+      mlbEnsureHeadshot(c);
+      if(!yr||c.mlbStats.seasonYear===yr)return c.mlbStats;
     }
   }
   let id=c.mlbId;
@@ -5116,14 +5246,23 @@ window.mlbEnrichCard=async function mlbEnrichCard(c,{force=false}={}){
     const hit=hits.find(p=>typeof bbNorm==='function'?bbNorm(p.name)===bbNorm(c.player):p.name===c.player)||hits[0];
     if(hit&&hit.mlbId){c.mlbId=hit.mlbId;id=hit.mlbId;}
   }
-  if(!id)return null;
-  const [person, hitting, pitching]=await Promise.all([
-    mlbFetchPerson(id),
-    mlbFetchCareerGroup(id,'hitting').catch(()=>null),
-    mlbFetchCareerGroup(id,'pitching').catch(()=>null)
+  if(!id)return c.mlbStats||null;
+  const needCareer=force||!c.mlbStats||!fresh;
+  const [person, hitting, pitching, seasonHit, seasonPit]=await Promise.all([
+    needCareer?mlbFetchPerson(id):Promise.resolve(null),
+    needCareer?mlbFetchCareerGroup(id,'hitting').catch(()=>null):Promise.resolve(null),
+    needCareer?mlbFetchCareerGroup(id,'pitching').catch(()=>null):Promise.resolve(null),
+    yr?mlbFetchSeasonGroup(id,'hitting',yr).catch(()=>null):Promise.resolve(null),
+    yr?mlbFetchSeasonGroup(id,'pitching',yr).catch(()=>null):Promise.resolve(null)
   ]);
-  if(!person)return null;
-  c.mlbStats=mlbBuildSummary(person, hitting, pitching);
+  if(person){
+    c.mlbStats=mlbBuildSummary(person, hitting, pitching, seasonHit, seasonPit, yr);
+  }else if(c.mlbStats){
+    c.mlbStats.seasonYear=yr;
+    c.mlbStats.seasonHitting=mlbNormHit(seasonHit);
+    c.mlbStats.seasonPitching=mlbNormPit(seasonPit);
+    c.mlbStats.fetched=Date.now();
+  }else return null;
   mlbCachePut(c.mlbStats);
   if(!c.team&&c.mlbStats.team)c.team=c.mlbStats.team;
   if(c.mlbStats.pos){
@@ -5131,6 +5270,7 @@ window.mlbEnrichCard=async function mlbEnrichCard(c,{force=false}={}){
     if(!c.notes)c.notes=tag;
     else if(!String(c.notes).includes('Pos:'))c.notes=String(c.notes).trim()+' · '+tag;
   }
+  mlbEnsureHeadshot(c);
   return c.mlbStats;
 };
 
@@ -5176,43 +5316,56 @@ window.downloadMlbCareerJson=function downloadMlbCareerJson(){
   showToast('Downloaded mlb-career.json ('+out.count+' players)');
 };
 
+function mlbGridHitting(h){
+  if(!h)return '';
+  return `<div class="mlbGrid">
+    <div class="mlbCell"><div class="k">G</div><div class="v">${h.g}</div></div>
+    <div class="mlbCell"><div class="k">AB</div><div class="v">${h.ab}</div></div>
+    <div class="mlbCell"><div class="k">H</div><div class="v">${h.h}</div></div>
+    <div class="mlbCell"><div class="k">HR</div><div class="v">${h.hr}</div></div>
+    <div class="mlbCell"><div class="k">RBI</div><div class="v">${h.rbi}</div></div>
+    <div class="mlbCell"><div class="k">SB</div><div class="v">${h.sb}</div></div>
+    <div class="mlbCell"><div class="k">AVG</div><div class="v">${esc(h.avg)}</div></div>
+    <div class="mlbCell"><div class="k">OBP</div><div class="v">${esc(h.obp)}</div></div>
+    <div class="mlbCell"><div class="k">SLG</div><div class="v">${esc(h.slg)}</div></div>
+    <div class="mlbCell"><div class="k">OPS</div><div class="v">${esc(h.ops)}</div></div>
+  </div>`;
+}
+function mlbGridPitching(p){
+  if(!p)return '';
+  return `<div class="mlbGrid">
+    <div class="mlbCell"><div class="k">W-L</div><div class="v">${p.w}-${p.l}</div></div>
+    <div class="mlbCell"><div class="k">ERA</div><div class="v">${esc(p.era)}</div></div>
+    <div class="mlbCell"><div class="k">IP</div><div class="v">${esc(String(p.ip))}</div></div>
+    <div class="mlbCell"><div class="k">SO</div><div class="v">${p.so}</div></div>
+    <div class="mlbCell"><div class="k">BB</div><div class="v">${p.bb}</div></div>
+    <div class="mlbCell"><div class="k">SV</div><div class="v">${p.sv}</div></div>
+    <div class="mlbCell"><div class="k">WHIP</div><div class="v">${esc(p.whip||'—')}</div></div>
+    <div class="mlbCell"><div class="k">G</div><div class="v">${p.g}</div></div>
+  </div>`;
+}
+
 window.renderMlbPanel=function renderMlbPanel(c){
   const s=c&&c.mlbStats;
   if(!s){
     return `<div class="panel mlbPanel" id="mlbPanel">
-      <div class="ct">MLB career</div>
-      <div class="teach-hint" style="color:var(--dim);font-size:12px;margin:0 0 8px">Career lines from the public stats JSON / MLB.</div>
-      <button type="button" id="btnMlbLoad" class="bigim">Import MLB stats</button>
+      <div class="ct">MLB stats (free)</div>
+      <div class="teach-hint" style="color:var(--dim);font-size:12px;margin:0 0 8px">Season + career from the public MLB Stats API — no CardSight calls.</div>
+      <button type="button" id="btnMlbLoad" class="bigim">Load MLB stats</button>
     </div>`;
   }
   const bio=[s.pos,s.team,s.bats&&s.throws?('B/T '+s.bats+'/'+s.throws):'',s.debutDate?('Debut '+s.debutDate):''].filter(Boolean).join(' · ');
   const h=s.hitting, p=s.pitching;
+  const sh=s.seasonHitting, sp=s.seasonPitching;
+  const yr=s.seasonYear||String(c.year||'').slice(0,4);
   return `<div class="panel mlbPanel" id="mlbPanel">
-    <div class="ct">MLB career <span style="font-weight:500;text-transform:none;letter-spacing:0">${esc(s.fullName||c.player||'')}</span></div>
+    <div class="ct">MLB stats <span style="font-weight:500;text-transform:none;letter-spacing:0">${esc(s.fullName||c.player||'')}</span></div>
     <div class="mlbBio">${esc(bio||'—')}</div>
-    ${h?`<div class="mlbGrid">
-      <div class="mlbCell"><div class="k">G</div><div class="v">${h.g}</div></div>
-      <div class="mlbCell"><div class="k">AB</div><div class="v">${h.ab}</div></div>
-      <div class="mlbCell"><div class="k">H</div><div class="v">${h.h}</div></div>
-      <div class="mlbCell"><div class="k">HR</div><div class="v">${h.hr}</div></div>
-      <div class="mlbCell"><div class="k">RBI</div><div class="v">${h.rbi}</div></div>
-      <div class="mlbCell"><div class="k">SB</div><div class="v">${h.sb}</div></div>
-      <div class="mlbCell"><div class="k">AVG</div><div class="v">${esc(h.avg)}</div></div>
-      <div class="mlbCell"><div class="k">OBP</div><div class="v">${esc(h.obp)}</div></div>
-      <div class="mlbCell"><div class="k">SLG</div><div class="v">${esc(h.slg)}</div></div>
-      <div class="mlbCell"><div class="k">OPS</div><div class="v">${esc(h.ops)}</div></div>
-    </div>`:''}
-    ${p?`<div class="ct" style="margin-top:10px">Pitching</div>
-    <div class="mlbGrid">
-      <div class="mlbCell"><div class="k">W-L</div><div class="v">${p.w}-${p.l}</div></div>
-      <div class="mlbCell"><div class="k">ERA</div><div class="v">${esc(p.era)}</div></div>
-      <div class="mlbCell"><div class="k">IP</div><div class="v">${esc(String(p.ip))}</div></div>
-      <div class="mlbCell"><div class="k">SO</div><div class="v">${p.so}</div></div>
-      <div class="mlbCell"><div class="k">BB</div><div class="v">${p.bb}</div></div>
-      <div class="mlbCell"><div class="k">SV</div><div class="v">${p.sv}</div></div>
-      <div class="mlbCell"><div class="k">WHIP</div><div class="v">${esc(p.whip||'—')}</div></div>
-      <div class="mlbCell"><div class="k">G</div><div class="v">${p.g}</div></div>
-    </div>`:''}
+    ${typeof mlbChipsHtml==='function'?mlbChipsHtml(c):''}
+    ${(sh||sp)?`<div class="ct" style="margin-top:10px">${esc(yr)} season</div>
+      ${mlbGridHitting(sh)}${sp&&!sh?mlbGridPitching(sp):(sp?`<div class="ct" style="margin-top:8px">${esc(yr)} pitching</div>`+mlbGridPitching(sp):'')}`:''}
+    ${h?`<div class="ct" style="margin-top:10px">Career hitting</div>${mlbGridHitting(h)}`:''}
+    ${p?`<div class="ct" style="margin-top:10px">Career pitching</div>${mlbGridPitching(p)}`:''}
     <div class="home-actions" style="margin-top:8px">
       <button type="button" id="btnMlbLoad">Refresh stats</button>
       ${s.mlbId?`<a class="mlbLink" href="https://www.mlb.com/player/${s.mlbId}" target="_blank" rel="noopener">MLB.com</a>`:''}

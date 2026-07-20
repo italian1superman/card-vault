@@ -185,11 +185,15 @@ window.fillVaultData=async function fillVaultData({
       }catch(e){ break; }
     }
 
-    /* 5) Free MLB career onto cards missing team/mlbId */
-    if(typeof enrichPlayerFields==='function'){
-      const needMlb=state.cards.filter(c=>c.player&&!c.mlbId&&c.status!=='sold').slice(0,40);
+    /* 5) Free MLB headshots + season/career chips */
+    if(typeof enrichPlayerFields==='function'||typeof mlbEnrichCard==='function'){
+      const needMlb=state.cards.filter(c=>c.player&&c.status!=='sold'&&(!c.mlbId||!c.mlbStats)).slice(0,50);
       for(const c of needMlb){
-        try{await enrichPlayerFields(c,c.player);}catch(e){}
+        try{
+          if(typeof enrichPlayerFields==='function') await enrichPlayerFields(c,c.player);
+          else if(typeof mlbEnrichCard==='function') await mlbEnrichCard(c);
+          if(typeof ensureMlbHeadshot==='function') ensureMlbHeadshot(c);
+        }catch(e){}
       }
     }
 
