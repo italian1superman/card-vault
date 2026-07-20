@@ -6,12 +6,12 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#002d62">
-<title>Card Vault · Astros</title>
+<title>Jay's Card Vault</title>
 
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Card Vault Astros">
-<meta name="application-name" content="Card Vault">
-<meta name="description" content="Sports card collection tracker — values, P/L, Excel export. Data stays on your device.">
+<meta name="apple-mobile-web-app-title" content="Jay's Card Vault">
+<meta name="application-name" content="Jay's Card Vault">
+<meta name="description" content="Jay's Card Vault — Astros baseball cards, values, sets, and photos. On-device.">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
@@ -1287,7 +1287,7 @@ img.portraitFallback.mlbShot{object-fit:cover}
 <body class="cv-cool">
 <header>
   <div class="hdrTop">
-    <h1><span class="brandLockup"><img class="brandHou" src="assets/teams/HOU.svg" alt=""><span>Card Vault</span><span class="brandTeam">Astros</span></span></h1>
+    <h1><span class="brandLockup"><img class="brandHou" src="assets/teams/HOU.svg" alt=""><span>Jay's Card Vault</span><span class="brandTeam">Astros</span></span></h1>
     <div class="hdrActions">
       <button type="button" class="deskOnly bigxl" id="btnXl">Excel</button>
       <button type="button" class="deskOnly bigim" id="btnIm">Import</button>
@@ -2808,9 +2808,9 @@ function renderDash(){
   const qp=(typeof QUICK_PLAYERS!=='undefined'?QUICK_PLAYERS:['Ken Griffey Jr','Shohei Ohtani','Mike Trout','Aaron Judge']);
   $('view').innerHTML=`
    ${empty?`<div class="panel heroPanel coolHero emptyCool">
-      <div class="heroEyebrow"><span class="dot"></span> Houston Astros · Card Vault</div>
-      <div class="heroTitle">Card Vault</div>
-      <div class="heroSub">Track Astros (and every club) — values, sets, and photos on this phone.</div>
+      <div class="heroEyebrow"><span class="dot"></span> Jay's Card Vault · Crush City</div>
+      <div class="heroTitle">Jay's Card Vault</div>
+      <div class="heroSub">Jay's Astros collection — values, sets, and photos on this phone.</div>
       <div class="floatLogos">
         ${['HOU','NYY','LAD','BOS','ATL'].map(a=>`<button type="button" class="logoChip" data-team-abbr="${a}" title="${a}"><img src="assets/teams/${a}.svg" alt="${a}"></button>`).join('')}
       </div>
@@ -2831,7 +2831,7 @@ function renderDash(){
    ${(cs.length&&(unpriced>=3||unlinked>=3))?`<div class="backupBanner" style="background:linear-gradient(135deg,rgba(0,45,98,.12),rgba(235,110,31,.1))"><div class="bbTxt">⚡ ${unpriced?unpriced+' cards need prices':''}${unpriced&&unlinked?' · ':''}${unlinked?unlinked+' not linked to catalog':''}. Photos + PSA pop are free; prices bulk-fill ~100 per call (then cached).</div><button type="button" id="btnFillDataBanner">Fill data</button></div>`:''}
    ${!empty?`${widgetHomeHtml(cs,s)}
    <div class="panel heroPanel coolHero">
-     <div class="heroEyebrow"><span class="dot"></span> Astros collection · Crush City</div>
+     <div class="heroEyebrow"><span class="dot"></span> Jay's collection · Crush City</div>
      <div class="heroSub deskOnly">${s.have} owned · ${s.want} wants${s.deals?` · <span class="pos">🔥 ${s.deals} deal${s.deals>1?'s':''}</span>`:''}</div>
      <div class="plBar ${s.pl>=0?'pos':'neg'}">${s.pl>=0?'▲':'▼'} ${s.pl>=0?'+':''}${money0(s.pl)} unrealized</div>
      ${homeShowcaseHtml(cs)}
@@ -2993,7 +2993,7 @@ function render(){
   const f=$('footSave');
   if(f){
     const cs=csKey()?(' · CS '+csUseN()+'/750 · cache '+CS_STATS.hits+'h/'+CS_STATS.stale+'s/'+CS_STATS.misses+'m'):'';
-    f.innerHTML='⚾ <b>Auto-saved</b> · '+n+' card'+(n===1?'':'s')+cs+' · Home Screen keeps collection. Menu → Backup for iCloud.';
+    f.innerHTML="⚾ <b>Jay's Vault</b> auto-saved · "+n+" card"+(n===1?"":"s")+cs+" · Menu → Backup for iCloud.";
   }
 }
 
@@ -3888,7 +3888,7 @@ async function handleImportFile(f){
     else if(mode==='ssml')sheets=parseSpreadsheetML(payload);
     else sheets={Sheet1:csvParse(payload)};
     const r=mapAllSheets(sheets);
-    if(!r.cards.length&&!r.prices.length)return alert('No recognizable columns found.\n\nTip: TCDB / spreadsheet exports work if the first row has headers like:\nPlayer (or Name), Year, Set, # / Card Number, Brand, Grade, Qty, Value…\n\nOr restore a Card Vault Backup JSON.');
+    if(!r.cards.length&&!r.prices.length)return alert("No recognizable columns found.\n\nTip: TCDB / spreadsheet exports work if the first row has headers like:\nPlayer (or Name), Year, Set, # / Card Number, Brand, Grade, Qty, Value…\n\nOr restore a Jay's Card Vault backup JSON.");
     const keys=new Map(state.cards.map(c=>[keyOf(c),c]));
     let added=0,dup=0,priced=0;
     for(const c of r.cards){
@@ -3927,7 +3927,7 @@ function openMenu(anchor){
   if(!m)return;
   m.innerHTML=`
     <div class="menuGrab"></div>
-    <div class="menuTitle">Menu</div>
+    <div class="menuTitle">Jay's Menu</div>
     <div class="menuSec">Auto-fill</div>
     <div class="menuGrid">
       <button type="button" class="menuItem primary" data-a="fill"><span class="miI">⚡</span><span>Fill data<span class="miS">Photos · pop · link · prices</span></span></button>
@@ -4087,7 +4087,7 @@ async function ghPushVault(){
       const cur=await ghApi(ghContentPath(path));
       sha=cur&&cur.sha;
     }catch(e){ /* file may not exist yet */ }
-    const payload={message:'Card Vault backup '+today(),content};
+    const payload={message:"Jay's Card Vault backup "+today(),content};
     if(sha) payload.sha=sha;
     await ghApi(ghContentPath(path),{
       method:'PUT',
@@ -4106,7 +4106,7 @@ async function ghPullVault(){
     if(!j||!j.content) throw new Error('Empty file');
     const raw=decodeURIComponent(escape(atob(j.content.replace(/\n/g,''))));
     const data=JSON.parse(raw);
-    if(!data||!Array.isArray(data.cards)) throw new Error('Not a Card Vault backup');
+    if(!data||!Array.isArray(data.cards)) throw new Error("Not a Jay's Card Vault backup");
     const replace=confirm(`Cloud has ${data.cards.length} cards. OK = REPLACE current ${state.cards.length} · Cancel = abort`);
     if(!replace)return;
     const keepToken=state.meta&&state.meta.ghToken;

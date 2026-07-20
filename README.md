@@ -1,4 +1,4 @@
-# Card Vault ⚾
+# Jay's Card Vault ⚾
 
 **Live:** https://italian1superman.github.io/card-vault/
 

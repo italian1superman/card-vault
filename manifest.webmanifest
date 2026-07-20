@@ -1,7 +1,7 @@
 {
-  "name": "Card Vault \u00b7 Astros",
-  "short_name": "Card Vault",
-  "description": "Houston Astros\u2013themed baseball card vault \u2014 values, sets, photos. On-device.",
+  "name": "Jay's Card Vault",
+  "short_name": "Jay's Vault",
+  "description": "Jay's Astros baseball card vault — values, sets, photos. On-device.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
