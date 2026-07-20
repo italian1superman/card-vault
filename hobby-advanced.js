@@ -44,42 +44,136 @@ window.ownParallelCountInSet=function ownParallelCountInSet(setId){
   return n;
 };
 
+const MLB_TEAMS={
+  ARI:'Diamondbacks',ATL:'Braves',BAL:'Orioles',BOS:'Red Sox',CHC:'Cubs',CIN:'Reds',CLE:'Guardians',
+  COL:'Rockies',CWS:'White Sox',CHW:'White Sox',DET:'Tigers',HOU:'Astros',KC:'Royals',KCR:'Royals',
+  LAA:'Angels',LAD:'Dodgers',MIA:'Marlins',MIL:'Brewers',MIN:'Twins',NYM:'Mets',NYY:'Yankees',
+  OAK:'Athletics',ATH:'Athletics',PHI:'Phillies',PIT:'Pirates',SD:'Padres',SDP:'Padres',SEA:'Mariners',
+  SF:'Giants',SFG:'Giants',STL:'Cardinals',TB:'Rays',TBR:'Rays',TEX:'Rangers',TOR:'Blue Jays',
+  WSH:'Nationals',WAS:'Nationals',WSN:'Nationals'
+};
+const BRAND_HINT=/^(Topps|Bowman|Upper Deck|Panini|Donruss|Fleer|Leaf|Score|Sage|Stadium Club|Heritage|Gypsy Queen|Allen\s*&\s*Ginter|Chrome|Prizm|Select|Mosaic|Optic)/i;
+
+window.csSplitCardName=function csSplitCardName(name){
+  const n=String(name||'').trim();
+  const m=n.match(/^(.+?)\s+[—\-–]\s+(.+)$/);
+  if(m&&m[2].trim().split(/\s+/).length>=2)return{player:m[2].trim(),subtitle:m[1].trim()};
+  return{player:n,subtitle:''};
+};
+window.csInferBrand=function csInferBrand(x){
+  if(x.manufacturerName)return x.manufacturerName;
+  if(x.brand)return x.brand;
+  if(x.manufacturer)return x.manufacturer;
+  const blob=[x.releaseName,x.setName].filter(Boolean).join(' ');
+  const m=blob.match(BRAND_HINT);
+  return m?m[1].replace(/\s+/g,' ').trim():'';
+};
+window.csParseAttributes=function csParseAttributes(attrs){
+  const out={team:'',rookie:false,flags:[],raw:[]};
+  for(const a of (attrs||[])){
+    const s=String(a||'').trim(); if(!s)continue;
+    out.raw.push(s);
+    if(/^rc$|rookie/i.test(s)){out.rookie=true;continue;}
+    const mlb=s.match(/^MLB-([A-Z]{2,3})$/i);
+    if(mlb){
+      const code=mlb[1].toUpperCase();
+      out.team=MLB_TEAMS[code]||code;
+      continue;
+    }
+    if(/^(AU|AUTO|AUTOGRAPH)/i.test(s)){out.flags.push('Autograph');continue;}
+    if(/^(MEM|RELIC|PATCH|JSY|JERSEY)/i.test(s)){out.flags.push('Memorabilia');continue;}
+    if(/^(SSP|SP|SHORT\s*PRINT)/i.test(s)){out.flags.push(/^SSP/i.test(s)?'SSP':'SP');continue;}
+    if(/^(1st|FIRST)\b/i.test(s)){out.flags.push('1st Bowman');continue;}
+    if(/^[A-Z]{2,3}$/.test(s)&&MLB_TEAMS[s]){out.team=MLB_TEAMS[s];continue;}
+    if(!/^(MLB|NBA|NFL|NHL)/i.test(s))out.flags.push(s);
+  }
+  return out;
+};
+
+/** Pull every field CardSight actually has for this card ID (detail + release brand). */
+window.csEnrichCatalogCard=async function csEnrichCatalogCard(x){
+  if(!x)return x;
+  const id=x.id||x.cardId;
+  let full=Object.assign({},x);
+  if(id){
+    try{
+      const d=await csFetchCached('/v1/catalog/cards/'+id,{},{ttlMs:CS_TTL_CARD});
+      if(d&&typeof d==='object')full=Object.assign({},full,d,{id:d.id||id});
+    }catch(e){}
+  }
+  if(!full.manufacturerName&&full.releaseId){
+    try{
+      const rel=await csFetchCached('/v1/catalog/releases/'+full.releaseId,{},{ttlMs:CS_TTL_CAT});
+      if(rel){
+        if(rel.name&&!full.releaseName)full.releaseName=rel.name;
+        if(rel.year&&!full.releaseYear)full.releaseYear=rel.year;
+        /* manufacturer endpoint often 404 — brand inferred from release name */
+      }
+    }catch(e){}
+  }
+  if(!full.manufacturerName)full.manufacturerName=csInferBrand(full);
+  const split=csSplitCardName(full.name||full.player||'');
+  full._playerClean=split.player;
+  full._subtitle=split.subtitle;
+  full._attr=csParseAttributes(full.attributes||x.attributes||[]);
+  if(full.parallelName&&!full.parallels){
+    /* search hits sometimes include parallelName only */
+    full._searchParallel=full.parallelName;
+  }
+  return full;
+};
+
 window.csHydrateCard=function csHydrateCard(nc,x,par){
   FIELDS.forEach(f=>{if(!(f in nc))nc[f]=f==='qty'?1:'';});
+  const attr=x._attr||csParseAttributes(x.attributes||[]);
+  const split=x._playerClean?{player:x._playerClean,subtitle:x._subtitle||''}:csSplitCardName(x.name||x.player||'');
   nc.sport=BB_SPORT;
-  nc.player=x.name||x.player||nc.player||'';
-  nc.year=x.releaseYear||x.year||nc.year||'';
-  const setBits=[x.releaseName,x.setName&&!/^base\b/i.test(String(x.setName))?x.setName:''].filter(Boolean);
+  nc.player=split.player||x.name||x.player||nc.player||'';
+  nc.year=String(x.releaseYear||x.year||nc.year||'').slice(0,4);
+  const setBits=[x.releaseName,x.setName&&!/^base\b/i.test(String(x.setName||''))?x.setName:''].filter(Boolean);
   nc.setName=setBits.join(' ').trim()||nc.setName||'';
   nc.num=x.number||x.num||nc.num||'';
   nc.csId=x.id||x.cardId||nc.csId||'';
-  nc.brand=x.manufacturerName||x.brand||nc.brand||'';
+  nc.brand=csInferBrand(x)||nc.brand||'';
   if(x.releaseId)nc.csReleaseId=x.releaseId;
   if(x.setId)nc.csSetId=x.setId;
-  nc.rookie=!!(nc.rookie||(x.attributes||[]).some(a=>/^rc$|rookie/i.test(a)));
-  const attrs=(x.attributes||[]).filter(a=>!/^rc$|rookie/i.test(a)&&!/^mlb-/i.test(a));
-  if(attrs.length&&!nc.team){
-    const teamish=attrs.find(a=>/^[A-Z]{2,3}$|^MLB-/i.test(a));
-    if(teamish)nc.team=String(teamish).replace(/^MLB-/i,'');
+  nc.rookie=!!(nc.rookie||attr.rookie||(x.attributes||[]).some(a=>/^rc$|rookie/i.test(a)));
+  if(attr.team)nc.team=attr.team;
+  else if(!nc.team){
+    const teamish=(x.attributes||[]).find(a=>/^MLB-/i.test(a)||(MLB_TEAMS[String(a||'').toUpperCase()]));
+    if(teamish){
+      const code=String(teamish).replace(/^MLB-/i,'').toUpperCase();
+      nc.team=MLB_TEAMS[code]||code;
+    }
   }
   if(par&&par.id){
     nc.variant=par.name||nc.variant||'';
     nc.csParallelId=par.id;
-    if(par.numberedTo)nc.serial='/'+par.numberedTo;
-  }else{
+    if(par.numberedTo!=null&&par.numberedTo!=='')nc.serial='/'+par.numberedTo;
+  }else if(x._searchParallel&&!nc.variant){
+    nc.variant=x._searchParallel;
     nc.csParallelId='';
+  }else{
+    nc.csParallelId=nc.csParallelId||'';
     if(!nc.variant)nc.variant='';
+  }
+  /* notes: only add facts we know — never invent */
+  const noteBits=[];
+  if(split.subtitle)noteBits.push(split.subtitle);
+  if(attr.flags.length)noteBits.push(attr.flags.join(' · '));
+  if(par&&par.numberedTo)noteBits.push('Print run /'+par.numberedTo);
+  else if(x.numberedTo)noteBits.push('Print run /'+x.numberedTo);
+  if(noteBits.length){
+    const add=noteBits.join(' · ');
+    if(!nc.notes)nc.notes=add;
+    else if(!String(nc.notes).includes(noteBits[0]))nc.notes=String(nc.notes).trim()+(String(nc.notes).trim()?' · ':'')+add;
   }
   return nc;
 };
 
 window.csEnsureParallels=async function csEnsureParallels(x){
-  if(x.parallels&&x.parallels.length)return x.parallels;
-  if(!x.id)return [];
-  try{
-    const d=await csFetchCached('/v1/catalog/cards/'+x.id,{},{ttlMs:CS_TTL_CARD});
-    if(d&&d.parallels){x.parallels=d.parallels;if(d.manufacturerName&&!x.manufacturerName)x.manufacturerName=d.manufacturerName;return d.parallels;}
-  }catch(e){}
+  const full=await csEnrichCatalogCard(x);
+  Object.assign(x,full);
   return x.parallels||[];
 };
 
@@ -128,6 +222,9 @@ window.openParallelPicker=function openParallelPicker(x,status){
 
 window.addFromCatalogAdvanced=async function addFromCatalogAdvanced(x,status,{parallel,skipPicker,skipDup,quiet}={}){
   if(!x)return null;
+  /* Always hydrate from full catalog detail so empty list rows still populate everything available */
+  if(!quiet)showToast('Filling card details…');
+  x=await csEnrichCatalogCard(x);
   let par=parallel;
   if(par===undefined&&!skipPicker){
     const pick=await openParallelPicker(x,status);
@@ -149,22 +246,31 @@ window.addFromCatalogAdvanced=async function addFromCatalogAdvanced(x,status,{pa
   const v=(typeof EX!=='undefined'&&EX.prices)?EX.prices[x.id]:null;
   if(v!=null)nc.prices.push({d:today(),v:+(+v).toFixed(2),src:'cardsight'});
   state.cards.push(nc);save();
-  try{
-    const url=csImgSrc(await csImageData(x.id));
-    if(url){
-      if(url.startsWith('data:')){nc.imgId=nc.id;imgCache.set(nc.id,url);await idb.put(nc.id,url);save();}
-      else {nc.imgUrl=url;save();}
-    }
-  }catch(e){}
-  /* background price if linked and no price yet */
-  if(nc.csId&&!nc.prices.length){
-    csBulkPriceByIds([nc.csId]).then(map=>{
-      if(map[nc.csId]!=null&&applyCsPrice(nc,map[nc.csId],'cardsight')){save(); if(tab==='dash'||sel===nc)render();}
-    }).catch(()=>{});
+  /* photo + MLB team/id + market price — whatever is available, in parallel */
+  const jobs=[];
+  jobs.push((async()=>{
+    try{
+      const url=csImgSrc(await csImageData(x.id));
+      if(url){
+        if(url.startsWith('data:')){nc.imgId=nc.id;imgCache.set(nc.id,url);await idb.put(nc.id,url);}
+        else nc.imgUrl=url;
+        save();
+      }
+    }catch(e){}
+  })());
+  if(typeof enrichPlayerFields==='function'&&nc.player){
+    jobs.push(enrichPlayerFields(nc,nc.player).catch(()=>{}));
   }
+  if(nc.csId&&!nc.prices.length){
+    jobs.push(csBulkPriceByIds([nc.csId]).then(map=>{
+      if(map[nc.csId]!=null&&applyCsPrice(nc,map[nc.csId],'cardsight'))save();
+    }).catch(()=>{}));
+  }
+  await Promise.all(jobs);
   if(!quiet){
     if(typeof confettiBurst==='function')confettiBurst();
-    showToast((status==='want'?'⭐ Wanted: ':'✔ Added: ')+nc.player+(nc.variant?' · '+nc.variant:'')+(nc.num?' #'+nc.num:''));
+    const bits=[nc.player,nc.year,nc.brand||nc.setName,nc.num?'#'+nc.num:'',nc.variant,nc.team,nc.rookie?'RC':''].filter(Boolean);
+    showToast((status==='want'?'⭐ Wanted: ':'✔ Added: ')+bits.slice(0,4).join(' · '));
   }
   return nc;
 };
