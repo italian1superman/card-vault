@@ -62,11 +62,11 @@ window.setsLoadAllPhotos=async function setsLoadAllPhotos(){
 };
 
 /** Persist free CardSight catalog images onto vault cards missing a photo. */
-window.fillMissingPhotos=async function fillMissingPhotos({concurrency=6,max=80}={}){
-  if(typeof csKey!=='function'||!csKey()){showToast('CardSight needed for free catalog photos');return 0;}
+window.fillMissingPhotos=async function fillMissingPhotos({concurrency=6,max=80,silent=false}={}){
+  if(typeof csKey!=='function'||!csKey()){if(!silent)showToast('CardSight needed for free catalog photos');return 0;}
   const need=state.cards.filter(c=>c.status!=='sold'&&c.csId&&!c.imgId&&!c.imgUrl).slice(0,max);
-  if(!need.length){showToast('All linked cards already have photos ✔');return 0;}
-  showToast('🖼 Filling '+need.length+' free photos…');
+  if(!need.length){if(!silent)showToast('All linked cards already have photos ✔');return 0;}
+  if(!silent)showToast('🖼 Filling '+need.length+' free photos…');
   let i=0, done=0;
   async function worker(){
     while(i<need.length){
@@ -88,7 +88,7 @@ window.fillMissingPhotos=async function fillMissingPhotos({concurrency=6,max=80}
   await Promise.all(Array.from({length:Math.min(concurrency,need.length)},()=>worker()));
   save();
   if(typeof logActivity==='function')logActivity('photos','Filled '+done+' catalog photos');
-  showToast('🖼 Saved '+done+' free photos'+(need.length>=max?' (run again for more)':''));
+  if(!silent)showToast('🖼 Saved '+done+' free photos'+(need.length>=max?' (run again for more)':''));
   if(tab==='have'||tab==='want'||tab==='dash')render();
   return done;
 };

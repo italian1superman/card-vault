@@ -2,21 +2,22 @@
 
 **Live:** https://italian1superman.github.io/card-vault/
 
-## Public data on GitHub
+Gift-friendly baseball card tracker. Collection stays on the phone; **⋯ → Backup** to iCloud/Files so a wipe can’t erase it.
 
-| File | What |
+## Already loaded (no setup)
+
+| Asset | Where |
 |------|------|
-| `data/mlb-career.json` | MLB career hitting/pitching (~2k recent/legend players) |
-| App UI | GitHub Pages |
+| **30 MLB team logos** | `assets/teams/*.svg` — Home strip + badge on every card |
+| **Brand marks** | Topps / Bowman / Panini / Upper Deck / Fleer |
+| **MLB career stats** | `data/mlb-career.json` (~2k players) |
+| **Player portraits** | MLB CDN headshots when a card photo isn’t cached yet |
+| **Card photos** | Free CardSight images — auto-filled for linked cards on open |
 
-Your **card collection** stays on your phone. **⋯ → Backup** exports a local JSON.
+Millions of catalog card scans are **not** in the repo (too large). The app warms free photos + portraits so the vault still looks full.
 
-## Card photos
+## Friend tips
 
-There are millions of baseball cards — they are **not** stored as image files in this repo (that would be terabytes).
-
-Instead, every card that appears in Find / Sets / your vault loads its picture **on demand** from CardSight’s free image API, then caches it on the phone (IndexedDB). In a set checklist, use **🖼 All photos** to cache the whole set.
-
-## MLB stats
-
-⋯ → **MLB stats** / Import loads career lines from `data/mlb-career.json`, with live MLB API fallback.
+1. **Add to Home Screen** (Share → Add to Home Screen)
+2. **⋯ → Backup** after importing cards (save the JSON in iCloud)
+3. Tap **Photos** on Home to pull free catalog pictures for cards that already have a match ID

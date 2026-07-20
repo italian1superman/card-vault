@@ -328,6 +328,37 @@ details summary::-webkit-details-marker{display:none}
 .panel.insights .ct, .mlbPanel .ct{color:var(--mute);font-weight:400;text-transform:none;letter-spacing:0;font-size:13px}
 
 
+
+/* Gift visuals: team/brand logos + portraits */
+.teamBadge{
+  position:absolute;right:2px;bottom:2px;width:18px;height:18px;object-fit:contain;
+  background:#fff;border-radius:4px;padding:1px;box-shadow:0 1px 3px rgba(0,0,0,.18);z-index:2;
+}
+.gimg .teamBadge{width:22px;height:22px;right:4px;bottom:4px}
+.thumb,.gimg{position:relative}
+.brandMark{
+  width:16px;height:16px;border-radius:4px;object-fit:cover;vertical-align:-3px;margin-right:4px;
+  box-shadow:0 0 0 0.5px var(--sep);
+}
+.metaTxt{vertical-align:middle}
+.logoStrip{
+  display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;
+  padding:4px 0 8px;margin:4px 0 8px;scrollbar-width:none;
+}
+.logoStrip::-webkit-scrollbar{display:none}
+.logoChip{
+  flex:none;width:44px;height:44px;padding:6px;border-radius:12px;background:var(--panel);
+  border:0.5px solid var(--sep);display:flex;align-items:center;justify-content:center;
+}
+.logoChip img{width:28px;height:28px;object-fit:contain}
+.logoChip:active{opacity:.7}
+img.cardPhoto, .thumb > img:not(.teamBadge), .gimg > img:not(.teamBadge){
+  width:100%;height:100%;object-fit:contain;background:#fff;
+}
+img.portraitFallback{object-fit:cover;background:#e8eef5}
+.hasPortrait{background:#e8eef5}
+.catalogHint::after{content:'';position:absolute;inset:0;pointer-events:none}
+
 /* ========== iPhone layout fit (v21) ========== */
 html,body{
   width:100%;max-width:100%;overflow-x:clip;
@@ -1564,6 +1595,8 @@ async function fillThumb(el,c){
       setImgEl(el,src);
       if(!c.imgId&&!c.imgUrl&&c.csId)el.classList.add('catalogHint');
       else el.classList.remove('catalogHint');
+    }else if(typeof applyPortraitFallback==='function' && applyPortraitFallback(el,c)){
+      el.classList.remove('imgMiss');
     }else el.classList.add('imgMiss');
   }finally{el.classList.remove('thumbLoad');}
 }
@@ -1582,9 +1615,9 @@ function renderListPanel(cs){
   if(view==='grid'){
     return `<div class="grid">${cs.map(c=>`
       <div class="gcard" data-id="${c.id}">
-        <div class="gimg" id="im-${c.id}">${sportIcon(c.sport)}</div>
+        ${typeof cardThumb==='function'?cardThumb(c,'gimg'):`<div class="gimg" id="im-${c.id}">${sportIcon(c.sport)}</div>`}
         <div class="gt"><div class="l1">${esc(c.player||c.setName||'—')}${badges(c)}</div>
-        <div class="l2">${esc([c.year,c.brand||c.setName,c.num?'#'+c.num:'',c.variant,c.grade].filter(Boolean).join(' · '))}</div>
+        <div class="l2">${typeof cardMetaLine==='function'?cardMetaLine(c,[c.year,c.brand||c.setName,c.num?'#'+c.num:'',c.variant,c.grade]):esc([c.year,c.brand||c.setName,c.num?'#'+c.num:'',c.variant,c.grade].filter(Boolean).join(' · '))}</div>
         <div class="l3">${money(valueOf(c))}</div></div></div>`).join('')}</div>`;
   }
   let last='', html='';
@@ -1593,10 +1626,10 @@ function renderListPanel(cs){
     if(listGroup&&gl!==last){html+=`<div class="groupHead">${esc(gl)}</div>`;last=gl;}
     const gp=gainPct(c),cls=gp==null?'':gp>=0?'pos':'neg';
     html+=`<div class="row" data-id="${c.id}">
-        <div class="thumb" id="im-${c.id}">${sportIcon(c.sport)}</div>
+        ${typeof cardThumb==='function'?cardThumb(c,'thumb'):`<div class="thumb" id="im-${c.id}">${sportIcon(c.sport)}</div>`}
         <div class="rmain">
           <div class="l1">${esc(c.player||c.setName||'—')}${badges(c)}</div>
-          <div class="l2">${esc([c.year,c.brand,c.setName,c.num?'#'+c.num:'',c.variant,c.grade,c.gradeCert?('cert '+c.gradeCert):'',(+c.qty||1)>1?('×'+c.qty):''].filter(Boolean).join(' · '))}</div>
+          <div class="l2">${typeof cardMetaLine==='function'?cardMetaLine(c,[c.year,c.brand,c.setName,c.num?'#'+c.num:'',c.variant,c.grade,c.gradeCert?('cert '+c.gradeCert):'',(+c.qty||1)>1?('×'+c.qty):'']):esc([c.year,c.brand,c.setName,c.num?'#'+c.num:'',c.variant,c.grade,c.gradeCert?('cert '+c.gradeCert):'',(+c.qty||1)>1?('×'+c.qty):''].filter(Boolean).join(' · '))}</div>
         </div>
         <canvas class="spark" id="sp-${c.id}"></canvas>
         <div class="rright"><div class="v">${money(valueOf(c))}</div>
@@ -1635,6 +1668,7 @@ function renderDash(){
         <button type="button" class="quickCard" data-go="want"><b>⭐ Start a want</b><span>Track a target price</span></button>
         <button type="button" class="quickCard" data-go="show"><b>🃏 Show Mode</b><span>Check if you already have it</span></button>
       </div>
+      ${typeof mlbLogoStripHtml==='function'?`<div class="ct" style="margin-top:14px">MLB teams</div>${mlbLogoStripHtml()}`:''}
       <div class="ct" style="margin-top:14px">Try a legend</div>
       <div class="pill-row">${qp.slice(0,6).map(n=>`<button type="button" class="pill" data-pl="${esc(n)}">⚾ ${esc(n)}</button>`).join('')}</div>
     </div>`:''}
@@ -1650,6 +1684,7 @@ function renderDash(){
        <button type="button" id="btnMlbAll" class="deskOnly">MLB stats</button>
        <button type="button" id="btnGh" class="deskOnly">Stats JSON</button>
      </div>
+     ${typeof mlbLogoStripHtml==='function'?`<div class="ct">Teams</div>${mlbLogoStripHtml()}`:''}
      <div class="ct" style="margin-top:12px">Jump to a player</div>
      <div class="pill-row">${qp.slice(0,8).map(n=>`<button type="button" class="pill" data-pl="${esc(n)}">⚾ ${esc(n)}</button>`).join('')}</div>
    </div>`:''}
@@ -1675,6 +1710,7 @@ function renderDash(){
     else if(g==='want'){tab='want';addCard();} else if(g==='show'){if(typeof openShowMode==='function')openShowMode();}
   });
   document.querySelectorAll('[data-pl]').forEach(b=>b.onclick=()=>goExplorePlayer(b.dataset.pl));
+  if(typeof wireLogoStrip==='function')wireLogoStrip($('view'));
   const bf=$('btnGoFind'); if(bf) bf.onclick=()=>{tab='explore';render();};
   const bs=$('btnGoSets'); if(bs) bs.onclick=()=>{tab='sets';render();};
   const br=$('btnStale'); if(br) br.onclick=()=>refreshStalePrices();
@@ -1877,18 +1913,20 @@ function csDisplayUrl(d){
 }
 function setImgEl(el,url){
   if(!el||!url)return false;
+  const badge=el.querySelector('.teamBadge');
   const img=document.createElement('img');
+  img.className='cardPhoto';
   img.alt='';
   img.decoding='async';
   img.loading='eager';
-  img.src=url; /* never HTML-escape data/blob URLs */
-  el.textContent='';
+  img.src=url;
+  el.innerHTML='';
   el.appendChild(img);
+  if(badge) el.appendChild(badge);
   el.classList.add('imgReady');
-  el.classList.remove('thumbLoad','imgMiss');
+  el.classList.remove('thumbLoad','imgMiss','hasPortrait');
   return true;
 }
-
 function renderExplore(){
   const n=EX.items.length;
   $('view').innerHTML=`<div class="panel">
@@ -2675,11 +2713,11 @@ window.setsLoadAllPhotos=async function setsLoadAllPhotos(){
 };
 
 /** Persist free CardSight catalog images onto vault cards missing a photo. */
-window.fillMissingPhotos=async function fillMissingPhotos({concurrency=6,max=80}={}){
-  if(typeof csKey!=='function'||!csKey()){showToast('CardSight needed for free catalog photos');return 0;}
+window.fillMissingPhotos=async function fillMissingPhotos({concurrency=6,max=80,silent=false}={}){
+  if(typeof csKey!=='function'||!csKey()){if(!silent)showToast('CardSight needed for free catalog photos');return 0;}
   const need=state.cards.filter(c=>c.status!=='sold'&&c.csId&&!c.imgId&&!c.imgUrl).slice(0,max);
-  if(!need.length){showToast('All linked cards already have photos ✔');return 0;}
-  showToast('🖼 Filling '+need.length+' free photos…');
+  if(!need.length){if(!silent)showToast('All linked cards already have photos ✔');return 0;}
+  if(!silent)showToast('🖼 Filling '+need.length+' free photos…');
   let i=0, done=0;
   async function worker(){
     while(i<need.length){
@@ -2701,7 +2739,7 @@ window.fillMissingPhotos=async function fillMissingPhotos({concurrency=6,max=80}
   await Promise.all(Array.from({length:Math.min(concurrency,need.length)},()=>worker()));
   save();
   if(typeof logActivity==='function')logActivity('photos','Filled '+done+' catalog photos');
-  showToast('🖼 Saved '+done+' free photos'+(need.length>=max?' (run again for more)':''));
+  if(!silent)showToast('🖼 Saved '+done+' free photos'+(need.length>=max?' (run again for more)':''));
   if(tab==='have'||tab==='want'||tab==='dash')render();
   return done;
 };
@@ -4149,6 +4187,9 @@ async function init(){
   $('sheetBk').onclick=closeSheet;
   window.addEventListener('resize',()=>{if(tab==='dash')renderDash();});
   render();
+  const warm=()=>{ if(typeof warmGiftVisuals==='function') warmGiftVisuals().catch(()=>{}); };
+  if(typeof requestIdleCallback==='function') requestIdleCallback(warm,{timeout:2500});
+  else setTimeout(warm, 1200);
 }
 addEventListener('DOMContentLoaded',init);
 
@@ -4178,5 +4219,6 @@ if('serviceWorker' in navigator){
 
 }
 </script>
+<script src="./visuals.js"></script>
 </body>
 </html>

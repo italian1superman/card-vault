@@ -1,0 +1,384 @@
+{
+  "teams": [
+    {
+      "id": 108,
+      "abbr": "LAA",
+      "file": "assets/teams/LAA.svg",
+      "aliases": [
+        "LAA",
+        "Angels",
+        "Los Angeles Angels"
+      ]
+    },
+    {
+      "id": 109,
+      "abbr": "ARI",
+      "file": "assets/teams/ARI.svg",
+      "aliases": [
+        "ARI",
+        "Diamondbacks",
+        "Arizona Diamondbacks",
+        "D-backs",
+        "Dbacks"
+      ]
+    },
+    {
+      "id": 110,
+      "abbr": "BAL",
+      "file": "assets/teams/BAL.svg",
+      "aliases": [
+        "BAL",
+        "Orioles",
+        "Baltimore Orioles"
+      ]
+    },
+    {
+      "id": 111,
+      "abbr": "BOS",
+      "file": "assets/teams/BOS.svg",
+      "aliases": [
+        "BOS",
+        "Red Sox",
+        "Boston Red Sox",
+        "RedSox"
+      ]
+    },
+    {
+      "id": 112,
+      "abbr": "CHC",
+      "file": "assets/teams/CHC.svg",
+      "aliases": [
+        "CHC",
+        "Cubs",
+        "Chicago Cubs"
+      ]
+    },
+    {
+      "id": 113,
+      "abbr": "CIN",
+      "file": "assets/teams/CIN.svg",
+      "aliases": [
+        "CIN",
+        "Reds",
+        "Cincinnati Reds"
+      ]
+    },
+    {
+      "id": 114,
+      "abbr": "CLE",
+      "file": "assets/teams/CLE.svg",
+      "aliases": [
+        "CLE",
+        "Guardians",
+        "Cleveland Guardians",
+        "Indians",
+        "Cleveland Indians"
+      ]
+    },
+    {
+      "id": 115,
+      "abbr": "COL",
+      "file": "assets/teams/COL.svg",
+      "aliases": [
+        "COL",
+        "Rockies",
+        "Colorado Rockies"
+      ]
+    },
+    {
+      "id": 116,
+      "abbr": "DET",
+      "file": "assets/teams/DET.svg",
+      "aliases": [
+        "DET",
+        "Tigers",
+        "Detroit Tigers"
+      ]
+    },
+    {
+      "id": 117,
+      "abbr": "HOU",
+      "file": "assets/teams/HOU.svg",
+      "aliases": [
+        "HOU",
+        "Astros",
+        "Houston Astros"
+      ]
+    },
+    {
+      "id": 118,
+      "abbr": "KC",
+      "file": "assets/teams/KC.svg",
+      "aliases": [
+        "KC",
+        "Royals",
+        "Kansas City Royals",
+        "KCR"
+      ]
+    },
+    {
+      "id": 119,
+      "abbr": "LAD",
+      "file": "assets/teams/LAD.svg",
+      "aliases": [
+        "LAD",
+        "Dodgers",
+        "Los Angeles Dodgers",
+        "LA Dodgers"
+      ]
+    },
+    {
+      "id": 120,
+      "abbr": "WSH",
+      "file": "assets/teams/WSH.svg",
+      "aliases": [
+        "WSH",
+        "Nationals",
+        "Washington Nationals",
+        "Was",
+        "Natinals"
+      ]
+    },
+    {
+      "id": 121,
+      "abbr": "NYM",
+      "file": "assets/teams/NYM.svg",
+      "aliases": [
+        "NYM",
+        "Mets",
+        "New York Mets"
+      ]
+    },
+    {
+      "id": 133,
+      "abbr": "OAK",
+      "file": "assets/teams/OAK.svg",
+      "aliases": [
+        "OAK",
+        "Athletics",
+        "Oakland Athletics",
+        "A's",
+        "Athletics"
+      ]
+    },
+    {
+      "id": 134,
+      "abbr": "PIT",
+      "file": "assets/teams/PIT.svg",
+      "aliases": [
+        "PIT",
+        "Pirates",
+        "Pittsburgh Pirates"
+      ]
+    },
+    {
+      "id": 135,
+      "abbr": "SD",
+      "file": "assets/teams/SD.svg",
+      "aliases": [
+        "SD",
+        "Padres",
+        "San Diego Padres",
+        "SDP"
+      ]
+    },
+    {
+      "id": 136,
+      "abbr": "SEA",
+      "file": "assets/teams/SEA.svg",
+      "aliases": [
+        "SEA",
+        "Mariners",
+        "Seattle Mariners"
+      ]
+    },
+    {
+      "id": 137,
+      "abbr": "SF",
+      "file": "assets/teams/SF.svg",
+      "aliases": [
+        "SF",
+        "Giants",
+        "San Francisco Giants",
+        "SFG"
+      ]
+    },
+    {
+      "id": 138,
+      "abbr": "STL",
+      "file": "assets/teams/STL.svg",
+      "aliases": [
+        "STL",
+        "Cardinals",
+        "St. Louis Cardinals",
+        "St Louis Cardinals",
+        "SLC"
+      ]
+    },
+    {
+      "id": 139,
+      "abbr": "TB",
+      "file": "assets/teams/TB.svg",
+      "aliases": [
+        "TB",
+        "Rays",
+        "Tampa Bay Rays",
+        "TBR",
+        "Devil Rays"
+      ]
+    },
+    {
+      "id": 140,
+      "abbr": "TEX",
+      "file": "assets/teams/TEX.svg",
+      "aliases": [
+        "TEX",
+        "Rangers",
+        "Texas Rangers"
+      ]
+    },
+    {
+      "id": 141,
+      "abbr": "TOR",
+      "file": "assets/teams/TOR.svg",
+      "aliases": [
+        "TOR",
+        "Blue Jays",
+        "Toronto Blue Jays",
+        "BlueJays"
+      ]
+    },
+    {
+      "id": 142,
+      "abbr": "MIN",
+      "file": "assets/teams/MIN.svg",
+      "aliases": [
+        "MIN",
+        "Twins",
+        "Minnesota Twins"
+      ]
+    },
+    {
+      "id": 143,
+      "abbr": "PHI",
+      "file": "assets/teams/PHI.svg",
+      "aliases": [
+        "PHI",
+        "Phillies",
+        "Philadelphia Phillies"
+      ]
+    },
+    {
+      "id": 144,
+      "abbr": "ATL",
+      "file": "assets/teams/ATL.svg",
+      "aliases": [
+        "ATL",
+        "Braves",
+        "Atlanta Braves"
+      ]
+    },
+    {
+      "id": 145,
+      "abbr": "CWS",
+      "file": "assets/teams/CWS.svg",
+      "aliases": [
+        "CWS",
+        "White Sox",
+        "Chicago White Sox",
+        "CHW",
+        "WhiteSox"
+      ]
+    },
+    {
+      "id": 146,
+      "abbr": "MIA",
+      "file": "assets/teams/MIA.svg",
+      "aliases": [
+        "MIA",
+        "Marlins",
+        "Miami Marlins",
+        "Florida Marlins"
+      ]
+    },
+    {
+      "id": 147,
+      "abbr": "NYY",
+      "file": "assets/teams/NYY.svg",
+      "aliases": [
+        "NYY",
+        "Yankees",
+        "New York Yankees"
+      ]
+    },
+    {
+      "id": 158,
+      "abbr": "MIL",
+      "file": "assets/teams/MIL.svg",
+      "aliases": [
+        "MIL",
+        "Brewers",
+        "Milwaukee Brewers"
+      ]
+    }
+  ],
+  "brands": [
+    {
+      "id": "topps",
+      "file": "assets/brands/topps.svg",
+      "aliases": [
+        "Topps",
+        "TOPPS",
+        "Topps Chrome",
+        "Topps Series 1",
+        "Topps Series 2",
+        "Topps Update",
+        "Topps Heritage",
+        "Stadium Club",
+        "Allen & Ginter"
+      ]
+    },
+    {
+      "id": "bowman",
+      "file": "assets/brands/bowman.svg",
+      "aliases": [
+        "Bowman",
+        "BOWMAN",
+        "Bowman Chrome",
+        "Bowman Draft",
+        "Bowman Sterling"
+      ]
+    },
+    {
+      "id": "panini",
+      "file": "assets/brands/panini.svg",
+      "aliases": [
+        "Panini",
+        "PANINI",
+        "Panini Prizm",
+        "Donruss",
+        "Donruss Optic",
+        "Chronicles"
+      ]
+    },
+    {
+      "id": "upperdeck",
+      "file": "assets/brands/upperdeck.svg",
+      "aliases": [
+        "Upper Deck",
+        "UPPER DECK",
+        "UD",
+        "SP Authentic"
+      ]
+    },
+    {
+      "id": "fleer",
+      "file": "assets/brands/fleer.svg",
+      "aliases": [
+        "Fleer",
+        "FLEER",
+        "Fleer Ultra"
+      ]
+    }
+  ]
+}
