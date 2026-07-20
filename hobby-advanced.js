@@ -625,4 +625,170 @@ window.openFabMenu=function openFabMenu(){
     if(!m.contains(e.target)&&e.target.id!=='fab'){m.remove();document.removeEventListener('click',h);}
   }),0);
 };
+
+/* ---- Player catalog cascade (only real cards for that player) ---- */
+window.PCAT={q:'',cards:[],total:0,year:'',brand:'',setName:'',loading:false};
+
+window.csCardBrand=function csCardBrand(x){
+  return (typeof csInferBrand==='function'?csInferBrand(x):'')||x.manufacturerName||x.releaseName||'Other';
+};
+window.loadPlayerCatalog=async function loadPlayerCatalog(player,{append=false}={}){
+  const q=String(player||'').trim();
+  if(q.length<2){PCAT.q='';PCAT.cards=[];PCAT.total=0;return PCAT;}
+  if(!append || PCAT.q!==q){PCAT.q=q;PCAT.cards=[];PCAT.year='';PCAT.brand='';PCAT.setName='';}
+  PCAT.loading=true;
+  const skip=PCAT.cards.length;
+  const j=await csSearchBaseballCards(q,{take:48,skip});
+  const seen=new Set(PCAT.cards.map(c=>c.id));
+  for(const c of (j.cards||[])){ if(c.id&&!seen.has(c.id)){PCAT.cards.push(c);seen.add(c.id);} }
+  PCAT.total=j.total_count||PCAT.cards.length;
+  PCAT.loading=false;
+  return PCAT;
+};
+window.pcatFiltered=function pcatFiltered(){
+  let list=PCAT.cards.slice();
+  if(PCAT.year)list=list.filter(x=>String(x.releaseYear||x.year||'')===String(PCAT.year));
+  if(PCAT.brand)list=list.filter(x=>csCardBrand(x)===PCAT.brand);
+  if(PCAT.setName)list=list.filter(x=>{
+    const sn=[x.releaseName,x.setName&&!/^base\b/i.test(String(x.setName||''))?x.setName:''].filter(Boolean).join(' ').trim()||x.setName||'';
+    return sn===PCAT.setName;
+  });
+  return list;
+};
+window.pcatOptions=function pcatOptions(){
+  const base=PCAT.cards;
+  const years=[...new Set(base.map(x=>String(x.releaseYear||x.year||'')).filter(Boolean))].sort((a,b)=>b.localeCompare(a));
+  let list=base;
+  if(PCAT.year)list=list.filter(x=>String(x.releaseYear||x.year||'')===String(PCAT.year));
+  const brands=[...new Set(list.map(csCardBrand).filter(Boolean))].sort();
+  if(PCAT.brand)list=list.filter(x=>csCardBrand(x)===PCAT.brand);
+  const sets=[...new Set(list.map(x=>{
+    return [x.releaseName,x.setName&&!/^base\b/i.test(String(x.setName||''))?x.setName:''].filter(Boolean).join(' ').trim()||x.setName||'Set';
+  }).filter(Boolean))].sort();
+  return {years,brands,sets,cards:pcatFiltered()};
+};
+window.applyCatalogToSheet=async function applyCatalogToSheet(x,c,{skipPicker=false}={}){
+  if(!x||!c)return;
+  showToast('Filling every field from catalog…');
+  const full=await csEnrichCatalogCard(x);
+  let par=null;
+  if(!skipPicker){
+    const pick=await openParallelPicker(full,c.status||'have');
+    if(pick===undefined)return;
+    par=pick;
+  }
+  csHydrateCard(c,full,par);
+  c.sport=BB_SPORT;
+  save();
+  try{
+    const url=csImgSrc(await csImageData(full.id));
+    if(url){
+      if(url.startsWith('data:')){c.imgId=c.id;imgCache.set(c.id,url);await idb.put(c.id,url);}
+      else c.imgUrl=url;
+      save();
+    }
+  }catch(e){}
+  if(typeof enrichPlayerFields==='function'&&c.player)await enrichPlayerFields(c,c.player).catch(()=>{});
+  if(c.csId&&!(c.prices&&c.prices.length)){
+    try{
+      const map=await csBulkPriceByIds([c.csId]);
+      if(map[c.csId]!=null)applyCsPrice(c,map[c.csId],'cardsight');
+      save();
+    }catch(e){}
+  }
+  if(typeof confettiBurst==='function')confettiBurst();
+  showToast('✔ '+[c.player,c.year,c.brand,c.num?'#'+c.num:'',c.variant].filter(Boolean).join(' · '));
+  openSheet();
+};
+window.renderPlayerCascade=async function renderPlayerCascade(player,c){
+  const box=$('propStrip'); if(!box)return;
+  const q=String(player||'').trim();
+  if(q.length<2){box.hidden=true;box.innerHTML='';return;}
+  box.hidden=false;
+  box.innerHTML=`<div class="cascade">
+    <div class="ct">Real cards for ${esc(q)} — pick year → brand → set → card</div>
+    <div class="empty soft" id="casLoad">Loading catalog…</div>
+  </div>`;
+  try{
+    if(PCAT.q!==q || !PCAT.cards.length) await loadPlayerCatalog(q);
+    paintCascade(box,c);
+    csPrefetchImages(pcatFiltered().slice(0,24).map(x=>x.id),{toast:false});
+  }catch(e){
+    box.innerHTML=`<div class="cascade"><div style="color:var(--amber);padding:8px">${esc(e.message||'Catalog error')}</div></div>`;
+  }
+};
+function paintCascade(box,c){
+  const opt=pcatOptions();
+  const cards=opt.cards.slice(0,60);
+  const setAllOn=!PCAT.setName?'on':'';
+  box.innerHTML=`<div class="cascade">
+    <div class="casHead">
+      <div class="ct" style="margin:0">⚾ ${esc(PCAT.q)} · ${PCAT.cards.length}${PCAT.total>PCAT.cards.length?' / '+PCAT.total:''} catalog cards</div>
+      <button type="button" id="casMore" ${PCAT.cards.length>=PCAT.total?'disabled':''}>Load more</button>
+      <button type="button" id="casExplore" class="bigim">Full Find →</button>
+    </div>
+    <div class="casLabel">Year <span>(only years this player has)</span></div>
+    <div class="pill-row" id="casYears">
+      <button type="button" class="pill ${!PCAT.year?'on':''}" data-y="">All</button>
+      ${opt.years.map(y=>`<button type="button" class="pill ${PCAT.year===y?'on':''}" data-y="${esc(y)}">${esc(y)}</button>`).join('')}
+    </div>
+    <div class="casLabel">Brand / release</div>
+    <div class="pill-row" id="casBrands">
+      <button type="button" class="pill ${!PCAT.brand?'on':''}" data-b="">All</button>
+      ${opt.brands.map(b=>`<button type="button" class="pill ${PCAT.brand===b?'on':''}" data-b="${esc(b)}">${esc(b)}</button>`).join('')}
+    </div>
+    <div class="casLabel">Set</div>
+    <div class="pill-row" id="casSets">
+      <button type="button" class="pill ${setAllOn}" data-s="">All</button>
+      ${opt.sets.slice(0,40).map(s=>`<button type="button" class="pill ${PCAT.setName===s?'on':''}" data-s="${esc(s)}">${esc(s.length>28?s.slice(0,27)+'…':s)}</button>`).join('')}
+    </div>
+    <div class="casLabel">${cards.length} card${cards.length===1?'':'s'} — tap one to fill year, brand, set, #, parallel, photo, price</div>
+    <div class="casGrid" id="casGrid">
+      ${cards.length?cards.map((x,i)=>{
+        const rc=(x.attributes||[]).some(a=>/^rc$|rookie/i.test(a));
+        const own=typeof findOwned==='function'&&findOwned(x.id,'');
+        const brand=csCardBrand(x);
+        const label=(x.name||'').includes(' - ')?(x.name||'').split(' - ').pop():(x.name||'');
+        return `<button type="button" class="casCard" data-i="${i}">
+          <div class="casImg" id="cas-img-${i}">🃏</div>
+          <div class="casMeta">
+            <b>#${esc(x.number||'?')} ${esc(label)}</b>
+            <span>${esc([x.releaseYear,brand,x.setName&&!/^base\b/i.test(String(x.setName||''))?x.setName:x.releaseName].filter(Boolean).join(' · '))}</span>
+            <span>${rc?'RC · ':''}${(x.parallels&&x.parallels.length)?(x.parallels.length+' parallels'):'tap for parallels'}${own?' · HAVE':''}</span>
+          </div>
+        </button>`;
+      }).join(''):`<div class="empty soft">No cards for these filters — tap All on a row above.</div>`}
+    </div>
+  </div>`;
+
+  const rebind=()=>paintCascade(box,c);
+  box.querySelectorAll('#casYears .pill').forEach(b=>b.onclick=()=>{PCAT.year=b.dataset.y||'';PCAT.brand='';PCAT.setName='';rebind();});
+  box.querySelectorAll('#casBrands .pill').forEach(b=>b.onclick=()=>{PCAT.brand=b.dataset.b||'';PCAT.setName='';rebind();});
+  box.querySelectorAll('#casSets .pill').forEach(b=>b.onclick=()=>{PCAT.setName=b.dataset.s||'';rebind();});
+  const more=$('casMore'); if(more) more.onclick=async()=>{
+    more.disabled=true; more.textContent='Loading…';
+    await loadPlayerCatalog(PCAT.q,{append:true});
+    paintCascade(box,c);
+  };
+  const ex=$('casExplore'); if(ex) ex.onclick=()=>{closeSheet();goExplorePlayer(PCAT.q);};
+  const list=opt.cards.slice(0,60);
+  box.querySelectorAll('.casCard').forEach(b=>b.onclick=()=>applyCatalogToSheet(list[+b.dataset.i],c));
+  list.forEach(async(x,i)=>{
+    const el=$('cas-img-'+i); if(!el)return;
+    const url=csImgSrc(await csImageData(x.id));
+    if(url&&$('cas-img-'+i))$('cas-img-'+i).innerHTML=`<img src="${esc(url)}" loading="lazy" alt="">`;
+  });
+  syncSheetCascadeFields(opt,c);
+}
+window.syncSheetCascadeFields=function syncSheetCascadeFields(opt,c){
+  const fill=(id,arr)=>{const el=$(id); if(!el)return; el.innerHTML=[...new Set(arr)].filter(Boolean).map(v=>`<option value="${esc(v)}">`).join('');};
+  fill('dlCasYear',opt.years||[]);
+  fill('dlCasBrand',opt.brands||[]);
+  fill('dlCasSet',opt.sets||[]);
+  fill('dlCasNum',(opt.cards||[]).map(x=>x.number).filter(Boolean).slice(0,200));
+  /* if filters imply single values, auto-fill empty fields for ease */
+  if(c&&PCAT.year&&!c.year){c.year=PCAT.year; const i=$('sheet')&&$('sheet').querySelector('[data-k="year"]'); if(i)i.value=c.year;}
+  if(c&&PCAT.brand&&!c.brand){c.brand=PCAT.brand; const i=$('sheet')&&$('sheet').querySelector('[data-k="brand"]'); if(i)i.value=c.brand;}
+};
+
 })();
