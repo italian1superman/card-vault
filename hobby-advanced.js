@@ -276,23 +276,23 @@ window.addFromCatalogAdvanced=async function addFromCatalogAdvanced(x,status,{pa
 };
 
 window.psaPopUrl=function psaPopUrl(c){
-  const q=[c.year,c.setName,c.player,c.num].filter(Boolean).join(' ');
-  return 'https://www.psacard.com/pop/search?q='+encodeURIComponent(q);
+  if(c&&c.gradeCert)return psaCertUrl(c.gradeCert);
+  const q=(typeof cardSearchBits==='function'?cardSearchBits(c,{mode:'tcdb'}):[c.year,c.setName,c.player,c.num].filter(Boolean).join(' '));
+  return 'https://www.psacard.com/pop/search?q='+encodeURIComponent(q||'');
 };
 window.psaCertUrl=function psaCertUrl(cert){
-  return 'https://www.psacard.com/cert/'+encodeURIComponent(String(cert||'').trim());
+  const n=String(cert||'').replace(/\D/g,'');
+  if(!n)return 'https://www.psacard.com/cert';
+  return 'https://www.psacard.com/cert/'+encodeURIComponent(n);
 };
 window.tcdbSetUrl=function tcdbSetUrl(year,name){
-  return 'https://www.tcdb.com/Search.cfm?SearchTerm='+encodeURIComponent([year,name].filter(Boolean).join(' '));
+  return 'https://www.tcdb.com/Search.cfm?SearchCategory=Baseball&SearchTerm='+encodeURIComponent([year,name].filter(Boolean).join(' '));
 };
 window.renderDeepLinks=function renderDeepLinks(c){
+  if(typeof renderCardLinks==='function')return renderCardLinks(c);
   return `<div class="deepLinks">
     <a href="${ebaySoldUrl(c)}" target="_blank" rel="noopener">eBay sold</a>
-    <a href="${ebayLiveUrl(c)}" target="_blank" rel="noopener">eBay live</a>
     <a href="${tcdbUrl(c)}" target="_blank" rel="noopener">TCDB</a>
-    <a href="${psaPopUrl(c)}" target="_blank" rel="noopener">PSA</a>
-    ${c.gradeCert?`<a href="${psaCertUrl(c.gradeCert)}" target="_blank" rel="noopener">Cert ${esc(c.gradeCert)}</a>`:''}
-    <a href="${imgSearchUrl(c)}" target="_blank" rel="noopener">Images</a>
   </div>`;
 };
 

@@ -240,6 +240,8 @@ footer{color:var(--dim);font-size:11.5px;text-align:center;padding:8px 14px 90px
 .casMeta span{font-size:11px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .casFields{margin:8px 0 4px}
 
+.linkHint{font-size:11px;color:var(--dim);margin:-2px 0 8px 2px}
+.links a{font-weight:600}
 </style>
 </head>
 <body>
@@ -614,17 +616,107 @@ function groupSum(cards,keyFn){
   for(const c of cards){const k=keyFn(c)||'—';m.set(k,(m.get(k)||0)+valueOf(c)*(+c.qty||1));}
   return [...m.entries()].sort((a,b)=>b[1]-a[1]);
 }
-function buildQuery(c){
-  return [c.year,c.brand,c.setName,c.player,c.num?('#'+c.num):'',c.variant&&!/^base$/i.test(c.variant)?c.variant:'',
-    c.serial?('/'+String(c.serial).replace(/^\//,'')):'',
-    c.grade&&!/^raw$/i.test(c.grade)?c.grade:''].filter(Boolean).join(' ').trim();
+/** Tight keyword strings for marketplace / database deep links. */
+function cardSearchBits(c,{mode='full'}={}){
+  if(!c)return '';
+  const year=String(c.year||'').trim();
+  const brand=String(c.brand||'').trim();
+  let set=String(c.setName||'').trim();
+  /* drop duplicated year/brand prefixes so queries stay title-like */
+  if(brand&&set.toLowerCase().startsWith(brand.toLowerCase()))set=set.slice(brand.length).trim();
+  if(year&&set.startsWith(year))set=set.slice(year.length).trim();
+  if(brand&&set.toLowerCase().startsWith(brand.toLowerCase()))set=set.slice(brand.length).trim();
+  const player=String(c.player||'').trim();
+  const num=c.num?('#'+String(c.num).replace(/^#/,'').trim()):'';
+  const variant=c.variant&&!/^base$/i.test(String(c.variant).trim())?String(c.variant).trim():'';
+  const grade=c.grade&&!/^raw$/i.test(String(c.grade).trim())?String(c.grade).trim():'';
+  const serial=c.serial?('/'+String(c.serial).replace(/^\//,'').trim()):'';
+  if(mode==='ebay'){
+    /* Listing titles are usually: year brand player #num [parallel] [grade] */
+    return [year,brand,player,num,variant,grade].filter(Boolean).join(' ').trim();
+  }
+  if(mode==='tcdb'){
+    /* Checklist search works best with year + brand + player + # */
+    return [year,brand,player,num,variant].filter(Boolean).join(' ').trim();
+  }
+  return [year,brand,set,player,num,variant,serial,grade].filter(Boolean).join(' ').trim();
 }
-const ebaySoldUrl=c=>'https://www.ebay.com/sch/i.html?_nkw='+encodeURIComponent(buildQuery(c))+'&LH_Sold=1&LH_Complete=1';
-const ebayLiveUrl=c=>'https://www.ebay.com/sch/i.html?_nkw='+encodeURIComponent(buildQuery(c));
-const pcUrl=c=>'https://www.pricecharting.com/search-products?type=prices&q='+encodeURIComponent(buildQuery(c));
-const tcdbUrl=c=>'https://www.tcdb.com/Search.cfm?SearchTerm='+encodeURIComponent(
-  [c.year,c.brand,c.setName,c.player].filter(Boolean).join(' ').trim());
-const imgSearchUrl=c=>'https://www.google.com/search?tbm=isch&q='+encodeURIComponent(buildQuery(c));
+function buildQuery(c){return cardSearchBits(c,{mode:'full'});}
+function ebaySoldUrl(c){
+  const q=cardSearchBits(c,{mode:'ebay'});
+  if(!q)return 'https://www.ebay.com/sch/i.html?_nkw=baseball+card&LH_Sold=1&LH_Complete=1&_sacat=261328';
+  const p=new URLSearchParams();
+  p.set('_from','R40');
+  p.set('_nkw',q);
+  p.set('_sacat','261328'); /* Baseball Cards */
+  p.set('LH_TitleDesc','0');
+  p.set('LH_Sold','1');
+  p.set('LH_Complete','1');
+  p.set('_sop','13'); /* recently ended */
+  p.set('_ipg','60');
+  p.set('rt','nc');
+  return 'https://www.ebay.com/sch/i.html?'+p.toString();
+}
+function ebayLiveUrl(c){
+  const q=cardSearchBits(c,{mode:'ebay'});
+  if(!q)return 'https://www.ebay.com/sch/i.html?_nkw=baseball+card&_sacat=261328';
+  const p=new URLSearchParams();
+  p.set('_from','R40');
+  p.set('_nkw',q);
+  p.set('_sacat','261328');
+  p.set('LH_TitleDesc','0');
+  p.set('_ipg','60');
+  p.set('rt','nc');
+  return 'https://www.ebay.com/sch/i.html?'+p.toString();
+}
+/** 130 Point — popular eBay sold-comps search for cards */
+function point130Url(c){
+  const q=cardSearchBits(c,{mode:'ebay'});
+  return 'https://www.130point.com/sales/?query='+encodeURIComponent(q||String(c&&c.player||'baseball card'));
+}
+function pcUrl(c){
+  const q=cardSearchBits(c,{mode:'full'})||cardSearchBits(c,{mode:'ebay'});
+  return 'https://www.pricecharting.com/search-products?type=prices&q='+encodeURIComponent(q||'');
+}
+function tcdbUrl(c){
+  const q=cardSearchBits(c,{mode:'tcdb'})||String(c&&c.player||'');
+  return 'https://www.tcdb.com/Search.cfm?SearchCategory=Baseball&SearchTerm='+encodeURIComponent(q);
+}
+function tcdbPlayerUrl(c){
+  const name=String(c&&c.player||'').trim();
+  if(!name)return tcdbUrl(c);
+  return 'https://www.tcdb.com/SearchPeople.cfm?SearchTerm='+encodeURIComponent(name);
+}
+function psaCertUrl(cert){
+  const n=String(cert||'').replace(/\D/g,'');
+  if(!n)return 'https://www.psacard.com/cert';
+  return 'https://www.psacard.com/cert/'+encodeURIComponent(n);
+}
+function psaPopUrl(c){
+  if(c&&c.gradeCert)return psaCertUrl(c.gradeCert);
+  const q=cardSearchBits(c,{mode:'tcdb'})||[c&&c.year,c&&c.player].filter(Boolean).join(' ');
+  return 'https://www.psacard.com/pop/search?q='+encodeURIComponent(q||'');
+}
+function imgSearchUrl(c){
+  return 'https://www.google.com/search?tbm=isch&q='+encodeURIComponent(cardSearchBits(c,{mode:'ebay'})||buildQuery(c));
+}
+function renderCardLinks(c){
+  const has=!!(c&&(c.player||c.setName||c.csId));
+  if(!has)return `<div class="links muted">Add a player or catalog card to unlock eBay / TCDB / PSA links.</div>`;
+  const cert=c.gradeCert?String(c.gradeCert).replace(/\D/g,''):'';
+  return `<div class="links">
+    <a href="${ebaySoldUrl(c)}" target="_blank" rel="noopener noreferrer">eBay sold</a>
+    <a href="${ebayLiveUrl(c)}" target="_blank" rel="noopener noreferrer">eBay live</a>
+    <a href="${point130Url(c)}" target="_blank" rel="noopener noreferrer">130 Point sales</a>
+    <a href="${tcdbUrl(c)}" target="_blank" rel="noopener noreferrer">TCDB card search</a>
+    <a href="${tcdbPlayerUrl(c)}" target="_blank" rel="noopener noreferrer">TCDB player</a>
+    <a href="${pcUrl(c)}" target="_blank" rel="noopener noreferrer">PriceCharting</a>
+    <a href="${psaPopUrl(c)}" target="_blank" rel="noopener noreferrer">${cert?'PSA cert':'PSA pop'}</a>
+    ${cert?`<a href="${psaCertUrl(cert)}" target="_blank" rel="noopener noreferrer">Cert #${esc(cert)}</a>`:''}
+    <a href="${imgSearchUrl(c)}" target="_blank" rel="noopener noreferrer">Pics</a>
+  </div>
+  <div class="linkHint">Searches use year · brand · player · # · parallel — Baseball Cards category on eBay.</div>`;
+}
 /* ------- exports ------- */
 function xmlEsc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function xlsExport(cards){
@@ -1646,15 +1738,10 @@ async function openSheet(){
     ${F('Sale date','saleDate',c.saleDate,'type="date"')}
    </div>
    <div class="f"><label>Notes</label><textarea data-k="notes" rows="2">${esc(c.notes)}</textarea></div>
-   <div class="links">
-    <a href="${ebaySoldUrl(c)}" target="_blank" rel="noopener">eBay SOLD 🔎</a>
-    <a href="${ebayLiveUrl(c)}" target="_blank" rel="noopener">eBay live</a>
-    <a href="${pcUrl(c)}" target="_blank" rel="noopener">PriceCharting</a>
+   ${typeof renderCardLinks==='function'?renderCardLinks(c):`<div class="links">
+    <a href="${ebaySoldUrl(c)}" target="_blank" rel="noopener">eBay sold</a>
     <a href="${tcdbUrl(c)}" target="_blank" rel="noopener">TCDB</a>
-    <a href="${typeof psaPopUrl==='function'?psaPopUrl(c):'https://www.psacard.com/'}" target="_blank" rel="noopener">PSA</a>
-    ${c.gradeCert?`<a href="https://www.psacard.com/cert/${encodeURIComponent(c.gradeCert)}" target="_blank" rel="noopener">Cert</a>`:''}
-    <a href="${imgSearchUrl(c)}" target="_blank" rel="noopener">Pics</a>
-   </div>
+   </div>`}
    ${F('PSA/BGS cert #','gradeCert',c.gradeCert||'','inputmode="numeric"')}
    <div id="csPop" class="teach-hint" style="color:var(--dim);font-size:12px;margin:6px 0">${c.csId?'Loading PSA pop (free)…':(csKey()?'Link a catalog card for PSA pop + accurate prices.':'')}</div>
    <div class="deltas">
@@ -2333,23 +2420,23 @@ window.addFromCatalogAdvanced=async function addFromCatalogAdvanced(x,status,{pa
 };
 
 window.psaPopUrl=function psaPopUrl(c){
-  const q=[c.year,c.setName,c.player,c.num].filter(Boolean).join(' ');
-  return 'https://www.psacard.com/pop/search?q='+encodeURIComponent(q);
+  if(c&&c.gradeCert)return psaCertUrl(c.gradeCert);
+  const q=(typeof cardSearchBits==='function'?cardSearchBits(c,{mode:'tcdb'}):[c.year,c.setName,c.player,c.num].filter(Boolean).join(' '));
+  return 'https://www.psacard.com/pop/search?q='+encodeURIComponent(q||'');
 };
 window.psaCertUrl=function psaCertUrl(cert){
-  return 'https://www.psacard.com/cert/'+encodeURIComponent(String(cert||'').trim());
+  const n=String(cert||'').replace(/\D/g,'');
+  if(!n)return 'https://www.psacard.com/cert';
+  return 'https://www.psacard.com/cert/'+encodeURIComponent(n);
 };
 window.tcdbSetUrl=function tcdbSetUrl(year,name){
-  return 'https://www.tcdb.com/Search.cfm?SearchTerm='+encodeURIComponent([year,name].filter(Boolean).join(' '));
+  return 'https://www.tcdb.com/Search.cfm?SearchCategory=Baseball&SearchTerm='+encodeURIComponent([year,name].filter(Boolean).join(' '));
 };
 window.renderDeepLinks=function renderDeepLinks(c){
+  if(typeof renderCardLinks==='function')return renderCardLinks(c);
   return `<div class="deepLinks">
     <a href="${ebaySoldUrl(c)}" target="_blank" rel="noopener">eBay sold</a>
-    <a href="${ebayLiveUrl(c)}" target="_blank" rel="noopener">eBay live</a>
     <a href="${tcdbUrl(c)}" target="_blank" rel="noopener">TCDB</a>
-    <a href="${psaPopUrl(c)}" target="_blank" rel="noopener">PSA</a>
-    ${c.gradeCert?`<a href="${psaCertUrl(c.gradeCert)}" target="_blank" rel="noopener">Cert ${esc(c.gradeCert)}</a>`:''}
-    <a href="${imgSearchUrl(c)}" target="_blank" rel="noopener">Images</a>
   </div>`;
 };
 

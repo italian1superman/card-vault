@@ -1,5 +1,5 @@
 /* Card Vault service worker */
-const CACHE = 'card-vault-v10-cascade';
+const CACHE = 'card-vault-v11-links';
 const ASSETS = [
   './',
   './index.html',
