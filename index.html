@@ -345,6 +345,141 @@ details summary::-webkit-details-marker{display:none}
 
 
 
+
+/* ===== Cooler collector layer ===== */
+:root{
+  --foil: linear-gradient(115deg, transparent 20%, rgba(255,255,255,.55) 40%, transparent 60%);
+}
+body.cv-cool{
+  background-color:#e8ebf2;
+  background-image:
+    radial-gradient(900px 420px at 10% -10%, rgba(0,122,255,.10), transparent 55%),
+    radial-gradient(700px 380px at 100% 0%, rgba(48,209,88,.08), transparent 50%),
+    radial-gradient(600px 400px at 50% 120%, rgba(255,159,10,.06), transparent 45%),
+    linear-gradient(180deg, #f3f5fa 0%, #e8ebf2 280px);
+}
+.heroPanel.coolHero{
+  position:relative;overflow:hidden;
+  background:
+    linear-gradient(135deg, rgba(0,122,255,.08) 0%, transparent 42%),
+    linear-gradient(180deg, #fff 0%, #f7f8fc 100%);
+  border:0.5px solid rgba(0,122,255,.12);
+}
+.heroPanel.coolHero::before{
+  content:'';position:absolute;right:-40px;top:-50px;width:160px;height:160px;border-radius:50%;
+  background:radial-gradient(circle, rgba(0,122,255,.16), transparent 68%);
+  pointer-events:none;
+}
+.heroEyebrow{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--acc);margin:0 0 8px;padding:4px 8px;border-radius:999px;
+  background:rgba(0,122,255,.10);
+}
+.heroEyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 0 3px rgba(48,209,88,.25)}
+
+.showcase{
+  display:flex;gap:10px;overflow-x:auto;-webkit-overflow-scrolling:touch;
+  padding:4px 2px 12px;margin:4px 0 2px;scrollbar-width:none;
+  scroll-snap-type:x mandatory;
+}
+.showcase::-webkit-scrollbar{display:none}
+.showCard{
+  flex:none;width:118px;scroll-snap-align:start;
+  background:var(--panel);border-radius:14px;overflow:hidden;cursor:pointer;
+  border:0.5px solid var(--sep);box-shadow:var(--shadow);
+  position:relative;text-align:left;padding:0;
+  transition:transform .18s var(--ease);
+}
+.showCard:active{transform:scale(.97)}
+.showCard .sg{
+  height:148px;background:linear-gradient(180deg,#1a2230,#2a3344);
+  display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;
+}
+.showCard .sg img{width:100%;height:100%;object-fit:contain;background:#111820}
+.showCard .sg img.portraitFallback{object-fit:cover}
+.showCard .sg .shine{
+  position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(115deg, transparent 30%, rgba(255,255,255,.22) 48%, transparent 62%);
+  transform:translateX(-120%);
+  animation:foilSweep 3.2s ease-in-out infinite;
+}
+.showCard .sm{padding:8px 9px 10px}
+.showCard .sm .l1{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.showCard .sm .l2{font-size:11px;color:var(--mute);margin-top:2px}
+.showCard .sm .l3{font-size:13px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums}
+
+@keyframes foilSweep{
+  0%,55%{transform:translateX(-120%)}
+  75%{transform:translateX(120%)}
+  100%{transform:translateX(120%)}
+}
+
+.gcard{position:relative}
+.gcard .foil{
+  position:absolute;inset:0;pointer-events:none;opacity:0;z-index:3;
+  background:linear-gradient(115deg, transparent 20%, rgba(255,255,255,.45) 42%, transparent 58%);
+  mix-blend-mode:soft-light;
+  transition:opacity .2s;
+}
+.gcard:active .foil{opacity:1}
+.gcard[data-status="want"]{box-shadow:var(--shadow), inset 0 0 0 1.5px rgba(255,159,10,.35)}
+.gcard[data-status="have"] .gimg::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:linear-gradient(180deg, var(--green), rgba(48,209,88,.2));z-index:2;
+}
+
+.emptyCool{
+  text-align:center;padding:8px 4px 4px;position:relative;
+}
+.emptyCool .heroTitle{font-size:36px!important}
+.floatLogos{
+  display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:12px 0 4px;opacity:.92;
+}
+.floatLogos img{
+  width:36px;height:36px;object-fit:contain;
+  filter:drop-shadow(0 4px 8px rgba(0,0,0,.12));
+  animation:floaty 3.5s ease-in-out infinite;
+}
+.floatLogos img:nth-child(2){animation-delay:.2s}
+.floatLogos img:nth-child(3){animation-delay:.4s}
+.floatLogos img:nth-child(4){animation-delay:.6s}
+.floatLogos img:nth-child(5){animation-delay:.8s}
+@keyframes floaty{
+  0%,100%{transform:translateY(0)}
+  50%{transform:translateY(-5px)}
+}
+
+.plBar{
+  display:inline-flex;align-items:center;gap:6px;margin-top:2px;
+  font-size:13px;font-weight:700;padding:4px 10px;border-radius:999px;
+}
+.plBar.pos{background:rgba(48,209,88,.12);color:var(--green)}
+.plBar.neg{background:rgba(255,59,48,.12);color:var(--red)}
+
+.statPulse .v{letter-spacing:-.5px}
+
+#fab{
+  background:linear-gradient(145deg, #5aa9ff 0%, #007aff 55%, #0062d1 100%);
+  box-shadow:0 8px 24px rgba(0,122,255,.42), inset 0 1px 0 rgba(255,255,255,.35);
+}
+#navB .nb.on .i{
+  transform:translateY(-1px);
+  filter:drop-shadow(0 2px 4px rgba(0,122,255,.25));
+}
+#navB .nb .i{transition:transform .15s var(--ease)}
+
+@media (prefers-reduced-motion:reduce){
+  .showCard .sg .shine,.floatLogos img{animation:none!important}
+}
+
+@media(max-width:899px){
+  .showCard{width:108px}
+  .showCard .sg{height:132px}
+  .emptyCool .heroTitle{font-size:30px!important}
+  .heroEyebrow{font-size:10px;margin-bottom:6px}
+}
+
 /* ===== Visual polish (still iPhone-dense) ===== */
 .brandLockup{display:inline-flex;align-items:center;gap:8px}
 .brandBall{
@@ -689,7 +824,7 @@ html,body{
 
 </style>
 </head>
-<body>
+<body class="cv-cool">
 <header>
   <div class="hdrTop">
     <h1><span class="brandLockup"><span class="brandBall" aria-hidden="true"></span><span>Card Vault</span></span></h1>
@@ -1736,7 +1871,8 @@ function renderListPanel(cs){
   if(!cs.length)return `<div class="empty soft"><b>Nothing here yet</b><div class="bigActs"><button type="button" class="bigim" id="emptyFind">🔍 Find a player</button><button type="button" id="emptySets">📚 Build a set</button><button type="button" id="emptyAdd">＋ Add blank card</button></div></div>`;
   if(view==='grid'){
     return `<div class="grid">${cs.map(c=>`
-      <div class="gcard" data-id="${c.id}">
+      <div class="gcard" data-id="${c.id}" data-status="${esc(c.status||'have')}">
+        <i class="foil" aria-hidden="true"></i>
         ${typeof cardThumb==='function'?cardThumb(c,'gimg'):`<div class="gimg" id="im-${c.id}">${sportIcon(c.sport)}</div>`}
         <div class="gt"><div class="l1">${esc(c.player||c.setName||'—')}${badges(c)}</div>
         <div class="l2">${typeof cardMetaLine==='function'?cardMetaLine(c,[c.year,c.brand||c.setName,c.num?'#'+c.num:'',c.variant,c.grade]):esc([c.year,c.brand||c.setName,c.num?'#'+c.num:'',c.variant,c.grade].filter(Boolean).join(' · '))}</div>
@@ -1789,6 +1925,37 @@ function afterListRender(cs){
     const sp=$('sp-'+c.id);if(sp)spark(sp,(c.prices||[]).map(p=>p.v));
   });
 }
+
+function homeShowcaseHtml(cards){
+  const top=(cards||[]).filter(c=>c.status==='have').sort((a,b)=>valueOf(b)*(b.qty||1)-valueOf(a)*(a.qty||1)).slice(0,8);
+  if(!top.length) return '';
+  return `<div class="ct">Showcase</div><div class="showcase" id="homeShowcase">`+
+    top.map(c=>`<button type="button" class="showCard" data-id="${c.id}">
+      <div class="sg" id="hs-${c.id}">${typeof sportIcon==='function'?sportIcon(c.sport):'🃏'}
+        <i class="shine" aria-hidden="true"></i>
+        ${typeof teamBadgeHtml==='function'?teamBadgeHtml(c.team):''}
+      </div>
+      <div class="sm">
+        <div class="l1">${esc(c.player||c.setName||'Card')}</div>
+        <div class="l2">${esc([c.year,c.brand].filter(Boolean).join(' · '))}</div>
+        <div class="l3">${money0(valueOf(c))}</div>
+      </div>
+    </button>`).join('')+`</div>`;
+}
+function wireHomeShowcase(){
+  document.querySelectorAll('#homeShowcase .showCard').forEach(btn=>{
+    btn.onclick=()=>{
+      sel=state.cards.find(c=>c.id===btn.dataset.id);
+      if(sel) openSheet();
+    };
+  });
+  (state.cards||[]).forEach(c=>{
+    const el=$('hs-'+c.id); if(!el) return;
+    if(c.imgId||c.imgUrl||c.csId||c._pPhoto) fillThumb(el,c);
+    else if(typeof applyPortraitFallback==='function') applyPortraitFallback(el,c);
+  });
+}
+
 function renderDash(){
   const s=stats(state.cards);
   const cs=state.cards;
@@ -1800,9 +1967,13 @@ function renderDash(){
   const empty=!cs.length;
   const qp=(typeof QUICK_PLAYERS!=='undefined'?QUICK_PLAYERS:['Ken Griffey Jr','Shohei Ohtani','Mike Trout','Aaron Judge']);
   $('view').innerHTML=`
-   ${empty?`<div class="panel heroPanel">
+   ${empty?`<div class="panel heroPanel coolHero emptyCool">
+      <div class="heroEyebrow"><span class="dot"></span> Baseball vault</div>
       <div class="heroTitle">Card Vault</div>
-      <div class="heroSub">Your baseball cards, values, and sets — on this phone.</div>
+      <div class="heroSub">Values, sets, and photos — built for your collection.</div>
+      <div class="floatLogos">
+        ${['NYY','LAD','BOS','CHC','ATL'].map(a=>`<img src="assets/teams/${a}.svg" alt="${a}">`).join('')}
+      </div>
       <div class="quickGrid">
         <button type="button" class="quickCard" data-go="explore"><b>🔍 Find a player</b><span>Browse catalog cards</span></button>
         <button type="button" class="quickCard" data-go="sets"><b>📚 Build a set</b><span>Checklist + completion %</span></button>
@@ -1815,9 +1986,12 @@ function renderDash(){
       <div class="pill-row">${qp.slice(0,6).map(n=>`<button type="button" class="pill" data-pl="${esc(n)}">⚾ ${esc(n)}</button>`).join('')}</div>
     </div>`:''}
    ${(cs.length&&(backupAge===null||backupAge>7))?`<div class="warn">💾 ${backupAge===null?'Tip: make a Backup from ⋯ so a phone wipe can’t erase your vault.':'Last backup '+backupAge+' days ago — ⋯ → Backup when you can.'}</div>`:''}
-   ${!empty?`<div class="panel heroPanel">
+   ${!empty?`<div class="panel heroPanel coolHero">
+     <div class="heroEyebrow"><span class="dot"></span> Live collection</div>
      <div class="heroTitle">${money0(s.val)}</div>
-     <div class="heroSub">${s.have} in collection · ${s.want} wants${s.deals?` · <span class="pos">🔥 ${s.deals} deal${s.deals>1?'s':''}</span>`:''} · P/L <span class="${s.pl>=0?'pos':'neg'}">${s.pl>=0?'+':''}${money0(s.pl)}</span></div>
+     <div class="heroSub">${s.have} owned · ${s.want} wants${s.deals?` · <span class="pos">🔥 ${s.deals} deal${s.deals>1?'s':''}</span>`:''}</div>
+     <div class="plBar ${s.pl>=0?'pos':'neg'}">${s.pl>=0?'▲':'▼'} ${s.pl>=0?'+':''}${money0(s.pl)} unrealized</div>
+     ${homeShowcaseHtml(cs)}
      <div class="home-actions">
        <button type="button" id="btnGoFind" class="bigim">Search</button>
        <button type="button" id="btnGoSets">Sets</button>
@@ -1831,7 +2005,7 @@ function renderDash(){
      <div class="pill-row">${qp.slice(0,8).map(n=>`<button type="button" class="pill" data-pl="${esc(n)}">⚾ ${esc(n)}</button>`).join('')}</div>
    </div>`:''}
    ${!empty&&typeof renderInsightsPanel==='function'?renderInsightsPanel():''}
-   ${!empty?`<div class="panel"><div class="chips">
+   ${!empty?`<div class="panel"><div class="chips statPulse">
     <div class="chipStat"><div class="k">Cost basis</div><div class="v">${money0(s.cost)}</div></div>
     <div class="chipStat"><div class="k">Realized</div><div class="v ${s.realized>=0?'pos':'neg'}">${s.realized>=0?'+':''}${money0(s.realized)}</div><div class="s">${s.sold} sold</div></div>
     <div class="chipStat"><div class="k">Top card</div><div class="v" style="font-size:14px">${best?esc(best.player||best.setName||'—'):'—'}</div><div class="s">${best?money0(valueOf(best)):''}</div></div>
@@ -1853,6 +2027,7 @@ function renderDash(){
   });
   document.querySelectorAll('[data-pl]').forEach(b=>b.onclick=()=>goExplorePlayer(b.dataset.pl));
   if(typeof wireLogoStrip==='function')wireLogoStrip($('view'));
+  if(typeof wireHomeShowcase==='function')wireHomeShowcase();
   const bf=$('btnGoFind'); if(bf) bf.onclick=()=>{tab='explore';render();};
   const bs=$('btnGoSets'); if(bs) bs.onclick=()=>{tab='sets';render();};
   const br=$('btnStale'); if(br) br.onclick=()=>refreshStalePrices();
@@ -2056,6 +2231,7 @@ function csDisplayUrl(d){
 function setImgEl(el,url){
   if(!el||!url)return false;
   const badge=el.querySelector('.teamBadge');
+  const shine=el.querySelector('.shine');
   const img=document.createElement('img');
   img.className='cardPhoto';
   img.alt='';
@@ -2064,7 +2240,8 @@ function setImgEl(el,url){
   img.src=url;
   el.innerHTML='';
   el.appendChild(img);
-  if(badge) el.appendChild(badge);
+  if(shine) el.appendChild(shine.cloneNode(true));
+  if(badge) el.appendChild(badge.cloneNode?badge.cloneNode(true):badge);
   el.classList.add('imgReady');
   el.classList.remove('thumbLoad','imgMiss','hasPortrait');
   return true;
