@@ -185,7 +185,7 @@ footer{color:var(--dim);font-size:11.5px;text-align:center;padding:8px 14px 90px
 </header>
 <div id="iosBanner" class="ios-banner" hidden></div>
 <main id="view"></main>
-<footer>⚾ Baseball vault — data stays on this device. Use ⋯ → <b>Backup</b> (then GitHub private repo / iCloud). Safari → Add to Home Screen.</footer>
+<footer id="footSave">⚾ Auto-saves on <b>this phone</b> when you edit — open the Home Screen icon and your collection is already there. Off-phone safety: ⋯ → Backup.</footer>
 <div id="navB"></div>
 <button id="fab">+</button>
 <div id="sheetBk"></div>
@@ -940,6 +940,9 @@ function render(){
   else if(tab==='explore')renderExplore();
   else renderList();
   fillDatalists();
+  const n=(state.cards||[]).length;
+  const f=$('footSave');
+  if(f) f.innerHTML='⚾ <b>Auto-saved on this phone</b> · '+n+' card'+(n===1?'':'s')+' · open Home Screen icon = collection ready. Cloud copy: ⋯ → Backup.';
 }
 
 
@@ -1540,7 +1543,7 @@ function openMenu(anchor){
     const a=b.dataset.a;
     if(a==='bk')doBackup(false);
     else if(a==='bkp')doBackup(true);
-    else if(a==='ghtip')alert('Your collection lives on THIS phone (localStorage + photos in IndexedDB).\n\nGitHub Pages only hosts the APP — not your cards.\n\nOff-phone backup:\n1) ⋯ → Backup + photos → downloads a JSON file\n2) Save that file to a PRIVATE GitHub repo, iCloud Drive, or Files\n3) On a new phone: open Card Vault → ⋯ → Restore / import that file\n\nTip: make a private repo like “card-vault-backup” and drag the JSON in via github.com on Safari.');
+    else if(a==='ghtip')alert('SEAMLESS (same phone):\nEvery edit auto-saves. Open the Home Screen “Card Vault” icon → your collection is already there. No login.\n\nWHERE:\n· Cards/values → Safari storage on this phone\n· Photos → IndexedDB on this phone\n· github.io only hosts the app UI\n\nOTHER PHONE / WIPE:\n⋯ → Backup + photos → save JSON to private GitHub or iCloud → Restore on the new device.\n\nChrome vs Safari = different storage. Always use the Home Screen icon.');
     else if(a==='restore')$('fileIn').click();
     else if(a==='csv')download('card-vault-'+today()+'.csv',csvExport(state.cards),'text/csv');
     else if(a==='prices'){
@@ -1650,7 +1653,7 @@ function showIosInstallHelp(){
   if(!isIOS)return;
   if(localStorage.getItem('cv.hideIosBanner')==='1')return;
   el.hidden=false; el.classList.add('show');
-  el.innerHTML=`<div class="t"><b>Install on iPhone</b>Tap Share <span style="opacity:.8">⬆︎</span> then <b>Add to Home Screen</b> for the full app.</div>
+  el.innerHTML=`<div class="t"><b>Keep your collection</b>Tap Share <span style="opacity:.8">⬆︎</span> → <b>Add to Home Screen</b>. The icon auto-saves cards on this phone — Safari tabs can forget them.</div>
     <button type="button" id="iosBannerX">Got it</button>`;
   $('iosBannerX').onclick=()=>{localStorage.setItem('cv.hideIosBanner','1');el.hidden=true;el.classList.remove('show');};
 }

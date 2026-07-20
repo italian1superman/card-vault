@@ -1,42 +1,30 @@
 # Card Vault ⚾
 
-Baseball card collection PWA — catalog propagate, CardSight pricing, photo ID, Excel import/export.
+Baseball card collection PWA.
 
-**Live app:** https://italian1superman.github.io/card-vault/
+**Live:** https://italian1superman.github.io/card-vault/
 
-## Open on iPhone
+## Seamless save (same phone) — already built
 
-1. Open the live URL in **Safari** (not Chrome).
-2. Tap **Share** → **Add to Home Screen**.
-3. Open the **Card Vault** icon.
+| | |
+|--|--|
+| **Where** | On **this device**, in the browser/app storage for Card Vault |
+| **Cards & prices** | `localStorage` key `cardVault.v2` |
+| **Photos** | IndexedDB database `cardVaultImgs` |
+| **How** | Every edit calls `save()` immediately. Opening the page calls `load()` — no login, no upload |
 
-## How search works
+**Do this once:** Safari → Share → **Add to Home Screen**, then always open that icon.
 
-- Header search / Explore: type a player → baseball catalog cards appear (CardSight).
-- Add card → type player name → live strip of matching cards to tap into Have / Want.
-- Sport is locked to **Baseball**.
+That is the seamless path. Your collection is waiting whenever you open the app on that phone.
 
-## Where is my data?
+### What is *not* automatic
 
-| What | Where |
-|------|--------|
-| App (code/UI) | GitHub Pages / hub — shared by everyone |
-| **Your cards + values** | **Only on your device** (`localStorage`) |
-| **Your photos** | **Only on your device** (IndexedDB) |
+- A **different phone**, **Chrome vs Safari**, or **Private tab** = empty vault (different / wiped storage)
+- **GitHub Pages** hosts the app code only — it does **not** store your cards
+- iOS may clear site data for rarely used *browser tabs*; the Home Screen app is much safer
 
-**GitHub Pages is not a database.** It hosts the app shell. Your collection never uploads there automatically.
+### Off-phone copy (optional safety net)
 
-### Off-phone backup (recommended)
+⋯ → **Backup + photos** → JSON file → private GitHub / iCloud → ⋯ → Restore on a new device.
 
-1. In the app: **⋯ → Backup + photos** → downloads a JSON file.
-2. Store that file somewhere durable:
-   - **Private GitHub repo** (best free sync): create `card-vault-backup` (private), upload the JSON via github.com
-   - **iCloud Drive / Files** on iPhone
-   - Email it to yourself
-3. New phone / wipe: open Card Vault → **⋯ → Restore / import** that JSON.
-
-Do **not** commit backups into the public `card-vault` app repo if it has real collection values.
-
-## Desktop
-
-Open the Pages URL in any browser. Use **⋯ → Backup** often.
+Cross-device *auto* sync (open anywhere, same collection) needs a cloud account — say if you want that next.
