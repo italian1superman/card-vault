@@ -1,5 +1,5 @@
 /* Card Vault service worker */
-const CACHE = 'card-vault-v32-binder';
+const CACHE = 'card-vault-v33-card-data';
 const ASSETS = [
   './',
   './index.html',

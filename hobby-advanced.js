@@ -62,7 +62,7 @@ window.setsLoadAllPhotos=async function setsLoadAllPhotos(){
 };
 
 /** Persist free CardSight catalog images onto vault cards missing a photo. */
-window.fillMissingPhotos=async function fillMissingPhotos({concurrency=6,max=80,silent=false}={}){
+window.fillMissingPhotos=async function fillMissingPhotos({concurrency=8,max=120,silent=false}={}){
   if(typeof csKey!=='function'||!csKey()){if(!silent)showToast('CardSight needed for free catalog photos');return 0;}
   const need=state.cards.filter(c=>c.status!=='sold'&&c.csId&&!c.imgId&&!c.imgUrl).slice(0,max);
   if(!need.length){if(!silent)showToast('All linked cards already have photos ✔');return 0;}
@@ -96,9 +96,10 @@ window.fillMissingPhotos=async function fillMissingPhotos({concurrency=6,max=80,
 
 /** One-tap vault fill: free photos + PSA pop, then bulk prices (≤100 IDs / 1 billed call). */
 window.fillVaultData=async function fillVaultData({
-  maxPhoto=120,
-  maxLink=12,
-  maxPriceBatches=8,
+  maxPhoto=500,
+  maxLink=20,
+  maxPriceBatches=10,
+  maxPop=500,
   link=true,
   silent=false
 }={}){
@@ -108,28 +109,11 @@ window.fillVaultData=async function fillVaultData({
   }
   if(state.meta._fillBusy){ if(!silent)showToast('Already filling…'); return null; }
   state.meta._fillBusy=true;
-  const out={photos:0,linked:0,priced:0,pop:0,callsEst:0};
+  const out={photos:0,linked:0,priced:0,pop:0,callsEst:0,passes:0};
   try{
-    if(!silent)showToast('Filling photos · pop · prices…');
+    if(!silent)showToast('Filling ALL linked photos · PSA pop · prices…');
 
-    /* 1) Free photos */
-    if(typeof fillMissingPhotos==='function'){
-      out.photos=await fillMissingPhotos({concurrency:6,max:maxPhoto,silent:true})||0;
-    }
-
-    /* 2) Free PSA pop onto cards missing it */
-    const needPop=state.cards.filter(c=>c.csId&&c.status!=='sold'&&c.psaPop==null).slice(0,80);
-    for(const c of needPop){
-      try{
-        const pop=await csCardPop(c.csId);
-        if(pop&&pop.total_population!=null){
-          c.psaPop=+pop.total_population;
-          out.pop++;
-        }
-      }catch(e){}
-    }
-
-    /* 3) Link unlinked cards that already have year/brand/# (billed search, capped) */
+    /* 0) Link first so free photo/pop can hit more cards */
     if(link && typeof csSearchBaseballCards==='function'){
       const needLink=state.cards.filter(c=>c.status!=='sold'&&!c.csId&&(c.player||'').trim().length>=2&&(c.year||c.brand||c.num))
         .slice(0,maxLink);
@@ -156,6 +140,7 @@ window.fillVaultData=async function fillVaultData({
           const id=hit.cardId||hit.id;
           if(!id)continue;
           c.csId=id;
+          if(hit.setId)c.csSetId=hit.setId;
           if(!c.year&&(hit.year||hit.releaseYear))c.year=String(hit.year||hit.releaseYear).slice(0,4);
           if(!c.brand&&(hit.brand||hit.manufacturerName))c.brand=hit.brand||hit.manufacturerName;
           if(!c.setName&&hit.setName)c.setName=hit.setName;
@@ -165,7 +150,39 @@ window.fillVaultData=async function fillVaultData({
       }
     }
 
-    /* 4) Bulk price: never-priced first, then stale — soft cache = often $0 billed */
+    /* 1) Free photos — loop until linked cards are filled or cap */
+    let photoBudget=maxPhoto;
+    while(photoBudget>0 && typeof fillMissingPhotos==='function'){
+      const batch=Math.min(100, photoBudget);
+      const n=await fillMissingPhotos({concurrency:8,max:batch,silent:true})||0;
+      out.photos+=n; out.passes++;
+      photoBudget-=batch;
+      if(n<batch) break;
+    }
+
+    /* 2) Free PSA pop on EVERY linked card missing it */
+    const needPop=state.cards.filter(c=>c.csId&&c.status!=='sold'&&(c.psaPop==null||c.psaPop===''))
+      .slice(0,maxPop);
+    let pi=0;
+    async function popWorker(){
+      while(pi<needPop.length){
+        const c=needPop[pi++];
+        try{
+          const pop=await csCardPop(c.csId);
+          if(pop&&pop.total_population!=null){
+            c.psaPop=+pop.total_population;
+            if(pop.grades&&!c.psaPopNote){
+              const gem=pop.grades.find&&pop.grades.find(g=>/10|gem/i.test(String(g.grade||g.label||'')));
+              /* keep light */
+            }
+            out.pop++;
+          }
+        }catch(e){}
+      }
+    }
+    await Promise.all(Array.from({length:Math.min(6,needPop.length||1)},()=>popWorker()));
+
+    /* 3) Bulk price — cache-first */
     const needPrice=state.cards.filter(c=>c.csId&&c.status!=='sold'&&priceAgeDays(c)>=14)
       .sort((a,b)=>{
         const a0=!(a.prices&&a.prices.length), b0=!(b.prices&&b.prices.length);
@@ -177,7 +194,7 @@ window.fillVaultData=async function fillVaultData({
       const slice=ids.slice(b*100,(b+1)*100);
       try{
         const map=await csBulkPriceByIds(slice,{force:false});
-        out.callsEst++; /* at most 1 if cache miss */
+        out.callsEst++;
         for(const c of needPrice){
           if(slice.includes(c.csId)&&map[c.csId]!=null&&applyCsPrice(c,map[c.csId],'cardsight'))
             out.priced++;
@@ -185,9 +202,9 @@ window.fillVaultData=async function fillVaultData({
       }catch(e){ break; }
     }
 
-    /* 5) Free MLB headshots + season/career chips */
+    /* 4) Free MLB headshots + season chips */
     if(typeof enrichPlayerFields==='function'||typeof mlbEnrichCard==='function'){
-      const needMlb=state.cards.filter(c=>c.player&&c.status!=='sold'&&(!c.mlbId||!c.mlbStats)).slice(0,50);
+      const needMlb=state.cards.filter(c=>c.player&&c.status!=='sold'&&(!c.mlbId||!c.mlbStats)).slice(0,60);
       for(const c of needMlb){
         try{
           if(typeof enrichPlayerFields==='function') await enrichPlayerFields(c,c.player);
@@ -197,20 +214,164 @@ window.fillVaultData=async function fillVaultData({
       }
     }
 
+    /* 5) Rebuild local set / TCDB checklist progress */
+    if(typeof rebuildLocalChecklists==='function') rebuildLocalChecklists();
+
     save();
     state.meta.lastFillData=Date.now();
     save();
     if(typeof logActivity==='function')
       logActivity('fill','photos '+out.photos+' · linked '+out.linked+' · priced '+out.priced+' · pop '+out.pop);
     if(!silent){
-      showToast(`Filled ✔ 🖼${out.photos} · 🔗${out.linked} · 💰${out.priced} · PSA ${out.pop}`);
-      if(tab==='dash'||tab==='have'||tab==='want')render();
+      showToast(`Filled ✔ 🖼${out.photos} · PSA ${out.pop} · 🔗${out.linked} · 💰${out.priced}`);
+      if(typeof haptic==='function')haptic('success');
+      if(tab==='dash'||tab==='have'||tab==='want'||tab==='sets')render();
     }
     return out;
   }finally{
     state.meta._fillBusy=false;
   }
 };
+
+
+/* ---- Local TCDB/CSV checklists + Astros set progress (free) ---- */
+window.ASTROS_SET_PRESETS=[
+  {id:'2025-chrome', y:'2025', q:'Topps Chrome', keys:['chrome'], label:'2025 Topps Chrome'},
+  {id:'2025-topps', y:'2025', q:'Topps Series', keys:['topps'], label:'2025 Topps'},
+  {id:'2024-chrome', y:'2024', q:'Topps Chrome', keys:['chrome'], label:'2024 Topps Chrome'},
+  {id:'2024-update', y:'2024', q:'Topps Update', keys:['update'], label:'2024 Topps Update'},
+  {id:'2024-topps', y:'2024', q:'Topps Series', keys:['topps'], exclude:['chrome','update','heritage'], label:'2024 Topps'},
+  {id:'2025-bowman', y:'2025', q:'Bowman', keys:['bowman'], label:'2025 Bowman'},
+  {id:'2023-chrome', y:'2023', q:'Topps Chrome', keys:['chrome'], label:'2023 Topps Chrome'}
+];
+
+window.isAstrosCard=function isAstrosCard(c){
+  if(!c)return false;
+  if(typeof cardMatchesTeam==='function'&&typeof teamSearchKeys==='function')
+    return cardMatchesTeam(c, teamSearchKeys('HOU'));
+  return /astros|houston/i.test(String(c.team||''));
+};
+
+window.isAstrosCatalogCard=function isAstrosCatalogCard(x){
+  if(!x)return false;
+  const blob=[x.name,(x.attributes||[]).join(' '),x.team,x.teamName].map(v=>String(v||'')).join(' ');
+  return /MLB-HOU|\bAstros\b|Houston/i.test(blob);
+};
+
+window.setBlob=function setBlob(c){
+  return [c.brand,c.setName].filter(Boolean).join(' ').toLowerCase();
+};
+
+window.cardMatchesSetPreset=function cardMatchesSetPreset(c, preset){
+  if(!c||!preset)return false;
+  if(String(c.year||'').slice(0,4)!==String(preset.y))return false;
+  const blob=setBlob(c);
+  if(!blob)return false;
+  if((preset.keys||[]).length && !preset.keys.some(k=>blob.includes(k)))return false;
+  if((preset.exclude||[]).some(k=>blob.includes(k)))return false;
+  /* Topps Series: avoid pure Chrome/Update when keys only topps */
+  if(preset.keys&&preset.keys.length===1&&preset.keys[0]==='topps'){
+    if(/chrome|update|heritage|bowman/.test(blob))return false;
+  }
+  return true;
+};
+
+window.astrosSetProgress=function astrosSetProgress(){
+  const have=(state.cards||[]).filter(c=>c.status==='have'&&isAstrosCard(c));
+  return ASTROS_SET_PRESETS.map(p=>{
+    const cards=have.filter(c=>cardMatchesSetPreset(c,p));
+    const nums=new Set(cards.map(c=>String(c.num||'').replace(/^#/,'')).filter(Boolean));
+    return {...p, have:cards.length, uniqueNums:nums.size, sample:cards[0]||null};
+  }).filter(x=>true);
+};
+
+window.rebuildLocalChecklists=function rebuildLocalChecklists(){
+  const groups=new Map();
+  for(const c of state.cards||[]){
+    if(c.status==='sold')continue;
+    const year=String(c.year||'').slice(0,4);
+    const setName=(c.setName||c.brand||'').trim();
+    if(year.length!==4||setName.length<3)continue;
+    const key=year+'|'+normH(setName);
+    if(!groups.has(key))groups.set(key,{key,year,setName,total:0,have:0,want:0,astrosHave:0,nums:new Set()});
+    const g=groups.get(key);
+    g.total++;
+    const num=String(c.num||'').replace(/^#/,'');
+    if(num)g.nums.add(num);
+    if(c.status==='have'){g.have++; if(isAstrosCard(c))g.astrosHave++;}
+    if(c.status==='want')g.want++;
+  }
+  const list=[...groups.values()]
+    .filter(g=>g.total>=5)
+    .map(g=>({
+      key:g.key, year:g.year, setName:g.setName,
+      total:g.total, have:g.have, want:g.want, astrosHave:g.astrosHave,
+      uniqueNums:g.nums.size,
+      pct:Math.min(100, Math.round((g.have/g.total)*100))
+    }))
+    .sort((a,b)=>b.have-a.have||b.total-a.total);
+  if(!state.meta)state.meta={};
+  state.meta.checklists=list;
+  return list;
+};
+
+window.localChecklistsHtml=function localChecklistsHtml(){
+  const list=(state.meta&&state.meta.checklists)||rebuildLocalChecklists();
+  if(!list.length)return '';
+  return `<div class="ct">Imported / vault sets</div>
+    <div class="setProgList">`+list.slice(0,12).map(g=>`
+      <button type="button" class="setProgRow" data-ck="${esc(g.key)}">
+        <div class="l1">${esc(g.year)} ${esc(g.setName)}</div>
+        <div class="prog fat"><i style="width:${g.pct}%"></i></div>
+        <div class="l2">${g.have}/${g.total} have · ${g.astrosHave} Astros · ${g.want} want</div>
+      </button>`).join('')+`</div>`;
+};
+
+window.astrosSetsHtml=function astrosSetsHtml(){
+  const rows=astrosSetProgress();
+  return `<div class="astrosSetsPanel">
+    <div class="ct">🧡 Astros set checklists</div>
+    <div class="teach-hint" style="font-size:12px;color:var(--mute);margin:0 0 8px">Progress from your vault (HOU cards). Tap to open that release in Sets.</div>
+    <div class="setProgList">`+rows.map(p=>`
+      <button type="button" class="setProgRow astro" data-astros-set="${esc(p.id)}">
+        <div class="l1">${esc(p.label)}</div>
+        <div class="prog fat"><i style="width:${Math.min(100,p.have?Math.min(100,p.have*8):0)}%"></i></div>
+        <div class="l2"><b>${p.have}</b> Astros cards in vault${p.uniqueNums?(' · #'+p.uniqueNums+' unique'):''}</div>
+      </button>`).join('')+`</div>
+  </div>`;
+};
+
+window.openAstrosSetPreset=async function openAstrosSetPreset(id){
+  const p=ASTROS_SET_PRESETS.find(x=>x.id===id);
+  if(!p)return;
+  tab='sets';
+  window.SETS=window.SETS||{};
+  SETS.year=p.y; SETS.q=p.q; SETS.release=null; SETS.set=null; SETS.cards=[]; SETS.astrosOnly=true;
+  render();
+  /* after renderSets mounts, search */
+  setTimeout(()=>{
+    const y=$('setYear'), q=$('setQ');
+    if(y)y.value=p.y; if(q)q.value=p.q;
+    if(typeof setsSearchReleases==='function')setsSearchReleases();
+  }, 60);
+};
+
+window.wireSetProgressUi=function wireSetProgressUi(root){
+  (root||document).querySelectorAll('[data-astros-set]').forEach(btn=>{
+    btn.onclick=()=>{if(typeof haptic==='function')haptic('light');openAstrosSetPreset(btn.getAttribute('data-astros-set'));};
+  });
+  (root||document).querySelectorAll('[data-ck]').forEach(btn=>{
+    btn.onclick=()=>{
+      if(typeof haptic==='function')haptic('light');
+      const key=btn.getAttribute('data-ck')||'';
+      const [year,...rest]=key.split('|');
+      /* filter have by year */
+      if(typeof applyCollectionFilter==='function')applyCollectionFilter(year,{status:'have'});
+      else {q=year;tab='have';render();}
+    };
+  });
+};
+
 
 window.ownKey=function ownKey(csId,parallelId){
   return String(csId||'')+'|'+(parallelId||'');
@@ -537,9 +698,12 @@ window.QUICK_PLAYERS=QUICK_PLAYERS;
 
 window.renderSets=async function renderSets(){
   const S=SETS;
+  if(typeof rebuildLocalChecklists==='function') rebuildLocalChecklists();
   $('view').innerHTML=`<div class="panel heroPanel">
     <div class="heroTitle">📚 Build a set</div>
     <div class="heroSub">Search a release, open a checklist, tap Have / Want. Photos load free from the catalog as you browse (All photos caches the whole set).</div>
+    ${typeof astrosSetsHtml==='function'?astrosSetsHtml():''}
+    ${typeof localChecklistsHtml==='function'?localChecklistsHtml():''}
     <div class="boothBar">
       <input id="setYear" type="number" inputmode="numeric" placeholder="Year" value="${esc(S.year||'')}" style="width:88px">
       <input id="setQ" placeholder="Try: Topps Chrome, Bowman, Heritage…" value="${esc(S.q||'')}" autocomplete="off" style="flex:1">
@@ -562,11 +726,12 @@ window.renderSets=async function renderSets(){
     <div id="setCheck" style="display:none"></div>
   </div>`;
   const pills=$('setPills');
-  [['2024 Topps Chrome','2024','Topps Chrome'],['2025 Bowman','2025','Bowman'],['2024 Topps','2024','Topps Series'],['2023 Heritage','2023','Heritage']].forEach(([lab,y,q])=>{
+  [['🧡 2024 Chrome','2024','Topps Chrome'],['🧡 2024 Update','2024','Topps Update'],['🧡 2025 Bowman','2025','Bowman'],['2024 Topps','2024','Topps Series'],['2023 Chrome','2023','Topps Chrome']].forEach(([lab,y,q])=>{
     const b=document.createElement('button'); b.className='pill'; b.type='button'; b.textContent=lab;
-    b.onclick=()=>{$('setYear').value=y;$('setQ').value=q;setsSearchReleases();};
+    b.onclick=()=>{SETS.astrosOnly=/🧡/.test(lab);$('setYear').value=y;$('setQ').value=q;setsSearchReleases();};
     pills.appendChild(b);
   });
+  if(typeof wireSetProgressUi==='function') wireSetProgressUi($('view'));
   $('setSearch').onclick=()=>setsSearchReleases();
   $('setQ').onkeydown=e=>{if(e.key==='Enter')setsSearchReleases();};
   $('bnGo').onclick=boothFind;
@@ -680,6 +845,8 @@ window.setsPaintChecklist=async function setsPaintChecklist(){
   const haveN=ownCountInSet(s.id);
   const tot=SETS.total||s.cardCount||SETS.cards.length;
   const pct=tot?Math.min(100,Math.round(haveN/tot*100)):0;
+  const houCards=SETS.cards.filter(isAstrosCatalogCard);
+  const houHave=houCards.filter(x=>findOwned(x.id,'')).length;
   const parTypes=s.parallelCount||0;
   const masterDenom=parTypes?tot*(parTypes+1):tot;
   const masterHave=ownParallelCountInSet(s.id);
@@ -694,7 +861,7 @@ window.setsPaintChecklist=async function setsPaintChecklist(){
       <div style="flex:1">
         <div class="ct" style="margin:0">${esc(r&&r.year||'')} ${esc(r&&r.name||'')} · ${esc(s.name)}</div>
         <div class="prog fat"><i style="width:${pct}%"></i></div>
-        <div class="l2" style="font-size:12px;color:var(--dim)">Base ${haveN}/${tot} (${pct}%) · Master-ish ${masterPct}%</div>
+        <div class="l2" style="font-size:12px;color:var(--dim)">Base ${haveN}/${tot} (${pct}%) · Master-ish ${masterPct}% · 🧡 Astros on page ${houHave}/${houCards.length||0}</div>
       </div>
     </div>
     <div class="toolbar">
@@ -708,8 +875,14 @@ window.setsPaintChecklist=async function setsPaintChecklist(){
     <div style="text-align:center;margin-top:10px">
       <button id="setMore" style="display:${SETS.cards.length<tot?'inline-block':'none'}">More cards ↓</button>
     </div>`;
+  const astrosOnly=!!SETS.astrosOnly;
+  const viewCards=SETS.cards.map((x,i)=>({x,i})).filter(({x})=>!astrosOnly||isAstrosCatalogCard(x));
   const body=$('checkBody');
-  body.innerHTML=SETS.cards.map((x,i)=>{
+  const houN=SETS.cards.filter(isAstrosCatalogCard).length;
+  body.innerHTML=(astrosOnly?`<div class="teach-hint" style="margin:0 0 8px;font-size:12px">🧡 Astros filter on · ${viewCards.length} of ${SETS.cards.length} loaded (${houN} tagged HOU in this page)</div>
+    <div class="toolbar" style="margin-bottom:8px"><button type="button" id="setAstrosToggle" class="bigim">Show all teams</button></div>`:
+    `<div class="toolbar" style="margin-bottom:8px"><button type="button" id="setAstrosToggle">🧡 Astros only (${houN})</button></div>`)+
+    viewCards.map(({x,i})=>{
     const own=findOwned(x.id,'');
     const rc=(x.attributes||[]).some(a=>/^rc$|rookie/i.test(a));
     const pc=(x.parallels&&x.parallels.length)||0;
@@ -743,7 +916,9 @@ window.setsPaintChecklist=async function setsPaintChecklist(){
       }
     }catch(e){}
   });
-  $('setBackSets').onclick=()=>{SETS.set=null;setsPaintSets();};
+    const sat=$('setAstrosToggle');
+  if(sat) sat.onclick=()=>{ SETS.astrosOnly=!SETS.astrosOnly; setsPaintChecklist(); };
+$('setBackSets').onclick=()=>{SETS.set=null;setsPaintSets();};
   $('setMore').onclick=()=>setsLoadCards(false);
   $('setWantMiss').onclick=async()=>{
     const miss=SETS.cards.filter(x=>!findOwned(x.id,''));
