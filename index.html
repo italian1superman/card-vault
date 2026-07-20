@@ -742,11 +742,17 @@ function spark(cv,vals){
 const CS_BASE='https://api.cardsight.ai';
 /* keys must be pure ASCII for HTTP headers — strip invisible/unicode chars (e.g. the "…" from a masked dashboard key) */
 function csClean(k){return String(k||'').replace(/[^\x21-\x7E]/g,'');}
+/** Built-in CardSight key so gift users never need to paste one. Override via ⋯ → 🔑. */
+const CS_DEFAULT_KEY='51a01d2a54264ea58a82b6a2a266ff33';
 function csKeyLooksMasked(k){
   const s=String(k||'');
   return /…/.test(s)||/\.\.\.\s*$/.test(s)||/[^\x00-\xFF]/.test(s);
 }
-function csKey(){return csClean(state.meta&&state.meta.csKey);}
+function csKey(){
+  const stored=csClean(state.meta&&state.meta.csKey);
+  if(stored&&!csKeyLooksMasked(stored))return stored;
+  return CS_DEFAULT_KEY;
+}
 /** Fix or clear a bad saved key so Explore search does not throw on headers. */
 function scrubCsStoredKey(){
   const raw=state.meta&&state.meta.csKey;
@@ -862,7 +868,7 @@ async function csAutoPrice(c){
   return v;
 }
 async function refreshStalePrices(){
-  if(!csKey())return alert('Add CardSight key first (⋯ → 🔑)');
+  if(!csKey())return alert('CardSight key unavailable');
   const stale=state.cards.filter(c=>c.csId&&c.status!=='sold'&&priceAgeDays(c)>=3).slice(0,100);
   if(!stale.length)return showToast('No stale prices — need linked catalog IDs with prices ≥3 days old');
   showToast('Refreshing '+stale.length+' prices (1 call)…');
@@ -1014,7 +1020,7 @@ function renderDash(){
   const best=cs.filter(c=>c.status==='have').sort((a,b)=>valueOf(b)*(b.qty||1)-valueOf(a)*(a.qty||1))[0];
   $('view').innerHTML=`
    ${(cs.length&&(backupAge===null||backupAge>7))?`<div class="warn">💾 ${backupAge===null?'No backup yet':'Last backup '+backupAge+' days ago'} — use ⋯ → Backup. On iPhone the system can wipe browser storage without warning.</div>`:''}
-   ${csKey()?`<div class="panel" style="padding:10px 12px;font-size:13px;color:var(--dim)">Online stack: local MLB register + MLB Stats + CardSight (images/autocomplete/pop free · catalog/price use 750/mo). Cache ${CS_STATS.hits} hits. <button type="button" id="btnStale" style="margin-left:6px">♻ Refresh stale prices</button></div>`:`<div class="panel" style="padding:10px 12px;font-size:13px;color:var(--dim)">Add free CardSight key (⋯ → 🔑) for live baseball catalog, photos, and market prices — 750 calls/mo.</div>`}
+   <div class="panel" style="padding:10px 12px;font-size:13px;color:var(--dim)">Online stack: local MLB register + MLB Stats + CardSight (images/autocomplete/pop free · catalog/price use 750/mo). Cache ${CS_STATS.hits} hits. <button type="button" id="btnStale" style="margin-left:6px">♻ Refresh stale prices</button></div>
    <div class="panel"><div class="chips">
     <div class="chipStat"><div class="k">Collection value</div><div class="v">${money0(s.val)}</div><div class="s">${s.have} cards · ${s.qty} qty</div></div>
     <div class="chipStat"><div class="k">Cost basis</div><div class="v">${money0(s.cost)}</div></div>
@@ -1116,7 +1122,7 @@ async function csSearchBaseballCards(q, {take=24, skip=0}={}){
 
 async function fillPropStrip(player){
   const box=$('propStrip'); if(!box)return;
-  if(!csKey()){ box.hidden=false; box.innerHTML='<div class="ct">Catalog</div><div class="teach-hint" style="color:var(--dim)">Add CardSight key (⋯ → 🔑) to auto-load baseball cards.</div>'; return; }
+  if(!csKey()){ box.hidden=false; box.innerHTML='<div class="ct">Catalog</div><div class="teach-hint" style="color:var(--dim)">CardSight unavailable — check connection.</div>'; return; }
   const q=String(player||'').trim();
   if(q.length<2){box.hidden=true;box.innerHTML='';return;}
   box.hidden=false;
@@ -1196,10 +1202,8 @@ function csImgSrc(d){
   return '';
 }
 function renderExplore(){
-  const k=csKey();
   $('view').innerHTML=`<div class="panel">
     <div class="ct">Baseball catalog — type a player, cards appear</div>
-    ${k?`
     <div style="display:flex;gap:8px">
       <input id="exQ" placeholder="⚾ Player — e.g. Ken Griffey Jr" value="${esc(EX.q)}" autocomplete="off">
       <button class="bigim" id="exGo" style="flex:none">Search</button>
@@ -1212,11 +1216,8 @@ function renderExplore(){
     <div class="grid" id="exBody" style="margin-top:6px"></div>
     <div style="text-align:center;margin-top:10px">
       <button id="exMore" style="display:${EX.items.length&&EX.items.length<EX.total?'inline-block':'none'}">More ↓</button>
-    </div>`
-    :`<div class="empty">Explore needs the free CardSight AI key (750 calls/month, no credit card).<br><br>
-       Get it at <b>cardsight.ai</b> → then ⋯ menu → 🔑 CardSight AI key.</div>`}
+    </div>
    </div>`;
-  if(!k)return;
   const inp=$('exQ');
   inp.onkeydown=e=>{if(e.key==='Enter')exGo(true);};
   inp.oninput=()=>{
@@ -1249,7 +1250,7 @@ async function exGo(reset){
   }catch(e){
     const m=String(e&&e.message||e);
     if(/ISO-8859|headers|code point|invalid characters/i.test(m))
-      alert('Search failed: the saved API key is invalid.\n\nOpen ⋯ → 🔑 CardSight AI key and paste the FULL key (use the Copy button on cardsight.ai — not the masked “…” display).');
+      alert('Search failed: CardSight rejected the API key.\n\nTry ⋯ → 🔑 and clear the override to use the built-in key, or paste a fresh full key from cardsight.ai.');
     else alert('Search failed: '+m);
   }
 }
@@ -1693,7 +1694,7 @@ function openMenu(anchor){
    <button data-a="restore">📂 Restore / import file</button>
    <button data-a="csv">📑 Export CSV</button>
    <button data-a="prices">💲 Bulk price check (open eBay tabs)</button>
-   <button data-a="cskey">🔑 CardSight AI key${csKey()?' ✔':'…'}</button>
+   <button data-a="cskey">🔑 CardSight AI key ✔</button>
    ${csKey()?`<button data-a="csrefresh">♻ Refresh stale prices (ID bulk)</button>
    <button data-a="csbulk">🤖 Auto-price top 10 (CardSight)</button>
    <button data-a="csusage">📈 CardSight usage + cache</button>`:''}`;
@@ -1717,24 +1718,24 @@ function openMenu(anchor){
     }
     else if(a==='csrefresh')refreshStalePrices();
     else if(a==='cskey'){
-      const k=prompt('Paste your CardSight AI API key (free at cardsight.ai — 750 calls/month).\nUse the COPY button on the dashboard to get the full key, not the masked "…" display.\nLeave empty to remove.',csKey());
+      const k=prompt('Override CardSight AI key (optional).\nLeave empty to use the built-in key.\nPaste a FULL key from cardsight.ai Copy — not the masked “…” display.',state.meta&&state.meta.csKey||'');
       if(k===null)return;
-      if(csKeyLooksMasked(k))
+      if(k&&csKeyLooksMasked(k))
         return alert('That looks like the MASKED key (it ends with "…").\n\nOn the cardsight.ai API Keys page, use the copy button (or reveal) to get the FULL key, then paste that.');
-      const clean=csClean(k.trim());
-      if(clean!==k.trim()&&k.trim())showToast('Removed invisible characters from the pasted key');
+      const clean=csClean((k||'').trim());
+      if(clean!==(k||'').trim()&&(k||'').trim())showToast('Removed invisible characters from the pasted key');
       state.meta.csKey=clean;save();
       if(clean){
         showToast('Testing key…');
         fetch(CS_BASE+'/health/auth',{headers:{'X-API-Key':clean}})
-          .then(r=>showToast(r.ok?'CardSight key works ✔ AI features enabled':'Key rejected ('+r.status+') — re-copy the full key'))
+          .then(r=>showToast(r.ok?'Custom CardSight key works ✔':'Key rejected ('+r.status+') — re-copy the full key'))
           .catch(e=>{
             const m=String(e&&e.message||e);
             showToast(/ISO-8859|headers|code point/i.test(m)
               ? 'Key still has bad characters — re-copy the FULL key'
               : 'Could not reach CardSight (offline?)');
           });
-      }else showToast('CardSight key removed');
+      }else showToast('Using built-in CardSight key');
       render();
     }
     else if(a==='csusage'){
@@ -1765,7 +1766,7 @@ async function init(){
   load();
   const scrub=scrubCsStoredKey();
   if(scrub==='cleared'){
-    setTimeout(()=>alert('Your saved CardSight key looked masked (ended with “…”), so it was cleared.\n\nOpen ⋯ → 🔑 and paste the FULL key (Copy button on cardsight.ai).'),0);
+    setTimeout(()=>showToast('Cleared a bad saved key — using built-in CardSight key'),0);
   }else if(scrub==='fixed'){
     setTimeout(()=>showToast('Cleaned invisible characters from your CardSight key'),0);
   }
