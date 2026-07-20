@@ -242,11 +242,36 @@ footer{color:var(--dim);font-size:11.5px;text-align:center;padding:8px 14px 90px
 
 .linkHint{font-size:11px;color:var(--dim);margin:-2px 0 8px 2px}
 .links a{font-weight:600}
+
+.valueHero{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:8px 0;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:8px}
+.vhCell .k{font-size:10px;color:var(--dim);text-transform:uppercase}
+.vhCell .v{font-size:14px;font-weight:800;margin-top:2px}
+.vhActions{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}
+.vhActions button{flex:1;min-width:72px;font-size:12px;font-weight:700;padding:8px 6px}
+.binderRow{margin:0 0 8px;padding-bottom:4px}
+.binderRow .bc{opacity:.7;font-weight:600}
+.showPill{border-color:var(--acc)!important;color:var(--acc)!important}
+.insights .insightGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+@media(min-width:700px){.insights .insightGrid{grid-template-columns:repeat(6,1fr)}}
+.insight{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px;text-align:center}
+.insight b{display:block;font-size:16px}
+.insight span{font-size:11px;color:var(--dim)}
+.insightList{display:flex;flex-direction:column;gap:4px}
+.insightRow{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);text-align:left;width:100%}
+.insightRow.static{cursor:default}
+.insightRow .m{font-size:11px;color:var(--dim)}
+.showModeBk{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:85;display:flex;align-items:flex-end;justify-content:center;padding:12px}
+.showMode{background:var(--panel);border:1px solid var(--line);border-radius:16px 16px 0 0;padding:14px;width:min(640px,100%);max-height:88vh;overflow:auto}
+.smHit.owned{outline:2px solid var(--green)}
+.gradeChips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}
+.gradeChips button{font-size:11px;padding:5px 8px}
+.proBadge{font-size:10px;font-weight:800;letter-spacing:.4px;color:var(--acc);border:1px solid var(--acc);border-radius:6px;padding:1px 6px;margin-left:6px;vertical-align:2px}
+
 </style>
 </head>
 <body>
 <header>
-  <h1>⚾ <span>Card Vault</span></h1>
+  <h1>⚾ <span>Card Vault</span><span class="proBadge">PRO</span></h1>
   <div id="tabsTop"></div>
   <input id="q" placeholder="🔎 Type a player — cards appear…" list="dlSearch">
   <button class="bigxl" id="btnXl">Excel ⬇</button>
@@ -796,6 +821,7 @@ const money0=n=>'$'+Math.round(+n||0).toLocaleString();
 const today=()=>new Date().toISOString().slice(0,10);
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 let state={cards:[],meta:{lastBackup:0}},tab='dash',q='',view='list',listGroup='',sel=null,lastDeleted=null,toastT=null;
+/* BINDER_ID lives on window from pro-suite */
 const imgCache=new Map();
 
 /* ---- IndexedDB: photos + hardened network cache ---- */
@@ -1185,6 +1211,11 @@ function renderNav(){
 }
 function filtered(){
   let cs=state.cards.filter(c=>tab==='dash'||c.status===tab);
+  if(typeof applyBinder==='function' && (tab==='have'||tab==='want'||tab==='sold')){
+    const bid=window.BINDER_ID||'all';
+    if(bid==='want'&&tab==='have') cs=state.cards.filter(c=>c.status==='want');
+    else if(bid!=='all'&&bid!=='want') cs=applyBinder(cs);
+  }
   const sp=($('fSport')||{}).value||'';
   if(sp)cs=cs.filter(c=>c.sport===sp);
   if(q){const s=q.toLowerCase();
@@ -1285,6 +1316,7 @@ function renderDash(){
         <button type="button" class="quickCard" data-go="sets"><b>📚 Build a set</b><span>TCDB-style checklist %</span></button>
         <button type="button" class="quickCard" data-go="add"><b>📷 Add a card</b><span>Blank sheet or AI identify</span></button>
         <button type="button" class="quickCard" data-go="want"><b>⭐ Start a want</b><span>Deal alerts when price dips</span></button>
+        <button type="button" class="quickCard" data-go="show"><b>🃏 Show Mode</b><span>Do I own this? — free forever</span></button>
       </div>
       <div class="ct" style="margin-top:14px">Try a legend</div>
       <div class="pill-row">${qp.slice(0,6).map(n=>`<button type="button" class="pill" data-pl="${esc(n)}">⚾ ${esc(n)}</button>`).join('')}</div>
@@ -1301,6 +1333,7 @@ function renderDash(){
      <div class="ct" style="margin-top:12px">Jump to a player</div>
      <div class="pill-row">${qp.slice(0,8).map(n=>`<button type="button" class="pill" data-pl="${esc(n)}">⚾ ${esc(n)}</button>`).join('')}</div>
    </div>`:''}
+   ${!empty&&typeof renderInsightsPanel==='function'?renderInsightsPanel():''}
    ${!empty?`<div class="panel"><div class="chips">
     <div class="chipStat"><div class="k">Cost basis</div><div class="v">${money0(s.cost)}</div></div>
     <div class="chipStat"><div class="k">Realized</div><div class="v ${s.realized>=0?'pos':'neg'}">${s.realized>=0?'+':''}${money0(s.realized)}</div><div class="s">${s.sold} sold</div></div>
@@ -1319,7 +1352,7 @@ function renderDash(){
     if(g==='explore'){tab='explore';render();}
     else if(g==='sets'){tab='sets';render();}
     else if(g==='add'){tab='have';addCard();}
-    else if(g==='want'){tab='want';addCard();}
+    else if(g==='want'){tab='want';addCard();} else if(g==='show'){if(typeof openShowMode==='function')openShowMode();}
   });
   document.querySelectorAll('[data-pl]').forEach(b=>b.onclick=()=>goExplorePlayer(b.dataset.pl));
   const bf=$('btnGoFind'); if(bf) bf.onclick=()=>{tab='explore';render();};
@@ -1334,11 +1367,14 @@ function renderDash(){
     chDonut($('chSport'),groupSum(have,c=>c.sport));
     if(typeof autoRefreshPricesIfNeeded==='function') autoRefreshPricesIfNeeded();
   }
+  if(typeof wireInsightsPanel==='function') wireInsightsPanel();
 }
 function renderList(){
   const sports=[...new Set(state.cards.map(c=>c.sport).filter(Boolean))].sort();
+  const scope=state.cards.filter(c=>c.status===tab);
   $('view').innerHTML=`
    <div class="panel">
+    ${typeof renderBinderBar==='function'?renderBinderBar(state.cards):''}
     <div class="toolbar">
      <select id="fSport"><option value="">All sports</option>${sports.map(s=>`<option>${esc(s)}</option>`).join('')}</select>
      <select id="fGroup">
@@ -1363,6 +1399,7 @@ function renderList(){
   $('fSport').onchange=refreshList;$('fSort').onchange=refreshList;$('fGroup').onchange=refreshList;
   $('vList').onclick=()=>{view='list';renderList();};
   $('vGrid').onclick=()=>{view='grid';renderList();};
+  if(typeof wireBinderBar==='function') wireBinderBar(()=>renderList());
   refreshList();
 }
 function refreshList(){
@@ -1684,8 +1721,12 @@ async function openSheet(){
   $('sheetBk').style.display='block';
   const gp=gainPct(c);
   $('sheet').innerHTML=`
-   <div class="shead"><h2>${c.player?esc(c.player):'New card'} ${badges(c)}</h2>
+   <div class="shead"><h2>${c.player?esc(c.player):'New card'} ${badges(c)}<span class="proBadge">PRO</span></h2>
     <button id="shClose">✕</button></div>
+   ${typeof renderValueHero==='function'?renderValueHero(c):''}
+   <div class="gradeChips" id="gradeChips">
+     ${['Raw','PSA 8','PSA 9','PSA 10','BGS 9.5','SGC 10'].map(g=>`<button type="button" data-g="${esc(g)}" class="${String(c.grade||'')===g?'on':''}">${esc(g)}</button>`).join('')}
+   </div>
    <div class="photoBox">
     <div class="pv" id="pv">${sportIcon(c.sport)}</div>
     <div class="pbtns">
@@ -1787,6 +1828,14 @@ async function openSheet(){
     if(k==='imgUrl'&&inp.value)fillThumb(pv,c);
   });
   $('shClose').onclick=closeSheet;
+  const vhSold=$('vhSold'); if(vhSold) vhSold.onclick=()=>window.open(ebaySoldUrl(c),'_blank');
+  const vh130=$('vh130'); if(vh130) vh130.onclick=()=>window.open(typeof point130Url==='function'?point130Url(c):ebaySoldUrl(c),'_blank');
+  const vhPrice=$('vhPrice'); if(vhPrice) vhPrice.onclick=async()=>{try{await csAutoPrice(c);showToast('Priced ✔');openSheet();}catch(e){showToast(e.message);}};
+  const vhShare=$('vhShare'); if(vhShare) vhShare.onclick=()=>shareCard(c);
+  document.querySelectorAll('#gradeChips [data-g]').forEach(b=>b.onclick=()=>{
+    c.grade=b.dataset.g==='Raw'?'':b.dataset.g; save(); openSheet();
+  });
+
   $('pAdd').onclick=()=>{
     const v=parseFloat($('pVal').value);if(isNaN(v))return alert('Enter a value first');
     c.prices=c.prices||[];c.prices.push({d:$('pDate').value||today(),v,src:'manual'});
@@ -2752,6 +2801,7 @@ window.openFabMenu=function openFabMenu(){
   const existing=$('fabMenu'); if(existing){existing.remove();return;}
   const m=document.createElement('div'); m.id='fabMenu';
   m.innerHTML=`
+    <button data-f="show">🃏 Show Mode</button>
     <button data-f="explore">🔍 Find a player</button>
     <button data-f="sets">📚 Build a set</button>
     <button data-f="add">＋ Blank card</button>
@@ -2760,7 +2810,8 @@ window.openFabMenu=function openFabMenu(){
   m.querySelectorAll('button').forEach(b=>b.onclick=()=>{
     m.remove();
     const a=b.dataset.f;
-    if(a==='explore'){tab='explore';render(); setTimeout(()=>{const i=$('exQ');if(i)i.focus();},100);}
+    if(a==='show'){if(typeof openShowMode==='function')openShowMode();}
+    else if(a==='explore'){tab='explore';render(); setTimeout(()=>{const i=$('exQ');if(i)i.focus();},100);}
     else if(a==='sets'){tab='sets';render();}
     else if(a==='add'){tab='have';addCard();}
     else if(a==='want'){tab='want';addCard();}
@@ -2937,6 +2988,270 @@ window.syncSheetCascadeFields=function syncSheetCascadeFields(opt,c){
 
 })();
 
+/* ---- pro suite (inlined) ---- */
+/* Card Vault Pro suite — beat paid apps on-device (binders, show mode, insights, share) */
+(function(){
+'use strict';
+if(typeof window==='undefined')return;
+
+window.BINDER_ID = window.BINDER_ID || 'all';
+
+window.logActivity=function logActivity(type,text,cardId){
+  try{
+    state.meta=state.meta||{};
+    state.meta.activity=state.meta.activity||[];
+    state.meta.activity.unshift({t:Date.now(),type,text,cardId:cardId||''});
+    state.meta.activity=state.meta.activity.slice(0,50);
+    save();
+  }catch(e){}
+};
+
+window.smartBinders=function smartBinders(){
+  return [
+    {id:'all',label:'All',fn:()=>true},
+    {id:'rc',label:'Rookies',fn:c=>!!c.rookie},
+    {id:'graded',label:'Graded',fn:c=>c.grade&&!/^raw$/i.test(String(c.grade))},
+    {id:'numbered',label:'Numbered',fn:c=>!!c.serial},
+    {id:'auto',label:'Autos',fn:c=>/auto|autograph|\bau\b/i.test([c.variant,c.notes,c.setName].join(' '))},
+    {id:'mem',label:'Relics',fn:c=>/mem|relic|patch|jersey/i.test([c.variant,c.notes].join(' '))},
+    {id:'high',label:'$100+',fn:c=>valueOf(c)>=100},
+    {id:'deals',label:'🔥 Deals',fn:c=>typeof dealHit==='function'&&dealHit(c)},
+    {id:'stale',label:'Stale $',fn:c=>c.status==='have'&&c.csId&&typeof priceAgeDays==='function'&&priceAgeDays(c)>=3},
+    {id:'noprice',label:'No price',fn:c=>c.status==='have'&&latestPrice(c)==null},
+    {id:'want',label:'Wants',fn:c=>c.status==='want'}
+  ];
+};
+
+window.applyBinder=function applyBinder(cards){
+  const b=smartBinders().find(x=>x.id===BINDER_ID)||smartBinders()[0];
+  return (cards||[]).filter(b.fn);
+};
+
+window.binderCounts=function binderCounts(cards){
+  const out={};
+  for(const b of smartBinders())out[b.id]=(cards||[]).filter(b.fn).length;
+  return out;
+};
+
+window.collectionInsights=function collectionInsights(){
+  const have=state.cards.filter(c=>c.status==='have');
+  const want=state.cards.filter(c=>c.status==='want');
+  const val=have.reduce((s,c)=>s+valueOf(c)*(+c.qty||1),0);
+  const cost=have.reduce((s,c)=>s+(+c.cost||0)*(+c.qty||1),0);
+  const byPlayer={};
+  for(const c of have){
+    const k=c.player||'—';
+    byPlayer[k]=(byPlayer[k]||0)+valueOf(c)*(+c.qty||1);
+  }
+  const topPlayer=Object.entries(byPlayer).sort((a,b)=>b[1]-a[1])[0];
+  const conc=val&&topPlayer?Math.round(topPlayer[1]/val*100):0;
+  const graded=have.filter(c=>c.grade&&!/^raw$/i.test(String(c.grade))).length;
+  const unpriced=have.filter(c=>latestPrice(c)==null).length;
+  const stale=have.filter(c=>c.csId&&priceAgeDays(c)>=3).length;
+  const deals=want.filter(dealHit).length;
+  const roi=have.filter(c=>+c.cost>0&&latestPrice(c)!=null)
+    .map(c=>({c,roi:((latestPrice(c)-c.cost)/c.cost)*100,pl:(latestPrice(c)-c.cost)*(+c.qty||1)}))
+    .sort((a,b)=>b.pl-a.pl);
+  const week=have.map(c=>{
+    const d=typeof deltaDays==='function'?deltaDays(c,7):null;
+    return d==null?null:{c,d};
+  }).filter(Boolean).sort((a,b)=>Math.abs(b.d)-Math.abs(a.d));
+  return {
+    have:have.length,want:want.length,val,cost,pl:val-cost,
+    topPlayer:topPlayer?topPlayer[0]:'—',conc,graded,gradedPct:have.length?Math.round(graded/have.length*100):0,
+    unpriced,stale,deals,
+    roiTop:roi.slice(0,5),
+    movers7:week.slice(0,5),
+    activity:(state.meta&&state.meta.activity)||[]
+  };
+};
+
+window.cardShareText=function cardShareText(c){
+  const v=latestPrice(c);
+  const lines=[
+    [c.year,c.brand,c.player,c.num?('#'+c.num):'',c.variant].filter(Boolean).join(' '),
+    c.setName?('Set: '+c.setName):'',
+    c.grade?('Grade: '+c.grade+(c.gradeCert?(' · cert '+c.gradeCert):'')):'',
+    c.serial?('Serial: /'+String(c.serial).replace(/^\//,'')):'',
+    v!=null?('Market: $'+Number(v).toFixed(2)):'',
+    +c.cost?('Cost: $'+Number(c.cost).toFixed(2)):'',
+    typeof ebaySoldUrl==='function'?('eBay sold: '+ebaySoldUrl(c)):'',
+    typeof tcdbUrl==='function'?('TCDB: '+tcdbUrl(c)):''
+  ].filter(Boolean);
+  return lines.join('\n');
+};
+
+window.shareCard=async function shareCard(c){
+  const text=cardShareText(c);
+  try{
+    if(navigator.share){await navigator.share({title:c.player||'Card',text});showToast('Shared ✔');return;}
+  }catch(e){ if(e&&e.name==='AbortError')return; }
+  try{
+    await navigator.clipboard.writeText(text);
+    showToast('Copied card details + links');
+  }catch(e){
+    prompt('Copy this:',text);
+  }
+};
+
+window.renderValueHero=function renderValueHero(c){
+  const v=latestPrice(c);
+  const cost=+c.cost||0;
+  const pl=v!=null&&cost?v-cost:null;
+  const gp=typeof gainPct==='function'?gainPct(c):null;
+  return `<div class="valueHero">
+    <div class="vhCell"><div class="k">Market</div><div class="v">${v!=null?money(v):'—'}</div></div>
+    <div class="vhCell"><div class="k">Cost</div><div class="v">${cost?money(cost):'—'}</div></div>
+    <div class="vhCell"><div class="k">P/L</div><div class="v ${pl==null?'':(pl>=0?'pos':'neg')}">${pl==null?'—':((pl>=0?'+':'')+money(pl))}</div></div>
+    <div class="vhCell"><div class="k">ROI</div><div class="v ${gp==null?'':(gp>=0?'pos':'neg')}">${gp==null?'—':((gp>=0?'+':'')+gp.toFixed(0)+'%')}</div></div>
+  </div>
+  <div class="vhActions">
+    <button type="button" id="vhSold" class="bigim">eBay sold</button>
+    <button type="button" id="vh130">130 Point</button>
+    <button type="button" id="vhPrice" ${csKey()?'':'disabled'}>🤖 Price</button>
+    <button type="button" id="vhShare">Share</button>
+  </div>`;
+};
+
+window.openShowMode=function openShowMode(){
+  const bk=document.createElement('div');
+  bk.className='showModeBk';
+  bk.innerHTML=`<div class="showMode">
+    <div class="casHead">
+      <div>
+        <div class="heroTitle" style="font-size:18px">🃏 Show Mode</div>
+        <div class="heroSub" style="margin:0">Do I own this? Search like BinderIQ — free, unlimited, on-device.</div>
+      </div>
+      <button type="button" id="smClose">✕</button>
+    </div>
+    <div class="boothBar">
+      <input id="smQ" placeholder="Player — e.g. Elly De La Cruz" style="flex:1.4" autocomplete="off">
+      <input id="smNum" placeholder="#" style="width:72px">
+      <button type="button" class="bigxl" id="smGo" style="box-shadow:none">Check</button>
+    </div>
+    <div id="smOut" class="empty soft">Type a player (and optional #) — we'll show catalog matches and whether they're already in your vault.</div>
+  </div>`;
+  document.body.appendChild(bk);
+  const close=()=>bk.remove();
+  $('smClose').onclick=close;
+  bk.addEventListener('click',e=>{if(e.target===bk)close();});
+  const run=async()=>{
+    const q=($('smQ').value||'').trim();
+    const num=($('smNum').value||'').trim();
+    if(q.length<2)return showToast('Type a player name');
+    $('smOut').innerHTML='<div class="empty soft">Searching…</div>';
+    try{
+      let cards=[];
+      if(num){
+        const j=await csFetchCached('/v1/catalog/search?type=card&take=12&q='+encodeURIComponent([q,('#'+num),'baseball'].join(' ')),{},{ttlMs:CS_TTL_CAT});
+        cards=(j.results||[]).map(r=>({id:r.id,name:r.name,releaseYear:r.year,releaseName:r.releaseName,setName:r.setName,number:num,manufacturerName:r.manufacturerName}));
+      }
+      if(!cards.length){
+        const j=await csSearchBaseballCards(q,{take:24});
+        cards=j.cards||[];
+        if(num)cards=cards.filter(x=>String(x.number||'')===String(num)||!num)||cards;
+      }
+      if(!cards.length){$('smOut').innerHTML='<div class="empty soft">No catalog hits.</div>';return;}
+      $('smOut').innerHTML=`<div class="casGrid">${cards.slice(0,24).map((x,i)=>{
+        const own=findOwned(x.id,'');
+        const ownedAny=state.cards.filter(c=>c.csId===x.id&&c.status!=='sold');
+        return `<div class="casCard smHit ${own||ownedAny.length?'owned':''}">
+          <div class="casImg" id="sm-img-${i}">🃏</div>
+          <div class="casMeta">
+            <b>${own||ownedAny.length?'HAVE':'NEW'} · #${esc(x.number||'?')} ${esc(x.name||'')}</b>
+            <span>${esc([x.releaseYear,x.releaseName||x.setName].filter(Boolean).join(' · '))}</span>
+            <span>${ownedAny.length?('In vault ×'+ownedAny.reduce((s,c)=>s+(+c.qty||1),0)):'Not in vault'}</span>
+            <div class="pa" style="margin-top:6px;display:flex;gap:4px">
+              <button type="button" data-h="${i}">+Have</button>
+              <button type="button" data-w="${i}">⭐</button>
+              <button type="button" data-o="${i}">Open</button>
+            </div>
+          </div>
+        </div>`;
+      }).join('')}</div>`;
+      const list=cards.slice(0,24);
+      $('smOut').querySelectorAll('[data-h]').forEach(b=>b.onclick=async()=>{
+        await addFromCatalogAdvanced(list[+b.dataset.h],'have');
+        logActivity('add','Show Mode +Have '+(list[+b.dataset.h].name||''), '');
+        run();
+      });
+      $('smOut').querySelectorAll('[data-w]').forEach(b=>b.onclick=async()=>{
+        await addFromCatalogAdvanced(list[+b.dataset.w],'want');
+        run();
+      });
+      $('smOut').querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{
+        const x=list[+b.dataset.o];
+        const hit=state.cards.find(c=>c.csId===x.id);
+        if(hit){sel=hit;close();openSheet();}
+        else showToast('Not in vault — tap +Have first');
+      });
+      list.forEach(async(x,i)=>{
+        const url=csImgSrc(await csImageData(x.id));
+        if(url&&$('sm-img-'+i))$('sm-img-'+i).innerHTML=`<img src="${esc(url)}" loading="lazy">`;
+      });
+    }catch(e){$('smOut').innerHTML=`<div class="empty" style="color:var(--amber)">${esc(e.message)}</div>`;}
+  };
+  $('smGo').onclick=run;
+  $('smQ').onkeydown=e=>{if(e.key==='Enter')run();};
+  $('smNum').onkeydown=e=>{if(e.key==='Enter')run();};
+  setTimeout(()=>$('smQ').focus(),100);
+};
+
+window.renderBinderBar=function renderBinderBar(scopeCards){
+  const counts=binderCounts(scopeCards);
+  return `<div class="pill-row binderRow" id="binderRow">
+    ${smartBinders().map(b=>`<button type="button" class="pill ${BINDER_ID===b.id?'on':''}" data-binder="${b.id}">${esc(b.label)} <span class="bc">${counts[b.id]||0}</span></button>`).join('')}
+    <button type="button" class="pill showPill" id="btnShowMode">🃏 Show Mode</button>
+  </div>`;
+};
+
+window.wireBinderBar=function wireBinderBar(after){
+  const row=$('binderRow'); if(!row)return;
+  row.querySelectorAll('[data-binder]').forEach(b=>b.onclick=()=>{
+    window.BINDER_ID=b.dataset.binder; if(after)after(); else render();
+  });
+  const sm=$('btnShowMode'); if(sm) sm.onclick=()=>openShowMode();
+};
+
+window.renderInsightsPanel=function renderInsightsPanel(){
+  const i=collectionInsights();
+  if(!i.have&&!i.want)return '';
+  return `<div class="panel insights">
+    <div class="ct">Collection IQ <span style="font-weight:500;text-transform:none">(beats $10/mo apps — free, on-device)</span></div>
+    <div class="insightGrid">
+      <div class="insight"><b>${i.gradedPct}%</b><span>graded</span></div>
+      <div class="insight"><b>${i.conc}%</b><span>in ${esc(i.topPlayer)}</span></div>
+      <div class="insight"><b>${i.unpriced}</b><span>need price</span></div>
+      <div class="insight"><b>${i.stale}</b><span>stale comps</span></div>
+      <div class="insight"><b>${i.deals}</b><span>want deals</span></div>
+      <div class="insight"><b class="${i.pl>=0?'pos':'neg'}">${i.pl>=0?'+':''}${money0(i.pl)}</b><span>unrealized</span></div>
+    </div>
+    ${i.roiTop.length?`<div class="ct" style="margin-top:10px">Best P/L</div>
+      <div class="insightList">${i.roiTop.map(r=>`<button type="button" class="insightRow" data-id="${r.c.id}">
+        <span>${esc(r.c.player||'card')}</span>
+        <b class="${r.pl>=0?'pos':'neg'}">${r.pl>=0?'+':''}${money0(r.pl)}</b>
+      </button>`).join('')}</div>`:''}
+    ${i.activity.length?`<div class="ct" style="margin-top:10px">Recent activity</div>
+      <div class="insightList dim">${i.activity.slice(0,6).map(a=>`<div class="insightRow static"><span>${esc(a.text)}</span><span class="m">${new Date(a.t).toLocaleDateString()}</span></div>`).join('')}</div>`:''}
+    <div class="home-actions" style="margin-top:10px">
+      <button type="button" class="bigim" id="iqShow">🃏 Show Mode</button>
+      <button type="button" id="iqStale">♻ Refresh values</button>
+      <button type="button" id="iqUnpriced">Price gaps</button>
+    </div>
+  </div>`;
+};
+
+window.wireInsightsPanel=function wireInsightsPanel(){
+  document.querySelectorAll('.insightRow[data-id]').forEach(b=>b.onclick=()=>{
+    sel=state.cards.find(c=>c.id===b.dataset.id); if(sel)openSheet();
+  });
+  const s=$('iqShow'); if(s)s.onclick=()=>openShowMode();
+  const r=$('iqStale'); if(r)r.onclick=()=>refreshStalePrices();
+  const u=$('iqUnpriced'); if(u)u.onclick=()=>{window.BINDER_ID='noprice';tab='have';render();};
+};
+
+})();
+
 /* ---- init ---- */
 async function init(){
   await idb.open();
@@ -2948,6 +3263,16 @@ async function init(){
     setTimeout(()=>showToast('Cleaned invisible characters from your CardSight key'),0);
   }
   bbLoad();
+  if(!window._proAddWrapped && typeof addFromCatalogAdvanced==='function'){
+    const _add=addFromCatalogAdvanced;
+    window.addFromCatalogAdvanced=async function(x,status,opts){
+      const nc=await _add(x,status,opts);
+      if(nc&&typeof logActivity==='function')
+        logActivity(status==='want'?'want':'add',(status==='want'?'⭐ ':'✔ ')+(nc.player||'card')+(nc.num?(' #'+nc.num):''),nc.id);
+      return nc;
+    };
+    window._proAddWrapped=true;
+  }
   if(!state.meta.seenWelcome){
     state.meta.seenWelcome=1; save();
     setTimeout(()=>showToast('Tip: type a player in the search bar — catalog + photos appear'), 600);

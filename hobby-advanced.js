@@ -608,6 +608,7 @@ window.openFabMenu=function openFabMenu(){
   const existing=$('fabMenu'); if(existing){existing.remove();return;}
   const m=document.createElement('div'); m.id='fabMenu';
   m.innerHTML=`
+    <button data-f="show">🃏 Show Mode</button>
     <button data-f="explore">🔍 Find a player</button>
     <button data-f="sets">📚 Build a set</button>
     <button data-f="add">＋ Blank card</button>
@@ -616,7 +617,8 @@ window.openFabMenu=function openFabMenu(){
   m.querySelectorAll('button').forEach(b=>b.onclick=()=>{
     m.remove();
     const a=b.dataset.f;
-    if(a==='explore'){tab='explore';render(); setTimeout(()=>{const i=$('exQ');if(i)i.focus();},100);}
+    if(a==='show'){if(typeof openShowMode==='function')openShowMode();}
+    else if(a==='explore'){tab='explore';render(); setTimeout(()=>{const i=$('exQ');if(i)i.focus();},100);}
     else if(a==='sets'){tab='sets';render();}
     else if(a==='add'){tab='have';addCard();}
     else if(a==='want'){tab='want';addCard();}
