@@ -219,6 +219,12 @@
     const cls = kind === 'gimg' ? 'gimg' : 'thumb';
     const icon = typeof sportIcon === 'function' ? sportIcon(c && c.sport) : '🃏';
     const badge = teamBadgeHtml(c && c.team);
+    const url = (typeof cardPhotoUrl === 'function' ? cardPhotoUrl(c, kind === 'gimg' ? 240 : 160) : '') ||
+      (c && (c.imgUrl || c.portraitUrl || c._pPhoto)) || mlbPortraitUrl(c, 180);
+    if (url) {
+      return '<div class="' + cls + ' imgReady" id="im-' + c.id + '"><img class="cardPhoto" alt="" decoding="async" loading="lazy" referrerpolicy="no-referrer" src="' +
+        (typeof esc === 'function' ? esc(url) : url) + '">' + badge + '</div>';
+    }
     return '<div class="' + cls + '" id="im-' + c.id + '">' + icon + badge + '</div>';
   };
 
@@ -316,6 +322,7 @@
     img.alt = '';
     img.decoding = 'async';
     img.loading = 'lazy';
+    img.referrerPolicy = 'no-referrer';
     img.src = url;
     el.classList.remove('imgMiss');
     el.classList.add('hasPortrait');

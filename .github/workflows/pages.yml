@@ -35,10 +35,11 @@ jobs:
           [ -d data ] && cp -R data _site/data
           [ -d vault ] && cp -R vault _site/vault
           # Drop non-site noise from vault publish
-          rm -f _site/vault/parse-fails.txt
+          rm -f _site/vault/parse-fails.txt _site/vault/commons-card-scans.json
           # iCloud stubs are useless on Pages
           find _site -name '*.icloud' -delete || true
-          ls -lah _site _site/vault | head -40
+          ls -lah _site/vault | head -30
+          ls -lah _site | head -20
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

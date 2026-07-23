@@ -1,5 +1,5 @@
 /* Card Vault service worker — GitHub Pages */
-const CACHE = 'card-vault-v43-have-fast';
+const CACHE = 'card-vault-v44-photos';
 const ASSETS = [
   './',
   './index.html',

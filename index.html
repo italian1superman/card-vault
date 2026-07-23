@@ -1326,6 +1326,28 @@ img.portraitFallback.mlbShot{object-fit:cover}
 .astrosBoardHint{font-size:11px;color:var(--mute);font-weight:600}
 .loadMoreWrap{display:flex;justify-content:center;padding:14px 8px 22px}
 .loadMoreWrap .bigim{min-width:min(100%,280px)}
+.photoWall{margin:12px 0 8px}
+.pwHead{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:0 0 8px}
+.pwTitle{font-weight:800;font-size:15px;letter-spacing:.01em}
+.pwSub{font-size:11px;color:var(--mute);font-weight:600}
+.pwRail{
+  display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;
+  padding:2px 2px 10px;scroll-snap-type:x mandatory;
+}
+.pwCard{
+  flex:0 0 auto;width:92px;padding:0;border:0;background:transparent;cursor:pointer;
+  scroll-snap-align:start;text-align:left;
+}
+.pwCard img,.pwCard .cardPhoto{
+  width:92px;height:128px;object-fit:cover;object-position:top center;
+  border-radius:10px;display:block;
+  background:linear-gradient(160deg,rgba(0,45,98,.12),rgba(235,110,31,.08));
+  box-shadow:0 4px 14px rgba(0,45,98,.16);
+}
+.pwCap{
+  display:block;margin-top:5px;font-size:10px;font-weight:700;color:var(--ink);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:92px;
+}
 .astroScoreboard{
   display:grid;grid-template-columns:1fr 1fr;gap:6px;
 }
@@ -2156,6 +2178,64 @@ function hasBackPhoto(c){return !!(c&&(c.imgIdBack||c.imgUrlBack));}
 
 const COLLECTION_SEED_VER='jay-tcdb-ds-v1';
 const COLLECTION_SEED_URL='./vault/jay-collection-seed.json';
+const PHOTO_PATCH_VER='jay-photos-v2';
+const PHOTO_PATCH_URL='./vault/photo-patch.json';
+
+/** Merge free photos onto an existing vault without replacing cards. */
+async function ensureCollectionPhotos(){
+  if(!state.meta)state.meta={};
+  if(state.meta.photoPatch===PHOTO_PATCH_VER) return 0;
+  const n=(state.cards||[]).length;
+  if(n<50){ state.meta.photoPatch=PHOTO_PATCH_VER; return 0; }
+  let filled=0;
+  try{
+    /* Small patch first — Commons card scans preferred over headshots */
+    const pr=await fetch(PHOTO_PATCH_URL,{cache:'force-cache'});
+    if(pr.ok){
+      const pj=await pr.json();
+      const byId=new Map((pj.cards||[]).map(c=>[c.id,c]));
+      for(const c of state.cards){
+        const s=byId.get(c.id); if(!s||!s.imgUrl) continue;
+        const cur=c.imgUrl||'';
+        const better=!cur || /mlbstatic/.test(cur) || c.imgSource!=='commons';
+        if(better){ c.imgUrl=s.imgUrl; c.imgSource=s.imgSource||'commons'; filled++; }
+        if(s.mlbId&&!c.mlbId) c.mlbId=s.mlbId;
+      }
+    }
+  }catch(e){ console.warn('photo-patch', e); }
+  try{
+    /* Fill remaining blanks from full seed (MLB headshots) */
+    const need=(state.cards||[]).filter(c=>!c.imgId&&!c.imgUrl).length;
+    if(need>20){
+      const r=await fetch(COLLECTION_SEED_URL,{cache:'force-cache'});
+      if(r.ok){
+        const j=await r.json();
+        const byId=new Map((j.cards||[]).map(c=>[c.id,c]));
+        for(const c of state.cards){
+          if(c.imgId||c.imgUrl) continue;
+          const s=byId.get(c.id); if(!s) continue;
+          if(s.imgUrl){ c.imgUrl=s.imgUrl; if(s.imgSource)c.imgSource=s.imgSource; filled++; }
+          if(s.mlbId&&!c.mlbId) c.mlbId=s.mlbId;
+        }
+      }
+    }
+    for(const c of state.cards){
+      if(c.imgId||c.imgUrl||!c.mlbId) continue;
+      c.imgUrl='https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/'+
+        encodeURIComponent(c.mlbId)+'/headshot/67/current';
+      filled++;
+    }
+    state.meta.photoPatch=PHOTO_PATCH_VER;
+    if(filled){ save(); if(typeof showToast==='function') showToast('📷 '+filled.toLocaleString()+' photos ready'); }
+    else save();
+    return filled;
+  }catch(e){
+    console.warn('photo patch', e);
+    state.meta.photoPatch=PHOTO_PATCH_VER;
+    try{save();}catch(e2){}
+    return filled;
+  }
+}
 
 async function load(){
   try{
@@ -2895,7 +2975,7 @@ function renderListPanel(cs){
       const back=hasBackPhoto(c)?'<span class="bpFlipHint">FLIP</span>':'';
       return `<button type="button" class="binderPocket" data-id="${c.id}" data-idx="${i}">
         ${back}
-        <div class="bpFace front" id="bf-${c.id}">${typeof sportIcon==='function'?sportIcon(c.sport):'🃏'}</div>
+        <div class="bpFace front imgReady" id="bf-${c.id}">${(()=>{const u=cardPhotoUrl(c,220);return u?`<img class="cardPhoto" alt="" decoding="async" loading="lazy" referrerpolicy="no-referrer" src="${esc(u)}">`:(typeof sportIcon==='function'?sportIcon(c.sport):'🃏');})()}</div>
         <div class="bpFace back" id="bb-${c.id}">${hasBackPhoto(c)?'':'—'}</div>
         <div class="bpCap">${esc(c.player||c.setName||'Card')}</div>
       </button>`;
@@ -2919,7 +2999,7 @@ function renderListPanel(cs){
     return `<div class="grid">${shown.map(c=>`
       <div class="gcard" data-id="${c.id}" data-status="${esc(c.status||'have')}">
         <i class="foil" aria-hidden="true"></i>
-        ${typeof cardThumb==='function'?cardThumb(c,'gimg'):`<div class="gimg" id="im-${c.id}">${sportIcon(c.sport)}</div>`}
+        ${thumbHtml(c,'gimg')}
         <div class="gt"><div class="l1">${esc(c.player||c.setName||'—')}${badges(c)}</div>
         <div class="l2">${typeof cardMetaLine==='function'?cardMetaLine(c,[c.year,c.brand||c.setName,c.num?'#'+c.num:'',c.variant,c.grade]):esc([c.year,c.brand||c.setName,c.num?'#'+c.num:'',c.variant,c.grade].filter(Boolean).join(' · '))}</div>
         <div class="l3">${money(valueOf(c))}</div></div></div>`).join('')}</div>`+
@@ -2934,7 +3014,7 @@ function renderListPanel(cs){
     }
     const gp=gainPct(c),cls=gp==null?'':gp>=0?'pos':'neg';
     html+=`<div class="row" data-id="${c.id}">
-        ${typeof cardThumb==='function'?cardThumb(c,'thumb'):`<div class="thumb" id="im-${c.id}">${sportIcon(c.sport)}</div>`}
+        ${thumbHtml(c,'thumb')}
         <div class="rmain">
           <div class="l1">${esc(c.player||c.setName||'—')}${badges(c)}</div>
           <div class="l2">${typeof cardMetaLine==='function'?cardMetaLine(c,[c.year,c.brand,c.setName,c.num?'#'+c.num:'',c.variant,c.grade,c.gradeCert?('cert '+c.gradeCert):'',(+c.qty||1)>1?('×'+c.qty):'']):esc([c.year,c.brand,c.setName,c.num?'#'+c.num:'',c.variant,c.grade,c.gradeCert?('cert '+c.gradeCert):'',(+c.qty||1)>1?('×'+c.qty):''].filter(Boolean).join(' · '))}</div>
@@ -2955,16 +3035,17 @@ function afterListRender(cs){
     const paintPocket=async(c)=>{
       if(!c)return;
       const front=$('bf-'+c.id), back=$('bb-'+c.id);
+      if(front&&front.querySelector('img.cardPhoto')&&!hasBackPhoto(c)) return;
       try{
         let src=await getImg(c,'front');
         if(!src&&typeof resolveCardImg==='function')src=await resolveCardImg(c);
-        if(src&&front){front.innerHTML='<img src="'+src+'" alt="" decoding="async">';}
-        else if(front&&typeof applyPortraitFallback==='function')applyPortraitFallback(front,c);
+        if(src&&front&&!front.querySelector('img.cardPhoto')){front.innerHTML='<img class="cardPhoto" src="'+src+'" alt="" decoding="async" referrerpolicy="no-referrer">';}
+        else if(front&&!front.querySelector('img.cardPhoto')&&typeof applyPortraitFallback==='function')applyPortraitFallback(front,c);
       }catch(e){}
       if(hasBackPhoto(c)&&back){
         try{
           const bsrc=await getImg(c,'back');
-          if(bsrc)back.innerHTML='<img src="'+bsrc+'" alt="" decoding="async">';
+          if(bsrc)back.innerHTML='<img class="cardPhoto" src="'+bsrc+'" alt="" decoding="async" referrerpolicy="no-referrer">';
         }catch(e){}
       }
     };
@@ -3020,7 +3101,13 @@ function afterListRender(cs){
   };
   /* Only paint thumbs / sparks for the paged rows currently in the DOM */
   const visible=(cs||[]).slice(0, Math.max(LIST_PAGE_SIZE, listLimit||LIST_PAGE_SIZE));
-  visible.forEach(thumbGo);
+  visible.forEach(c=>{
+    const t=$('im-'+c.id);
+    if(!t)return;
+    if(t.querySelector('img.cardPhoto')) return;
+    if(c.imgId||c.imgUrl||c.csId||c._pPhoto||c.mlbId) fillThumb(t,c);
+    else if(typeof applyPortraitFallback==='function') applyPortraitFallback(t,c);
+  });
   visible.forEach(c=>{
     const sp=$('sp-'+c.id);if(sp)spark(sp,(c.prices||[]).map(p=>p.v));
   });
@@ -3105,7 +3192,7 @@ function homeShowcaseHtml(cards){
     <div class="rareRail" id="homeShowcase">`+
     top.map(({c},i)=>`<button type="button" class="rareCard" data-id="${c.id}">
       <span class="rk ${rkClass(i)}">${i+1}</span>
-      <div class="rg" id="hs-${c.id}">${typeof sportIcon==='function'?sportIcon(c.sport):'🃏'}
+      <div class="rg imgReady" id="hs-${c.id}">${(()=>{const u=cardPhotoUrl(c,200);return u?`<img class="cardPhoto" alt="" decoding="async" loading="lazy" referrerpolicy="no-referrer" src="${esc(u)}">`:(typeof sportIcon==='function'?sportIcon(c.sport):'🃏');})()}
         <i class="shine" aria-hidden="true"></i>
         ${typeof teamBadgeHtml==='function'?teamBadgeHtml(c.team):''}
       </div>
@@ -3117,8 +3204,39 @@ function homeShowcaseHtml(cards){
       </div>
     </button>`).join('')+`</div></div>`;
 }
+/** Horizontal photo wall — real pictures from the collection */
+function homePhotoWallHtml(cards){
+  const withPic=(cards||[]).filter(c=>c.status==='have'&&cardPhotoUrl(c));
+  if(withPic.length<4) return '';
+  /* Prefer real card scans (commons / non-mlb) then graded / high value */
+  const scored=withPic.map(c=>{
+    const u=cardPhotoUrl(c);
+    const scan=/wikimedia|commons|baseball-almanac/i.test(u||'')||c.imgSource==='commons'?3:0;
+    const grade=/PSA|BGS|SGC/i.test(String(c.grade||''))?1:0;
+    return {c, s:scan*1000+grade*100+rarityScore(c)+valueOf(c)/50};
+  }).sort((a,b)=>b.s-a.s);
+  const pick=[];
+  const seen=new Set();
+  for(const {c} of scored){
+    const k=(c.player||'')+'|'+(c.year||'');
+    if(seen.has(k)) continue;
+    seen.add(k); pick.push(c);
+    if(pick.length>=18) break;
+  }
+  if(pick.length<4) return '';
+  return `<div class="photoWall">
+    <div class="pwHead">
+      <div class="pwTitle">📷 Collection photos</div>
+      <div class="pwSub">${withPic.length.toLocaleString()} with pictures · tap any card</div>
+    </div>
+    <div class="pwRail" id="homePhotoWall">`+
+    pick.map(c=>`<button type="button" class="pwCard" data-id="${c.id}" title="${esc(c.player||'')}">
+      <img class="cardPhoto" alt="" decoding="async" loading="lazy" referrerpolicy="no-referrer" src="${esc(cardPhotoUrl(c,220))}">
+      <span class="pwCap">${esc((c.player||c.setName||'').split(' ').slice(-2).join(' '))}</span>
+    </button>`).join('')+`</div></div>`;
+}
 function wireHomeShowcase(){
-  document.querySelectorAll('#homeShowcase .rareCard, #homeShowcase .showCard').forEach(btn=>{
+  document.querySelectorAll('#homeShowcase .rareCard, #homeShowcase .showCard, #homePhotoWall .pwCard').forEach(btn=>{
     btn.onclick=()=>{
       sel=state.cards.find(c=>c.id===btn.dataset.id);
       if(sel) openSheet();
@@ -3126,6 +3244,7 @@ function wireHomeShowcase(){
   });
   (state.cards||[]).forEach(c=>{
     const el=$('hs-'+c.id); if(!el) return;
+    if(el.querySelector('img.cardPhoto')) return;
     if(c.imgId||c.imgUrl||c.csId||c._pPhoto) fillThumb(el,c);
     else if(typeof applyPortraitFallback==='function') applyPortraitFallback(el,c);
   });
@@ -3170,6 +3289,7 @@ function renderDash(){
      <div class="heroSub deskOnly">${s.have} owned · ${s.want} wants${s.deals?` · <span class="pos">🔥 ${s.deals} deal${s.deals>1?'s':''}</span>`:''}</div>
      <div class="plBar ${s.pl>=0?'pos':'neg'}">${s.pl>=0?'▲':'▼'} ${s.pl>=0?'+':''}${money0(s.pl)} unrealized</div>
      ${homeShowcaseHtml(cs)}
+     ${homePhotoWallHtml(cs)}
      ${typeof localChecklistsHtml==='function'?localChecklistsHtml():''}
      <div class="home-actions">
        <button type="button" id="btnGoFind" class="bigim">Search</button>
@@ -3471,6 +3591,7 @@ function setImgEl(el,url){
   img.alt='';
   img.decoding='async';
   img.loading='eager';
+  img.referrerPolicy='no-referrer';
   img.src=url;
   el.innerHTML='';
   el.appendChild(img);
@@ -3479,6 +3600,30 @@ function setImgEl(el,url){
   el.classList.add('imgReady');
   el.classList.remove('thumbLoad','imgMiss','hasPortrait');
   return true;
+}
+/** Instant URL for thumbs — prefer saved photo, then MLB headshot. */
+function cardPhotoUrl(c, size){
+  if(!c)return '';
+  if(c.imgUrl)return c.imgUrl;
+  if(c.portraitUrl)return c.portraitUrl;
+  if(c._pPhoto)return c._pPhoto;
+  if(typeof mlbPortraitUrl==='function')return mlbPortraitUrl(c, size||180)||'';
+  if(c.mlbId){
+    return 'https://img.mlbstatic.com/mlb-photos/image/upload/w_'+(size||180)+
+      ',q_auto:best/v1/people/'+encodeURIComponent(c.mlbId)+'/headshot/67/current';
+  }
+  return '';
+}
+function thumbHtml(c, kind){
+  const cls=kind==='gimg'?'gimg':'thumb';
+  const icon=typeof sportIcon==='function'?sportIcon(c&&c.sport):'🃏';
+  const badge=typeof teamBadgeHtml==='function'?teamBadgeHtml(c&&c.team):'';
+  const url=cardPhotoUrl(c, kind==='gimg'?240:160);
+  if(url){
+    return `<div class="${cls} imgReady" id="im-${c.id}"><img class="cardPhoto" alt="" decoding="async" loading="lazy" referrerpolicy="no-referrer" src="${esc(url)}">${badge}</div>`;
+  }
+  if(typeof cardThumb==='function') return cardThumb(c, kind);
+  return `<div class="${cls}" id="im-${c.id}">${icon}${badge}</div>`;
 }
 function renderExplore(){
   const n=EX.items.length;
@@ -6373,6 +6518,7 @@ async function init(){
   await idb.open();
   await load();
   await ensureCollectionSeed();
+  await ensureCollectionPhotos();
   const scrub=scrubCsStoredKey();
   if(scrub==='cleared'){
     setTimeout(()=>showToast('Cleared a bad saved key — using built-in CardSight key'),0);
