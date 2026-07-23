@@ -1971,6 +1971,197 @@ function tcdbPlayerUrl(c){
   if(!name)return tcdbUrl(c);
   return 'https://www.tcdb.com/SearchPeople.cfm?SearchTerm='+encodeURIComponent(name);
 }
+
+/** Parse sid/cid from a TCDB ViewCard (or checklist) URL. */
+window.parseTcdbIds=function parseTcdbIds(url){
+  const s=String(url||'');
+  const sid=(s.match(/\/sid\/(\d+)/i)||s.match(/[?&](?:SetID|sid)=(\d+)/i)||[])[1];
+  const cid=(s.match(/\/cid\/(\d+)/i)||s.match(/[?&](?:CardID|cid)=(\d+)/i)||[])[1];
+  if(!sid||!cid) return null;
+  return {sid, cid};
+};
+/** Build TCDB hosted front/back image URLs (authorized use — Images courtesy of TCDB.com). */
+window.tcdbImageUrls=function tcdbImageUrls(sid, cid, sport){
+  const sp=String(sport||'Baseball').replace(/\s+/g,'');
+  const base=`https://www.tcdb.com/Images/Cards/${sp}/${sid}/${sid}-${cid}`;
+  const large=`https://www.tcdb.com/Images/Large/${sp}/${sid}/${sid}-${cid}`;
+  return {
+    front: large+'Fr.jpg',
+    back: large+'Bk.jpg',
+    frontThumb: base+'Fr.jpg',
+    backThumb: base+'Bk.jpg',
+    viewCard: `https://www.tcdb.com/ViewCard.cfm/sid/${sid}/cid/${cid}`
+  };
+};
+window.applyTcdbCardUrl=function applyTcdbCardUrl(c, url, opts){
+  opts=opts||{};
+  const ids=parseTcdbIds(url);
+  if(!c||!ids) return false;
+  const imgs=tcdbImageUrls(ids.sid, ids.cid, c.sport||'Baseball');
+  c.tcdbSid=ids.sid; c.tcdbCid=ids.cid;
+  c.tcdbUrl=imgs.viewCard;
+  const side=opts.side==='back'?'back':'front';
+  if(side==='back'){
+    c.imgUrlBack=imgs.back;
+  }else{
+    /* Prefer real TCDB scan over MLB headshot */
+    c.imgUrl=imgs.front;
+    c.imgSource='tcdb';
+    if(c.imgId){ try{idb.del(c.imgId);}catch(e){} c.imgId=''; }
+  }
+  if(opts.both){
+    c.imgUrl=imgs.front; c.imgUrlBack=imgs.back; c.imgSource='tcdb';
+  }
+  return true;
+};
+window.applyTcdbPhotoMap=function applyTcdbPhotoMap(rows, opts){
+  opts=opts||{};
+  const overwrite=!!opts.overwrite;
+  const list=Array.isArray(rows)?rows:(rows&&rows.cards)||[];
+  if(!list.length) return {matched:0, updated:0};
+  const byKey=new Map();
+  const norm=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+  for(const r of list){
+    const year=String(r.year||'').slice(0,4);
+    const num=String(r.num||r.number||'').replace(/^#/,'').toLowerCase();
+    const player=norm(r.player||r.name||r.subject||'');
+    const setName=norm(r.setName||r.set||'');
+    if(r.sid&&r.cid){
+      byKey.set('id|'+r.sid+'|'+r.cid, r);
+    }
+    if(year&&num&&player) byKey.set([year,num,player].join('|'), r);
+    if(year&&num&&setName) byKey.set(['s',year,num,setName].join('|'), r);
+  }
+  let matched=0, updated=0;
+  for(const c of state.cards||[]){
+    const year=String(c.year||'').slice(0,4);
+    const num=String(c.num||'').replace(/^#/,'').toLowerCase();
+    const player=norm(c.player);
+    const setName=norm(c.setName||c.brand);
+    let r=null;
+    if(c.tcdbSid&&c.tcdbCid) r=byKey.get('id|'+c.tcdbSid+'|'+c.tcdbCid);
+    if(!r) r=byKey.get([year,num,player].join('|'));
+    if(!r) r=byKey.get(['s',year,num,setName].join('|'));
+    if(!r&&r!==0){
+      /* direct url / ids on row */
+      if(r) {}
+    }
+    if(!r) continue;
+    matched++;
+    const hasReal=c.imgId||(c.imgUrl&&!/mlbstatic/.test(c.imgUrl)&&c.imgSource==='tcdb');
+    if(hasReal&&!overwrite) continue;
+    if(r.sid&&r.cid){
+      applyTcdbCardUrl(c, `https://www.tcdb.com/ViewCard.cfm/sid/${r.sid}/cid/${r.cid}`, {both:true});
+      updated++;
+    }else if(r.imgUrl||r.imageUrl||r.front){
+      c.imgUrl=r.imgUrl||r.imageUrl||r.front;
+      c.imgSource='tcdb';
+      if(r.back||r.imgUrlBack) c.imgUrlBack=r.back||r.imgUrlBack;
+      updated++;
+    }
+  }
+  return {matched, updated};
+};
+window.tcdbPhotoBookmarklet=function tcdbPhotoBookmarklet(){
+  /* Runs on tcdb.com — harvests ViewCard links + image URLs from the open page */
+  const code=`javascript:(function(){
+    var rows=[], seen={};
+    function add(sid,cid,meta){
+      var k=sid+'-'+cid; if(seen[k])return; seen[k]=1;
+      var front='https://www.tcdb.com/Images/Large/Baseball/'+sid+'/'+sid+'-'+cid+'Fr.jpg';
+      rows.push(Object.assign({sid:sid,cid:cid,imgUrl:front,imgSource:'tcdb'}, meta||{}));
+    }
+    document.querySelectorAll('a[href*=\"ViewCard\"]').forEach(function(a){
+      var m=String(a.href).match(/sid\\/(\\d+)\\/cid\\/(\\d+)/i);
+      if(!m)return;
+      var t=(a.textContent||'').trim();
+      add(m[1],m[2],{label:t});
+    });
+    var html=document.documentElement.innerHTML;
+    var re=/sid\\/(\\d+)\\/cid\\/(\\d+)/gi, m;
+    while((m=re.exec(html))) add(m[1],m[2],{});
+    if(!rows.length){alert('No TCDB cards found on this page. Open a checklist / gallery / collection page first.');return;}
+    var blob=new Blob([JSON.stringify({v:1,source:'tcdb-bookmarklet',page:location.href,count:rows.length,cards:rows},null,2)],{type:'application/json'});
+    var u=URL.createObjectURL(blob);
+    var a=document.createElement('a'); a.href=u; a.download='tcdb-photos-'+rows.length+'.json';
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(u);
+    alert('Saved '+rows.length+' TCDB photo links. Import that JSON in Jay\\'s Card Vault → Menu → TCDB photos.');
+  })();`;
+  return code;
+};
+window.openTcdbPhotosPanel=function openTcdbPhotosPanel(){
+  const bk=document.createElement('div');
+  bk.className='showModeBk';
+  bk.innerHTML=`<div class="showMode" style="max-width:520px">
+    <div class="casHead">
+      <div>
+        <div class="heroTitle" style="font-size:18px">TCDB photos</div>
+        <div class="heroSub" style="margin:0">Authorized use only. TCDB blocks automated image downloads (Cloudflare), so we link scans from their pages / an export — we don’t scrape the CDN from the vault.</div>
+      </div>
+      <button type="button" id="tcdbPhClose">✕</button>
+    </div>
+    <div class="mlbBio" style="margin:10px 0">Images courtesy of <a href="https://www.tcdb.com" target="_blank" rel="noopener">TCDB.com</a>. Confirm you have permission before importing.</div>
+    <label style="display:flex;gap:8px;align-items:flex-start;margin:10px 0;font-size:13px">
+      <input type="checkbox" id="tcdbPerm" ${state.meta&&state.meta.tcdbPhotoAuth?'checked':''} style="margin-top:3px">
+      <span>I have permission from TCDB / the rights holder to use these images in this personal vault.</span>
+    </label>
+    <div class="home-actions">
+      <button type="button" class="bigim" id="tcdbCopyBm">Copy bookmarklet</button>
+      <button type="button" id="tcdbImportMap">Import photo JSON</button>
+      <button type="button" id="tcdbPasteOne">Paste one ViewCard URL</button>
+    </div>
+    <ol style="margin:12px 0 0;padding-left:18px;font-size:13px;color:var(--dim);line-height:1.45">
+      <li>On your phone/computer, open a TCDB checklist or collection page (while logged in if needed).</li>
+      <li>Run the bookmarklet → it downloads <b>tcdb-photos-….json</b>.</li>
+      <li>Back here → Import photo JSON → we match by year / # / player and set the TCDB scan URLs.</li>
+      <li>Or open any card → <b>TCDB card link → photo</b> and paste one ViewCard URL.</li>
+    </ol>
+    <input type="file" id="tcdbMapIn" accept="application/json,.json" hidden>
+  </div>`;
+  document.body.appendChild(bk);
+  const close=()=>bk.remove();
+  bk.onclick=e=>{ if(e.target===bk) close(); };
+  $('tcdbPhClose').onclick=close;
+  const perm=$('tcdbPerm');
+  perm.onchange=()=>{
+    if(!state.meta)state.meta={};
+    state.meta.tcdbPhotoAuth=!!perm.checked;
+    save();
+  };
+  $('tcdbCopyBm').onclick=async()=>{
+    if(!perm.checked) return alert('Check the permission box first.');
+    const code=tcdbPhotoBookmarklet();
+    try{
+      await navigator.clipboard.writeText(code);
+      showToast('Bookmarklet copied — make a bookmark, paste as URL');
+    }catch(e){
+      prompt('Copy this bookmarklet URL:', code);
+    }
+  };
+  $('tcdbImportMap').onclick=()=>{
+    if(!perm.checked) return alert('Check the permission box first.');
+    $('tcdbMapIn').click();
+  };
+  $('tcdbMapIn').onchange=async e=>{
+    const f=e.target.files&&e.target.files[0]; e.target.value='';
+    if(!f)return;
+    try{
+      const j=JSON.parse(await f.text());
+      const r=applyTcdbPhotoMap(j, {overwrite:confirm('Overwrite existing non-TCDB photos when a match is found?\n\nOK = overwrite · Cancel = only fill blanks / MLB headshots')});
+      save(); render();
+      showToast(`TCDB map: ${r.updated} photos · ${r.matched} matched`);
+      close();
+    }catch(err){ alert('Import failed: '+(err.message||err)); }
+  };
+  $('tcdbPasteOne').onclick=()=>{
+    if(!perm.checked) return alert('Check the permission box first.');
+    const u=prompt('Paste a TCDB ViewCard URL to apply to the selected card (open a card first), or Cancel.');
+    if(u===null)return;
+    if(!sel){ alert('Open a card in Have first, then try again.'); return; }
+    if(!applyTcdbCardUrl(sel, u.trim(), {both:true})) return alert('Need /sid/…/cid/… in the URL');
+    save(); openSheet(); showToast('TCDB photo linked ✔'); close();
+  };
+};
 function psaCertUrl(cert){
   const n=String(cert||'').replace(/\D/g,'');
   if(!n)return 'https://www.psacard.com/cert';
@@ -3987,10 +4178,12 @@ async function openSheet(){
     <div class="pbtns">
      <button id="btnPhoto">📷 Photo (this side)</button>
      ${csKey()?'<button id="btnCsId">📷 Identify front</button><button id="btnCsCat" class="bigim">🔎 Match in catalog</button>':''}
+     <button id="btnTcdbPhoto" type="button">📎 TCDB card link → photo</button>
      <button id="btnPPhoto" style="display:none">👤 Use player photo</button>
      <button id="btnRmPhoto">Remove this side</button>
      ${F('Front image URL','imgUrl',c.imgUrl)}
      ${F('Back image URL','imgUrlBack',c.imgUrlBack||'')}
+     <div class="teach-hint" style="font-size:11px;color:var(--dim);margin-top:4px">TCDB: paste a ViewCard link (…/sid/…/cid/…). Images courtesy of TCDB · authorized use only.</div>
     </div>
    </div>
    ${typeof mlbChipsHtml==='function'?mlbChipsHtml(c):''}
@@ -4275,6 +4468,16 @@ async function openSheet(){
   }
   paintSheetPhotos();
   $('btnPhoto').onclick=()=>$('photoIn').click();
+  const btcdb=$('btnTcdbPhoto');
+  if(btcdb) btcdb.onclick=()=>{
+    const u=prompt('Paste TCDB ViewCard link\n(example: tcdb.com/ViewCard.cfm/sid/…/cid/…)');
+    if(u===null||!String(u).trim())return;
+    if(typeof applyTcdbCardUrl!=='function')return showToast('TCDB helper missing');
+    const ok=applyTcdbCardUrl(c, u.trim(), {side:photoSide||'front'});
+    if(!ok) return alert('Need a TCDB ViewCard URL with /sid/…/cid/…');
+    save(); openSheet();
+    showToast('TCDB photo linked ✔');
+  };
   $('photoIn').onchange=async e=>{
     const f=e.target.files[0];e.target.value='';if(!f)return;
     const url=await new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result);r.readAsDataURL(f);});
@@ -4504,6 +4707,7 @@ function openMenu(anchor){
       <button type="button" class="menuItem" data-a="bk"><span class="miI">💾</span><span>Backup now<span class="miS">JSON for iCloud / Files</span></span></button>
       <button type="button" class="menuItem" data-a="bkp"><span class="miI">🖼</span>Backup + photos<span class="miS">Larger download</span></button>
       <button type="button" class="menuItem" data-a="restore"><span class="miI">📂</span>Import / restore<span class="miS">JSON · CSV · Excel · TCDB</span></button>
+      <button type="button" class="menuItem" data-a="tcdbphotos"><span class="miI">📎</span>TCDB photos<span class="miS">Authorized link / import map</span></button>
       <button type="button" class="menuItem" data-a="reseed"><span class="miI">♻</span>Reload Jay’s collection<span class="miS">TCDB + Diamond Stars seed</span></button>
       <button type="button" class="menuItem" data-a="csv"><span class="miI">📑</span>Export CSV<span class="miS">Spreadsheet</span></button>
     </div>
@@ -4545,6 +4749,7 @@ function openMenu(anchor){
       ensureCollectionSeed().then(()=>render()).catch(e=>alert(e.message||e));
     }
     else if(a==='restore')$('fileIn').click();
+    else if(a==='tcdbphotos'){ if(typeof openTcdbPhotosPanel==='function') openTcdbPhotosPanel(); }
     else if(a==='csv')download('card-vault-'+today()+'.csv',csvExport(state.cards),'text/csv');
     else if(a==='prices'){
       const top=state.cards.filter(c=>c.status!=='sold').sort((a2,b2)=>valueOf(b2)-valueOf(a2)).slice(0,5);
