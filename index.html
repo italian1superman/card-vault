@@ -1459,6 +1459,75 @@ button.astroChip,button.diamondTile,button.setProgRow{appearance:none;-webkit-ap
   .diamondBoard{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
 
+
+/* ===== UX pack v46 ===== */
+.portfolioDetails{margin-top:12px;border-radius:14px;background:rgba(0,45,98,.04);padding:8px 12px}
+.portfolioDetails > summary{
+  cursor:pointer;font-weight:800;font-size:14px;padding:8px 0;list-style:none;
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+}
+.portfolioDetails > summary::-webkit-details-marker{display:none}
+.portfolioDetails > summary::after{content:'▸';opacity:.55;transition:transform .15s}
+.portfolioDetails[open] > summary::after{transform:rotate(90deg)}
+.binderJump{display:flex;align-items:center;gap:6px;margin-left:auto}
+.binderJump input{
+  width:64px;min-height:34px;border-radius:10px;border:0.5px solid var(--sep);
+  background:var(--panel);color:var(--ink);text-align:center;font-weight:700;font-size:14px;
+}
+.binderJump button{min-height:34px;padding:0 10px;font-size:13px}
+.bpTitle{flex:1;min-width:0}
+.binderPageHead{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.searchSeg{
+  display:inline-flex;gap:2px;padding:2px;border-radius:12px;
+  background:rgba(0,45,98,.08);margin:0 0 8px;
+}
+.searchSeg button{
+  border:0;background:transparent;min-height:32px;padding:0 12px;border-radius:10px;
+  font-weight:700;font-size:12px;color:var(--mute);cursor:pointer;
+}
+.searchSeg button.on{background:var(--panel);color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.homeSearchBox{margin:8px 0 4px}
+.homeSearchBox input{
+  width:100%;min-height:44px;border-radius:12px;border:0.5px solid var(--sep);
+  padding:10px 12px;font-size:16px;background:var(--panel);color:var(--ink);
+}
+.dealChipHome{
+  display:inline-flex;align-items:center;gap:6px;margin:8px 0 0;
+  padding:8px 12px;border-radius:999px;border:0;cursor:pointer;
+  background:linear-gradient(135deg,rgba(235,110,31,.18),rgba(0,45,98,.1));
+  color:var(--ink);font-weight:800;font-size:13px;
+}
+.binderRow.stickyBinders{
+  position:sticky;top:0;z-index:5;background:var(--bg, #0b1220);
+  padding:6px 0 8px;margin:0 0 6px;
+  backdrop-filter:blur(8px);
+}
+body.cv-cool .binderRow.stickyBinders{background:rgba(8,14,28,.92)}
+.sheetAcc{margin-top:10px;border-radius:14px;border:0.5px solid var(--sep);padding:0 10px}
+.sheetAcc > summary{
+  cursor:pointer;font-weight:800;font-size:14px;padding:12px 2px;list-style:none;
+}
+.sheetAcc > summary::-webkit-details-marker{display:none}
+.photoProg{
+  position:fixed;left:12px;right:12px;bottom:calc(72px + env(safe-area-inset-bottom));
+  z-index:40;padding:10px 12px;border-radius:12px;
+  background:rgba(0,45,98,.92);color:#fff;font-size:13px;font-weight:700;
+  box-shadow:0 8px 24px rgba(0,0,0,.25);display:none;
+}
+.photoProg .bar{height:4px;background:rgba(255,255,255,.2);border-radius:99px;margin-top:6px;overflow:hidden}
+.photoProg .bar i{display:block;height:100%;width:0;background:#eb6e1f;transition:width .2s}
+.diamondHome{margin:12px 0 8px}
+.diamondHome .dhHead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0 0 8px}
+.diamondHome .dhTitle{font-weight:800;font-size:15px}
+.diamondHome .dhSub{font-size:11px;color:var(--mute);font-weight:600}
+.toolbarCompact details.moreFilters{flex:1;min-width:120px}
+.toolbarCompact details.moreFilters > summary{
+  list-style:none;cursor:pointer;min-height:40px;display:flex;align-items:center;
+  padding:0 10px;border-radius:10px;background:var(--panel);font-weight:700;font-size:13px;
+}
+.toolbarCompact details.moreFilters > summary::-webkit-details-marker{display:none}
+.toolbarCompact .moreFiltersBody{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+
 </style>
 </head>
 <body class="cv-cool">
@@ -1473,7 +1542,7 @@ button.astroChip,button.diamondTile,button.setProgRow{appearance:none;-webkit-ap
     </div>
   </div>
   <div id="tabsTop" class="deskOnly"></div>
-  <input id="q" class="hdrFilter" placeholder="Filter collection…" list="dlSearch" enterkeyhint="search">
+  <input id="q" class="hdrFilter" placeholder="Search vault…" list="dlSearch" enterkeyhint="search">
 </header>
 <div id="iosBanner" class="ios-banner" hidden></div>
 <main id="view"></main>
@@ -2304,9 +2373,10 @@ function confettiBurst(opts){
 }
 window.confettiBurst=confettiBurst;
 window.haptic=haptic;
-let state={cards:[],meta:{lastBackup:0}},tab='dash',q='',view=(window.matchMedia&&matchMedia('(max-width:899px)').matches)?'binder':'list',listGroup='',sel=null,lastDeleted=null,toastT=null,binderPage=0,listLimit=60,photoSide='front';
+let state={cards:[],meta:{lastBackup:0}},tab='dash',q='',view=(window.matchMedia&&matchMedia('(max-width:899px)').matches)?'binder':'list',listGroup='',sel=null,lastDeleted=null,toastT=null,binderPage=0,listLimit=60,photoSide='front',searchMode='vault';
 const LIST_PAGE_SIZE=60;
 let _filteredCache={key:'',rows:null};
+let _binderCountCache={key:'',counts:null};
 /* BINDER_ID lives on window from pro-suite */
 const imgCache=new Map();
 
@@ -2462,6 +2532,7 @@ async function ensureCollectionSeed(){
 }
 function save(){
   _filteredCache={key:'',rows:null};
+  _binderCountCache={key:'',counts:null};
   const payload={cards:state.cards,meta:state.meta||{lastBackup:0},v:2};
   // Prefer IndexedDB for large collections (Jay's TCDB dump ~20k cards won't fit in localStorage)
   try{idb.statePut(payload);}catch(e){}
@@ -2872,11 +2943,14 @@ async function sdbSearch(name){
 }
 
 /* ---- rendering ---- */
-const TABS=[['dash','⌂','Home'],['have','▤','Have'],['want','☆','Want'],['sold','$','Sold'],['sets','▦','Sets'],['explore','⌕','Find']];
+const TABS=[['dash','⌂','Home'],['have','▤','Have'],['want','☆','Want'],['show','🃏','Show'],['sets','▦','Sets'],['explore','⌕','Find']];
 function syncPhoneFilter(){
   const qel=$('q'); if(!qel) return;
-  const show=['have','want','sold','sets'].includes(tab);
+  const show=['dash','have','want','sold','sets','show'].includes(tab);
   qel.classList.toggle('isHidden', !show);
+  qel.placeholder = (tab==='dash'||tab==='explore')
+    ? (searchMode==='catalog'?'Search catalog…':'Search vault…')
+    : 'Filter collection…';
 }
 /** Used by visuals.js logo strip — let q/tab are not on window. */
 window.applyCollectionFilter=function applyCollectionFilter(text,{status='have'}={}){
@@ -3027,17 +3101,34 @@ function renderNav(){
   document.querySelectorAll('[data-t]').forEach(el=>el.onclick=()=>{
     window.TEAM_PAGE=null;
     const next=el.dataset.t;
+    if(next==='show'){
+      if(typeof openShowMode==='function') openShowMode();
+      return;
+    }
     if(next!==tab){listLimit=LIST_PAGE_SIZE;binderPage=0;_filteredCache={key:'',rows:null};}
     /* Large vaults: binder stays snappy (9 cards/page) */
     if((next==='have'||next==='want'||next==='sold')&&(state.cards||[]).length>400&&view==='list')
       view='binder';
+    /* Want hunt list: prefer deals / gap-to-target */
+    if(next==='want' && tab!=='want'){
+      window.BINDER_ID = (window.BINDER_ID==='all'||!window.BINDER_ID) ? 'deals' : window.BINDER_ID;
+      window._wantHuntSort = true;
+    }
     tab=next;render();
   });
   syncPhoneFilter();
 }
 function filtered(){
   const sp=($('fSport')||{}).value||'';
-  const m=($('fSort')||{}).value||'recent';
+  let m=($('fSort')||{}).value||'recent';
+  if(tab==='want' && window._wantHuntSort){
+    m='hunt';
+    window._wantHuntSort=false;
+    const fs=$('fSort'); if(fs && ![...fs.options].some(o=>o.value==='hunt')){
+      const o=document.createElement('option'); o.value='hunt'; o.textContent='🎯 Hunt (deals first)';
+      fs.insertBefore(o, fs.firstChild); fs.value='hunt';
+    } else if(fs) fs.value='hunt';
+  }
   listGroup=($('fGroup')||{}).value||'';
   const bid=(typeof applyBinder==='function'&&(tab==='have'||tab==='want'||tab==='sold'))?(window.BINDER_ID||'all'):'all';
   const cacheKey=[tab,sp,q||'',m,listGroup,bid,(state.cards||[]).length,state.meta&&state.meta.lastBackup].join('|');
@@ -3077,6 +3168,20 @@ function filtered(){
   else if(m==='value')cs.sort((a,b)=>valueOf(b)*(b.qty||1)-valueOf(a)*(a.qty||1));
   else if(m==='gain')cs.sort((a,b)=>g(b)-g(a));
   else if(m==='d30')cs.sort((a,b)=>(deltaDays(b,30)??-1e9)-(deltaDays(a,30)??-1e9));
+  else if(m==='hunt'){
+    const gap=c=>{
+      const t=+c.target||0, v=latestPrice(c);
+      if(t>0 && v!=null) return v-t; /* negative = under target = better */
+      if(t>0) return 1e6;
+      return 1e7;
+    };
+    cs.sort((a,b)=>{
+      const da=typeof dealHit==='function'&&dealHit(a)?0:1;
+      const db=typeof dealHit==='function'&&dealHit(b)?0:1;
+      if(da!==db) return da-db;
+      return gap(a)-gap(b) || (b.created||0)-(a.created||0);
+    });
+  }
   else cs.sort((a,b)=>(b.created||0)-(a.created||0));
   _filteredCache={key:cacheKey,rows:cs};
   return cs.slice();
@@ -3170,13 +3275,17 @@ function renderListPanel(cs){
     return `<div class="binderWrap">
       <div class="binderPageHead">
         <div class="bpTitle">Binder · page ${binderPage+1}/${pages}</div>
+        <div class="binderJump">
+          <input id="bpJump" type="number" inputmode="numeric" min="1" max="${pages}" value="${binderPage+1}" aria-label="Page number">
+          <button type="button" id="bpGo">Go</button>
+        </div>
         <div class="bpNav">
           <button type="button" id="bpPrev" ${binderPage<=0?'disabled':''} aria-label="Previous">‹</button>
           <button type="button" id="bpNext" ${binderPage>=pages-1?'disabled':''} aria-label="Next">›</button>
         </div>
       </div>
       <div class="binderGrid" id="binderGrid">${pockets}</div>
-      <div class="teach-hint" style="margin-top:8px;font-size:12px;color:var(--mute)">Tap to flip (if back photo) · double-tap to edit · swipe for pages</div>
+      <div class="teach-hint" style="margin-top:8px;font-size:12px;color:var(--mute)">Tap to flip (if back photo) · double-tap to edit · swipe · jump page</div>
     </div>`;
   }
   const total=cs.length;
@@ -3251,9 +3360,18 @@ function afterListRender(cs){
         },220);
       };
     });
-    const prev=$('bpPrev'), next=$('bpNext');
+    const prev=$('bpPrev'), next=$('bpNext'), jump=$('bpJump'), go=$('bpGo');
+    const pagesN=Math.max(1, Math.ceil((cs||[]).length/9));
+    const goPage=()=>{
+      let n=parseInt(jump&&jump.value,10);
+      if(!Number.isFinite(n)) return;
+      binderPage=Math.max(0, Math.min(pagesN-1, n-1));
+      haptic('light'); renderList();
+    };
     if(prev)prev.onclick=()=>{haptic('light');binderPage--;renderList();};
     if(next)next.onclick=()=>{haptic('light');binderPage++;renderList();};
+    if(go) go.onclick=goPage;
+    if(jump) jump.onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); goPage(); } };
     /* swipe pages */
     if(grid){
       let x0=null;
@@ -3398,7 +3516,7 @@ function homePhotoWallHtml(cards){
   /* Prefer real card scans (commons / non-mlb) then graded / high value */
   const scored=withPic.map(c=>{
     const u=cardPhotoUrl(c);
-    const scan=/wikimedia|commons|baseball-almanac/i.test(u||'')||c.imgSource==='commons'?3:0;
+    const scan=(c.imgId||c.imgSource==='commons'||c.imgSource==='tcdb'||c.imgSource==='cardsight'||/wikimedia|commons|baseball-almanac|tcdb\.com/i.test(u||''))?3:(/mlbstatic/i.test(u||'')?0:2);
     const grade=/PSA|BGS|SGC/i.test(String(c.grade||''))?1:0;
     return {c, s:scan*1000+grade*100+rarityScore(c)+valueOf(c)/50};
   }).sort((a,b)=>b.s-a.s);
@@ -3437,15 +3555,102 @@ function wireHomeShowcase(){
   });
 }
 
+
+function hasRealCardScan(c){
+  if(!c) return false;
+  if(c.imgId) return true;
+  const u=String(c.imgUrl||'');
+  if(!u) return false;
+  if(/mlbstatic\.com/i.test(u) && c.imgSource!=='commons' && c.imgSource!=='tcdb') return false;
+  return true;
+}
+function homeSearchHtml(){
+  return `<div class="homeSearchBox">
+    <div class="searchSeg" id="homeSearchSeg">
+      <button type="button" data-sm="vault" class="${searchMode!=='catalog'?'on':''}">In vault</button>
+      <button type="button" data-sm="catalog" class="${searchMode==='catalog'?'on':''}">Catalog</button>
+    </div>
+    <input id="homeQ" type="search" placeholder="${searchMode==='catalog'?'Search catalog players…':'Do I own this? Player, set, #'}" value="${esc(q||'')}" enterkeyhint="search" autocomplete="off">
+  </div>`;
+}
+function diamondStarsBoardHtml(){
+  const cards=(state.cards||[]).filter(isDiamondStarsCard);
+  if(!cards.length) return '';
+  const base=cards.filter(c=>String(c.setFocus||'')==='diamond-stars-r327' || (!c.setFocus && !/var|1981/i.test(String(c.setName||'')+String(c.variant||''))));
+  /* Prefer numbered 1–108 unique by num */
+  const byNum=new Map();
+  for(const c of base){
+    const n=String(c.num||'').replace(/^#/,'');
+    if(!n || !/^\d+$/.test(n)) continue;
+    const prev=byNum.get(n);
+    if(!prev || (c.status==='have' && prev.status!=='have')) byNum.set(n,c);
+    else if(!prev) byNum.set(n,c);
+  }
+  const nums=[...byNum.keys()].sort((a,b)=>(+a)-(+b));
+  if(nums.length<8) return '';
+  const haveN=nums.filter(n=>byNum.get(n).status==='have').length;
+  const wantN=nums.filter(n=>byNum.get(n).status==='want').length;
+  const tiles=nums.slice(0,108).map(n=>{
+    const c=byNum.get(n);
+    const have=c.status==='have', want=c.status==='want';
+    return `<button type="button" class="diamondTile ${have?'owned':''} ${want&&!have?'want':''}" data-ds-id="${esc(c.id)}" title="${esc(c.player||'')}">
+      <span class="dstamp">${have?'✔':want?'★':'☆'}</span>
+      <span class="dn">#${esc(n)}</span>
+      <span class="dp">${esc((c.player||'').split(' ').slice(-1)[0]||'—')}</span>
+    </button>`;
+  }).join('');
+  return `<div class="diamondHome">
+    <div class="dhHead">
+      <div class="dhTitle">◆ 1934–36 Diamond Stars</div>
+      <div class="dhSub">${haveN} have · ${wantN} want · ${nums.length} on board</div>
+    </div>
+    <div class="diamondActions">
+      <span class="pillStat"><b>${haveN}</b>/${nums.length}</span>
+      <button type="button" class="pill" id="btnDsHave">Have only</button>
+      <button type="button" class="pill" id="btnDsAll">Open set in Have</button>
+    </div>
+    <div class="diamondBoard" id="diamondBoard">${tiles}</div>
+  </div>`;
+}
+function wireDiamondStarsBoard(){
+  document.querySelectorAll('#diamondBoard [data-ds-id]').forEach(btn=>{
+    btn.onclick=()=>{
+      sel=state.cards.find(c=>c.id===btn.getAttribute('data-ds-id'));
+      if(sel){ haptic('light'); openSheet(); }
+    };
+  });
+  const h=$('btnDsHave');
+  if(h) h.onclick=()=>{ q='Diamond Stars'; tab='have'; window.BINDER_ID='all'; searchMode='vault'; render(); };
+  const a=$('btnDsAll');
+  if(a) a.onclick=()=>{ q='1934-36 Diamond Stars'; tab='have'; window.BINDER_ID='all'; searchMode='vault'; render(); };
+}
+
+
 function renderDash(){
   const s=stats(state.cards);
   const cs=state.cards;
-  const movers=cs.filter(c=>c.status==='have'&&+c.cost>0&&latestPrice(c)!=null)
-    .map(c=>[c.player||c.setName||'card',(latestPrice(c)-c.cost)*(+c.qty||1)])
-    .sort((a,b)=>Math.abs(b[1])-Math.abs(a[1]));
+  let movers=null;
+  const getMovers=()=>{
+    if(movers) return movers;
+    movers=cs.filter(c=>c.status==='have'&&+c.cost>0&&latestPrice(c)!=null)
+      .map(c=>[c.player||c.setName||'card',(latestPrice(c)-c.cost)*(+c.qty||1)])
+      .sort((a,b)=>Math.abs(b[1])-Math.abs(a[1]));
+    return movers;
+  };
   const backupAge=state.meta.lastBackup?Math.floor((Date.now()-state.meta.lastBackup)/86400000):null;
-  const unpriced=cs.filter(c=>c.status!=='sold'&&(!c.prices||!c.prices.length)).length;
-  const unlinked=cs.filter(c=>c.status!=='sold'&&!c.csId).length;
+  let unpriced=0, unlinked=0;
+  if(cs.length<=4000){
+    unpriced=cs.filter(c=>c.status!=='sold'&&(!c.prices||!c.prices.length)).length;
+    unlinked=cs.filter(c=>c.status!=='sold'&&!c.csId).length;
+  }else{
+    /* sample — avoid full scan on Home */
+    for(let i=0;i<cs.length;i+=7){
+      const c=cs[i]; if(c.status==='sold') continue;
+      if(!c.prices||!c.prices.length) unpriced++;
+      if(!c.csId) unlinked++;
+    }
+    unpriced*=7; unlinked*=7;
+  }
   const best=cs.filter(c=>c.status==='have').sort((a,b)=>valueOf(b)*(b.qty||1)-valueOf(a)*(a.qty||1))[0];
   const empty=!cs.length;
   const qp=(typeof QUICK_PLAYERS!=='undefined'?QUICK_PLAYERS:['Ken Griffey Jr','Shohei Ohtani','Mike Trout','Aaron Judge']);
@@ -3473,38 +3678,46 @@ function renderDash(){
    ${!empty?`${widgetHomeHtml(cs,s)}
    <div class="panel heroPanel coolHero">
      <div class="heroEyebrow"><span class="dot"></span> Jay's collection · Crush City</div>
-     <div class="heroSub deskOnly">${s.have} owned · ${s.want} wants${s.deals?` · <span class="pos">🔥 ${s.deals} deal${s.deals>1?'s':''}</span>`:''}</div>
+     <div class="heroSub">${s.have.toLocaleString()} owned · ${s.want} wants${s.deals?` · <span class="pos">🔥 ${s.deals} deal${s.deals>1?'s':''}</span>`:''}</div>
      <div class="plBar ${s.pl>=0?'pos':'neg'}">${s.pl>=0?'▲':'▼'} ${s.pl>=0?'+':''}${money0(s.pl)} unrealized</div>
+     ${homeSearchHtml()}
+     ${s.deals?`<button type="button" class="dealChipHome" id="btnHomeDeals">🔥 ${s.deals} deal${s.deals>1?'s':''} under target — open Want</button>`:''}
      ${homeShowcaseHtml(cs)}
      ${homePhotoWallHtml(cs)}
-     ${typeof localChecklistsHtml==='function'?localChecklistsHtml():''}
+     ${diamondStarsBoardHtml()}
      <div class="home-actions">
-       <button type="button" id="btnGoFind" class="bigim">Search</button>
+       <button type="button" id="btnGoShow" class="bigim">🃏 Show</button>
+       <button type="button" id="btnGoFind">Find</button>
        <button type="button" id="btnGoSets">Sets</button>
-       <button type="button" id="btnFillData" class="bigim">Fill data</button>
+       <button type="button" id="btnGoHave">Have</button>
        <button type="button" id="btnFillPhotos" class="homeMore">Photos</button>
+       <button type="button" id="btnFillData" class="homeMore">Fill data</button>
+     </div>
+     ${typeof mlbLogoStripHtml==='function'?`<div class="ct">Teams</div>${mlbLogoStripHtml()}`:''}
+   </div>
+   <details class="portfolioDetails" id="portfolioDetails">
+     <summary>📊 Portfolio & insights</summary>
+     ${typeof localChecklistsHtml==='function'?localChecklistsHtml():''}
+     ${typeof renderInsightsPanel==='function'?renderInsightsPanel():''}
+     <div class="panel" style="margin-top:8px"><div class="chips statPulse">
+      <div class="chipStat"><div class="k">Cost basis</div><div class="v">${money0(s.cost)}</div></div>
+      <div class="chipStat"><div class="k">Realized</div><div class="v ${s.realized>=0?'pos':'neg'}">${s.realized>=0?'+':''}${money0(s.realized)}</div><div class="s">${s.sold} sold</div></div>
+      <div class="chipStat"><div class="k">Top card</div><div class="v" style="font-size:14px">${best?esc(best.player||best.setName||'—'):'—'}</div><div class="s">${best?money0(valueOf(best)):''}</div></div>
+      <div class="chipStat"><div class="k">Cache</div><div class="v" style="font-size:14px">${CS_STATS.hits}h</div><div class="s">${CS_STATS.stale} soft · ${csUseN()}/750</div></div>
+     </div></div>
+     <div class="panel"><div class="ct">Portfolio over time</div><canvas class="chart" id="chPort"></canvas></div>
+     <div class="chartsGrid">
+      <div class="panel"><div class="ct">Top players</div><canvas class="chart" id="chPlayers"></canvas></div>
+      <div class="panel"><div class="ct">Movers</div><canvas class="chart" id="chMovers"></canvas></div>
+      <div class="panel"><div class="ct">By grade</div><canvas class="chart" id="chGrade"></canvas></div>
+      <div class="panel"><div class="ct">By sport</div><canvas class="chart" id="chSport"></canvas></div>
+     </div>
+     <div class="home-actions" style="margin-top:8px">
        <button type="button" id="btnStale" class="homeMore">Refresh $</button>
        <button type="button" id="btnMlbAll" class="deskOnly">MLB stats</button>
        <button type="button" id="btnGh" class="deskOnly">Stats JSON</button>
      </div>
-     ${typeof mlbLogoStripHtml==='function'?`<div class="ct">Teams</div>${mlbLogoStripHtml()}`:''}
-     <div class="ct" style="margin-top:12px">Jump to Find</div>
-     <div class="pill-row">${qp.slice(0,6).map(n=>`<button type="button" class="pill" data-pl="${esc(n)}">⚾ ${esc(n)}</button>`).join('')}</div>
-   </div>`:''}
-   ${!empty&&typeof renderInsightsPanel==='function'?renderInsightsPanel():''}
-   ${!empty?`<div class="panel"><div class="chips statPulse">
-    <div class="chipStat"><div class="k">Cost basis</div><div class="v">${money0(s.cost)}</div></div>
-    <div class="chipStat"><div class="k">Realized</div><div class="v ${s.realized>=0?'pos':'neg'}">${s.realized>=0?'+':''}${money0(s.realized)}</div><div class="s">${s.sold} sold</div></div>
-    <div class="chipStat"><div class="k">Top card</div><div class="v" style="font-size:14px">${best?esc(best.player||best.setName||'—'):'—'}</div><div class="s">${best?money0(valueOf(best)):''}</div></div>
-    <div class="chipStat"><div class="k">Cache</div><div class="v" style="font-size:14px">${CS_STATS.hits}h</div><div class="s">${CS_STATS.stale} soft · ${csUseN()}/750</div></div>
-   </div></div>
-   <div class="panel"><div class="ct">Portfolio over time</div><canvas class="chart" id="chPort"></canvas></div>
-   <div class="chartsGrid">
-    <div class="panel"><div class="ct">Top players</div><canvas class="chart" id="chPlayers"></canvas></div>
-    <div class="panel"><div class="ct">Movers</div><canvas class="chart" id="chMovers"></canvas></div>
-    <div class="panel"><div class="ct">By grade</div><canvas class="chart" id="chGrade"></canvas></div>
-    <div class="panel"><div class="ct">By sport</div><canvas class="chart" id="chSport"></canvas></div>
-   </div>`:''}`;
+   </details>`:''}`;
   document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{
     const g=b.dataset.go;
     if(g==='explore'){tab='explore';render();}
@@ -3515,12 +3728,44 @@ function renderDash(){
   document.querySelectorAll('[data-pl]').forEach(b=>b.onclick=()=>goExplorePlayer(b.dataset.pl));
   if(typeof wireLogoStrip==='function')wireLogoStrip($('view'));
   if(typeof wireHomeShowcase==='function')wireHomeShowcase();
-  if(typeof rebuildLocalChecklists==='function')rebuildLocalChecklists();
-  if(typeof wireSetProgressUi==='function')wireSetProgressUi(document.getElementById('view'));
+  if(typeof wireDiamondStarsBoard==='function')wireDiamondStarsBoard();
+  /* checklists only when Portfolio opens (expensive on 20k) */
+  const pd0=$('portfolioDetails');
+  if(pd0 && pd0.open && typeof rebuildLocalChecklists==='function') rebuildLocalChecklists();
   const bf=$('btnGoFind'); if(bf) bf.onclick=()=>{tab='explore';render();};
+  const bsh=$('btnGoShow'); if(bsh) bsh.onclick=()=>{if(typeof openShowMode==='function')openShowMode();};
+  const bh=$('btnGoHave'); if(bh) bh.onclick=()=>{tab='have';render();};
   const bs=$('btnGoSets'); if(bs) bs.onclick=()=>{tab='sets';render();};
+  const bd=$('btnHomeDeals'); if(bd) bd.onclick=()=>{tab='want'; window.BINDER_ID='deals'; window._wantHuntSort=true; render();};
   const br=$('btnStale'); if(br) br.onclick=()=>refreshStalePrices();
   const bfd=$('btnFillData'); if(bfd) bfd.onclick=()=>{if(typeof fillVaultData==='function'){haptic('light');fillVaultData();}};
+  /* Home search: vault filter vs catalog */
+  document.querySelectorAll('#homeSearchSeg [data-sm]').forEach(btn=>{
+    btn.onclick=()=>{
+      searchMode=btn.getAttribute('data-sm')||'vault';
+      document.querySelectorAll('#homeSearchSeg [data-sm]').forEach(b=>b.classList.toggle('on', b===btn));
+      const hq=$('homeQ'); if(hq) hq.placeholder=searchMode==='catalog'?'Search catalog players…':'Do I own this? Player, set, #';
+      syncPhoneFilter();
+    };
+  });
+  const hq=$('homeQ');
+  if(hq){
+    hq.oninput=e=>{
+      q=e.target.value;
+      const qel=$('q'); if(qel) qel.value=q;
+    };
+    hq.onkeydown=e=>{
+      if(e.key!=='Enter') return;
+      e.preventDefault();
+      const v=(hq.value||'').trim(); q=v;
+      if(searchMode==='catalog'){
+        if(v.length>=2) goExplorePlayer(v);
+        else { tab='explore'; render(); }
+      }else{
+        tab='have'; window.BINDER_ID='all'; render();
+      }
+    };
+  }
   const bwh=$('btnWidgetHome');
   if(bwh) bwh.onclick=()=>{
     haptic('light');
@@ -3547,16 +3792,30 @@ function renderDash(){
   const bp=$('btnFillPhotos'); if(bp) bp.onclick=()=>{if(typeof fillMissingPhotos==='function')fillMissingPhotos();};
   const bm=$('btnMlbAll'); if(bm) bm.onclick=()=>{if(typeof importAllMlbStats==='function')importAllMlbStats().catch(e=>alert(e.message));};
   const bg=$('btnGh'); if(bg) bg.onclick=()=>{if(typeof openGitHubPanel==='function')openGitHubPanel();};
-  if(!empty){
+  const paintPortfolio=()=>{
+    if(empty) return;
     const have=cs.filter(c=>c.status==='have');
-    chLine($('chPort'),portfolioSeries(cs),'#4da3ff',200);
+    const port=$('chPort'); if(!port || port.dataset.drawn) return;
+    chLine(port,portfolioSeries(cs),'#4da3ff',200);
     chBars($('chPlayers'),groupSum(have,c=>c.player).slice(0,7));
-    chBars($('chMovers'),movers.slice(0,7),{signed:true});
+    chBars($('chMovers'),getMovers().slice(0,7),{signed:true});
     chDonut($('chGrade'),groupSum(have,c=>c.grade||'Raw'));
     chDonut($('chSport'),groupSum(have,c=>c.sport));
-    if(typeof autoRefreshPricesIfNeeded==='function') autoRefreshPricesIfNeeded();
+    port.dataset.drawn='1';
+  };
+  const pd=$('portfolioDetails');
+  if(pd){
+    pd.addEventListener('toggle',()=>{
+      if(pd.open){
+        if(typeof rebuildLocalChecklists==='function') rebuildLocalChecklists();
+        /* inject checklists if empty slot */
+        paintPortfolio();
+        if(typeof wireInsightsPanel==='function') wireInsightsPanel();
+        if(typeof wireSetProgressUi==='function') wireSetProgressUi(pd);
+      }
+    });
   }
-  if(typeof wireInsightsPanel==='function') wireInsightsPanel();
+  if(!empty && typeof autoRefreshPricesIfNeeded==='function') autoRefreshPricesIfNeeded();
 }
 function renderList(){
   const sports=[...new Set(state.cards.map(c=>c.sport).filter(Boolean))].sort();
@@ -3576,7 +3835,9 @@ function renderList(){
       <option value="grade">Group: Grade</option>
      </select>
      <select id="fSort">
-      <option value="recent">Newest</option><option value="rarity">✦ Rarest</option><option value="value">Value ↓</option>
+      <option value="recent">Newest</option>
+      ${tab==='want'?'<option value="hunt">🎯 Hunt (deals first)</option>':''}
+      <option value="rarity">✦ Rarest</option><option value="value">Value ↓</option>
       <option value="gain">Gain % ↓</option><option value="d30">30-day Δ ↓</option>
       <option value="player">Player A–Z</option><option value="year">Year</option></select>
      <div class="viewtog"><button id="vList" class="${view==='list'?'on':''}" aria-label="List">☰</button><button id="vGrid" class="${view==='grid'?'on':''}" aria-label="Grid">▦</button><button id="vBinder" class="${view==='binder'?'on':''}" aria-label="Binder">📒</button></div>
@@ -3585,6 +3846,10 @@ function renderList(){
     <div id="listBody"></div>
    </div>`;
   if(listGroup)$('fGroup').value=listGroup;
+  if(tab==='want'){
+    const fs=$('fSort');
+    if(fs && (window._wantHuntSort || fs.value==='recent')){ fs.value='hunt'; window._wantHuntSort=false; }
+  }
   $('fSport').onchange=()=>{listLimit=LIST_PAGE_SIZE;_filteredCache={key:'',rows:null};refreshList();};
   $('fSort').onchange=()=>{listLimit=LIST_PAGE_SIZE;_filteredCache={key:'',rows:null};refreshList();};
   $('fGroup').onchange=()=>{listLimit=LIST_PAGE_SIZE;_filteredCache={key:'',rows:null};refreshList();};
@@ -3609,6 +3874,15 @@ function refreshList(){
   let hero='';
   if(sortM==='rarity'&&cs.length){
     hero=`<div class="rareListHero"><h3>✦ Rarest first</h3><p>Ranked by gem grades, low serials, SSP/RC, and value — your vault’s crown jewels.</p></div>`;
+  }
+  /* Jump binder to first search match */
+  if(view==='binder' && q && cs.length){
+    const s=q.toLowerCase();
+    const idx=cs.findIndex(c=>((c.player||'')+' '+(c.setName||'')+' '+(c.num||'')+' '+(c.year||'')).toLowerCase().includes(s));
+    if(idx>=0){
+      const wantPage=Math.floor(idx/9);
+      if(wantPage!==binderPage) binderPage=wantPage;
+    }
   }
   $('listBody').innerHTML=hero+renderListPanel(cs);
   afterListRender(cs);
@@ -4106,6 +4380,8 @@ async function openSheet(){
    <div id="propStrip" class="prop-panel cascade-host" ${c.player&&String(c.player).trim().length>=2?'':'hidden'}></div>
    </div>
 
+   <details class="sheetAcc" id="sheetDetails" ${isNew?"open":""}>
+   <summary>Card details & market</summary>
    <div class="casFields">
     <div class="ct">Card details</div>
     <div class="g3">
@@ -4161,6 +4437,7 @@ async function openSheet(){
     ${F('Sale date','saleDate',c.saleDate,'type="date"')}
    </div>
    <div class="f"><label>Notes</label><textarea data-k="notes" rows="2">${esc(c.notes)}</textarea></div>
+   </details>
 
    <div class="photoBox dual">
     <div class="sideTog">
@@ -4703,6 +4980,7 @@ function openMenu(anchor){
       <button type="button" class="menuItem" data-a="bk"><span class="miI">💾</span><span>Backup now<span class="miS">JSON for iCloud / Files</span></span></button>
       <button type="button" class="menuItem" data-a="bkp"><span class="miI">🖼</span>Backup + photos<span class="miS">Larger download</span></button>
       <button type="button" class="menuItem" data-a="restore"><span class="miI">📂</span>Import / restore<span class="miS">JSON · CSV · Excel · TCDB</span></button>
+      <button type="button" class="menuItem" data-a="sold"><span class="miI">$</span>Sold cards<span class="miS">Moved out of bottom nav</span></button>
       <button type="button" class="menuItem" data-a="tcdbphotos"><span class="miI">📎</span>TCDB photos<span class="miS">Authorized link / import map</span></button>
       <button type="button" class="menuItem" data-a="reseed"><span class="miI">♻</span>Reload Jay’s collection<span class="miS">TCDB + Diamond Stars seed</span></button>
       <button type="button" class="menuItem" data-a="csv"><span class="miI">📑</span>Export CSV<span class="miS">Spreadsheet</span></button>
@@ -4745,6 +5023,7 @@ function openMenu(anchor){
       ensureCollectionSeed().then(()=>render()).catch(e=>alert(e.message||e));
     }
     else if(a==='restore')$('fileIn').click();
+    else if(a==='sold'){ tab='sold'; window.BINDER_ID='all'; render(); }
     else if(a==='tcdbphotos'){ if(typeof openTcdbPhotosPanel==='function') openTcdbPhotosPanel(); }
     else if(a==='csv')download('card-vault-'+today()+'.csv',csvExport(state.cards),'text/csv');
     else if(a==='prices'){
@@ -4960,33 +5239,59 @@ window.setsLoadAllPhotos=async function setsLoadAllPhotos(){
 };
 
 /** Persist free CardSight catalog images onto vault cards missing a photo. */
+window.showPhotoProgress=function showPhotoProgress(cur, total, label){
+  let el=$('photoProg');
+  if(!el){
+    el=document.createElement('div');
+    el.id='photoProg'; el.className='photoProg';
+    el.innerHTML='<div class="txt"></div><div class="bar"><i></i></div>';
+    document.body.appendChild(el);
+  }
+  el.style.display='block';
+  const pct=total?Math.min(100, Math.round((cur/total)*100)):0;
+  el.querySelector('.txt').textContent=(label||'Photos')+' · '+cur+' / '+total+' ('+pct+'%)';
+  el.querySelector('.bar i').style.width=pct+'%';
+};
+window.hidePhotoProgress=function hidePhotoProgress(){
+  const el=$('photoProg'); if(el) el.style.display='none';
+};
 window.fillMissingPhotos=async function fillMissingPhotos({concurrency=8,max=120,silent=false}={}){
   if(typeof csKey!=='function'||!csKey()){if(!silent)showToast('CardSight needed for free catalog photos');return 0;}
-  const need=state.cards.filter(c=>c.status!=='sold'&&c.csId&&!c.imgId&&!c.imgUrl).slice(0,max);
-  if(!need.length){if(!silent)showToast('All linked cards already have photos ✔');return 0;}
-  if(!silent)showToast('🖼 Filling '+need.length+' free photos…');
+  const needsPhoto=c=>{
+    if(c.status==='sold'||!c.csId||c.imgId) return false;
+    if(!c.imgUrl) return true;
+    /* MLB headshot alone = still fill when catalog photo available */
+    if(/mlbstatic/i.test(c.imgUrl) && c.imgSource!=='commons' && c.imgSource!=='tcdb' && c.imgSource!=='cardsight') return true;
+    return false;
+  };
+  const list=state.cards.filter(needsPhoto).slice(0,max);
+  if(!list.length){if(!silent)showToast('All linked cards already have photos ✔');return 0;}
+  if(!silent)showToast('🖼 Filling '+list.length+' free photos…');
+  if(!silent) showPhotoProgress(0, list.length, 'Filling photos');
   let i=0, done=0;
   async function worker(){
-    while(i<need.length){
-      const c=need[i++];
+    while(i<list.length){
+      const c=list[i++];
       try{
         const url=csImgSrc(await csImageData(c.csId));
         if(!url)continue;
         if(url.startsWith('data:')){
           c.imgId=c.id; imgCache.set(c.id,url); await idb.put(c.id,url);
         }else{
-          c.imgUrl=url;
+          c.imgUrl=url; c.imgSource=c.imgSource||'cardsight';
         }
         done++;
+        if(!silent && done%4===0) showPhotoProgress(done, list.length, 'Filling photos');
         const t=typeof $==='function'?$('im-'+c.id):null;
         if(t&&typeof fillThumb==='function')fillThumb(t,c);
       }catch(e){}
     }
   }
-  await Promise.all(Array.from({length:Math.min(concurrency,need.length)},()=>worker()));
+  await Promise.all(Array.from({length:Math.min(concurrency,list.length)},()=>worker()));
   save();
+  if(!silent){ showPhotoProgress(done, list.length, 'Done'); setTimeout(()=>hidePhotoProgress(), 1600); }
   if(typeof logActivity==='function')logActivity('photos','Filled '+done+' catalog photos');
-  if(!silent)showToast('🖼 Saved '+done+' free photos'+(need.length>=max?' (run again for more)':''));
+  if(!silent)showToast('🖼 Saved '+done+' free photos'+(list.length>=max?' (run again for more)':''));
   if(!silent && (tab==='have'||tab==='want'||tab==='dash'))render();
   return done;
 };
@@ -6056,18 +6361,28 @@ window.logActivity=function logActivity(type,text,cardId){
 };
 
 window.smartBinders=function smartBinders(){
+  const isScan=c=>{
+    if(!c) return false;
+    if(c.imgId) return true;
+    const u=String(c.imgUrl||'');
+    if(!u) return false;
+    if(/mlbstatic\.com/i.test(u) && c.imgSource!=='commons' && c.imgSource!=='tcdb') return false;
+    return true;
+  };
   return [
-    {id:'all',label:'All',fn:()=>true},
+    {id:'all',label:'All',fn:()=>true,pin:true},
+    {id:'graded',label:'Graded',fn:c=>c.grade&&!/^raw$/i.test(String(c.grade)),pin:true},
+    {id:'numbered',label:'Numbered',fn:c=>!!c.serial,pin:true},
+    {id:'deals',label:'🔥 Deals',fn:c=>typeof dealHit==='function'&&dealHit(c),pin:true},
+    {id:'noscan',label:'No scan',fn:c=>c.status!=='sold'&&!isScan(c),pin:true},
     {id:'rc',label:'Rookies',fn:c=>!!c.rookie},
-    {id:'graded',label:'Graded',fn:c=>c.grade&&!/^raw$/i.test(String(c.grade))},
-    {id:'numbered',label:'Numbered',fn:c=>!!c.serial},
     {id:'auto',label:'Autos',fn:c=>/auto|autograph|\bau\b/i.test([c.variant,c.notes,c.setName].join(' '))},
     {id:'mem',label:'Relics',fn:c=>/mem|relic|patch|jersey/i.test([c.variant,c.notes].join(' '))},
     {id:'high',label:'$100+',fn:c=>valueOf(c)>=100},
-    {id:'deals',label:'🔥 Deals',fn:c=>typeof dealHit==='function'&&dealHit(c)},
     {id:'stale',label:'Stale $',fn:c=>c.status==='have'&&c.csId&&typeof priceAgeDays==='function'&&priceAgeDays(c)>=3},
     {id:'noprice',label:'No price',fn:c=>c.status==='have'&&latestPrice(c)==null},
-    {id:'want',label:'Wants',fn:c=>c.status==='want'}
+    {id:'want',label:'Wants',fn:c=>c.status==='want'},
+    {id:'sold',label:'Sold',fn:c=>c.status==='sold'}
   ];
 };
 
@@ -6077,9 +6392,18 @@ window.applyBinder=function applyBinder(cards){
 };
 
 window.binderCounts=function binderCounts(cards){
+  const n=(cards||[]).length;
+  const key=n+'|'+(state.meta&&state.meta.lastBackup||0)+'|'+tab;
+  if(_binderCountCache.key===key && _binderCountCache.counts) return {..._binderCountCache.counts};
   const out={};
-  for(const b of smartBinders())out[b.id]=(cards||[]).filter(b.fn).length;
-  return out;
+  const list=cards||[];
+  for(const b of smartBinders()){
+    let c=0;
+    for(let i=0;i<list.length;i++){ if(b.fn(list[i])) c++; }
+    out[b.id]=c;
+  }
+  _binderCountCache={key, counts:out};
+  return {...out};
 };
 
 window.collectionInsights=function collectionInsights(){
@@ -6249,16 +6573,28 @@ window.openShowMode=function openShowMode(){
 
 window.renderBinderBar=function renderBinderBar(scopeCards){
   const counts=binderCounts(scopeCards);
-  return `<div class="pill-row binderRow" id="binderRow">
-    ${smartBinders().map(b=>`<button type="button" class="pill ${BINDER_ID===b.id?'on':''}" data-binder="${b.id}">${esc(b.label)} <span class="bc">${counts[b.id]||0}</span></button>`).join('')}
-    <button type="button" class="pill showPill" id="btnShowMode">🃏 Show Mode</button>
+  const all=smartBinders();
+  const pin=all.filter(b=>b.pin);
+  const more=all.filter(b=>!b.pin);
+  const pill=b=>`<button type="button" class="pill ${BINDER_ID===b.id?'on':''}" data-binder="${b.id}">${esc(b.label)} <span class="bc">${counts[b.id]||0}</span></button>`;
+  return `<div class="pill-row binderRow stickyBinders" id="binderRow">
+    ${pin.map(pill).join('')}
+    <button type="button" class="pill showPill" id="btnShowMode">🃏 Show</button>
+    <details class="moreFilters" id="binderMore"><summary>More</summary>
+      <div class="moreFiltersBody">${more.map(pill).join('')}</div>
+    </details>
   </div>`;
 };
 
 window.wireBinderBar=function wireBinderBar(after){
   const row=$('binderRow'); if(!row)return;
   row.querySelectorAll('[data-binder]').forEach(b=>b.onclick=()=>{
-    window.BINDER_ID=b.dataset.binder; if(after)after(); else render();
+    const id=b.dataset.binder;
+    window.BINDER_ID=id;
+    if(id==='sold' && tab!=='sold'){ tab='sold'; render(); return; }
+    if(id==='want' && tab==='have'){ /* show wants inside have via applyBinder */ }
+    if(id==='deals' && tab==='have'){ tab='want'; window._wantHuntSort=true; render(); return; }
+    if(after)after(); else render();
   });
   const sm=$('btnShowMode'); if(sm) sm.onclick=()=>openShowMode();
 };
@@ -6758,6 +7094,12 @@ async function init(){
         listLimit=LIST_PAGE_SIZE;binderPage=0;_filteredCache={key:'',rows:null};
         refreshList();
       },140);
+      return;
+    }
+    if(tab==='dash' && searchMode==='vault'){
+      window.__qListTimer=setTimeout(()=>{
+        if(v.length>=2){ tab='have'; binderPage=0; listLimit=LIST_PAGE_SIZE; _filteredCache={key:'',rows:null}; render(); }
+      },220);
       return;
     }
     if(tab==='sets'){
