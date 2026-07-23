@@ -1,5 +1,5 @@
-/* Card Vault service worker */
-const CACHE = 'card-vault-v35-jay-iphone';
+/* Card Vault service worker — GitHub Pages */
+const CACHE = 'card-vault-v42-seeded';
 const ASSETS = [
   './',
   './index.html',
@@ -8,7 +8,9 @@ const ASSETS = [
   './icons/icon-512.png',
   './icons/apple-touch-icon.png',
   './visuals.js',
-  './data/mlb-career.json',
+  './data/diamond-stars-r327-meta.json',
+  './data/logos.json',
+  './vault/seed-meta.json',
   './assets/teams/ARI.svg',
   './assets/teams/ATL.svg',
   './assets/teams/BAL.svg',
@@ -60,10 +62,36 @@ self.addEventListener('fetch', (e) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
+  const path = url.pathname;
+  /* Large seed JSON: network-first so collection updates ship without stale cache */
+  if (path.includes('/vault/jay-collection-seed.json') || path.includes('/vault/jayk527-tcdb-import.json')) {
+    e.respondWith(
+      fetch(req)
+        .then((res) => {
+          if (res && res.ok) {
+            const copy = res.clone();
+            caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
+          }
+          return res;
+        })
+        .catch(() => caches.match(req))
+    );
+    return;
+  }
   e.respondWith(
     caches.match(req).then((hit) => {
       const fetchPromise = fetch(req).then((res) => {
-        if (res && res.ok && (url.pathname.endsWith('.html') || url.pathname.endsWith('/') || url.pathname.includes('manifest') || url.pathname.includes('icons') || url.pathname.includes('/assets/') || url.pathname.includes('/data/'))) {
+        if (
+          res &&
+          res.ok &&
+          (path.endsWith('.html') ||
+            path.endsWith('/') ||
+            path.includes('manifest') ||
+            path.includes('icons') ||
+            path.includes('/assets/') ||
+            path.includes('/data/') ||
+            path.includes('/vault/'))
+        ) {
           const copy = res.clone();
           caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
         }

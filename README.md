@@ -8,16 +8,17 @@ Gift-friendly baseball card tracker. Collection stays on the phone; **⋯ → Ba
 
 | Asset | Where |
 |------|------|
+| **Jay’s full collection** | ~19.8k cards auto-seeded on first open (`vault/jay-collection-seed.json`) |
+| **1934–36 Diamond Stars** | Full R327 checklist in Have/Want — searchable immediately |
 | **30 MLB team logos** | `assets/teams/*.svg` — Home strip + badge on every card |
 | **Brand marks** | Topps / Bowman / Panini / Upper Deck / Fleer |
-| **MLB career stats** | `data/mlb-career.json` (~2k players) |
-| **Player portraits** | MLB CDN headshots when a card photo isn’t cached yet |
-| **Card photos** | Free CardSight images — auto-filled for linked cards on open |
+| **Player portraits** | MLB CDN headshots (~17k matches) |
+| **Free card scans** | Wikimedia Commons where a public-domain scan matched (T206 / Goudey / Play Ball / …) |
 
-Millions of catalog card scans are **not** in the repo (too large). The app warms free photos + portraits so the vault still looks full.
+No Menu import required. Hard-refresh once after deploy if an old empty vault is cached; or use **⋯ → Reload Jay’s collection**.
 
 ## Friend tips
 
 1. **Add to Home Screen** (Share → Add to Home Screen)
-2. **⋯ → Backup** after importing cards (save the JSON in iCloud)
-3. Tap **Photos** on Home to pull free catalog pictures for cards that already have a match ID
+2. **⋯ → Backup** after you add or grade new cards
+3. Search any player on Home / Have / Want — Diamond Stars wants are included

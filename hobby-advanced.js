@@ -315,6 +315,25 @@ window.rebuildLocalChecklists=function rebuildLocalChecklists(){
   return list;
 };
 
+window.astroRingSvg=function astroRingSvg(pct, center){
+  const p=Math.max(0,Math.min(100,Number(pct)||0));
+  const r=15.5, c=2*Math.PI*r, dash=(p/100)*c;
+  const lab=String(center??Math.round(p));
+  return `<svg class="astroRing" width="38" height="38" viewBox="0 0 40 40" aria-hidden="true">
+    <circle cx="20" cy="20" r="${r}" fill="none" stroke="rgba(0,45,98,.12)" stroke-width="3.2"/>
+    <circle cx="20" cy="20" r="${r}" fill="none" stroke="#eb6e1f" stroke-width="3.2"
+      stroke-dasharray="${dash.toFixed(2)} ${c.toFixed(2)}" stroke-linecap="round"
+      transform="rotate(-90 20 20)"/>
+    <text x="20" y="23.5" text-anchor="middle" font-size="${lab.length>2?9:11}" font-weight="800" fill="#002d62">${esc(lab)}</text>
+  </svg>`;
+};
+
+window.shortPlayerName=function shortPlayerName(name){
+  const parts=String(name||'').trim().split(/\s+/).filter(Boolean);
+  if(!parts.length)return '—';
+  return parts[parts.length-1];
+};
+
 window.localChecklistsHtml=function localChecklistsHtml(){
   const list=(state.meta&&state.meta.checklists)||rebuildLocalChecklists();
   if(!list.length)return '';
@@ -323,21 +342,31 @@ window.localChecklistsHtml=function localChecklistsHtml(){
       <button type="button" class="setProgRow" data-ck="${esc(g.key)}">
         <div class="l1">${esc(g.year)} ${esc(g.setName)}</div>
         <div class="prog fat"><i style="width:${g.pct}%"></i></div>
-        <div class="l2">${g.have}/${g.total} have · ${g.astrosHave} Astros · ${g.want} want</div>
+        <div class="l2">${g.have}/${g.total} · 🧡${g.astrosHave}${g.want?(' · ⭐'+g.want):''}</div>
       </button>`).join('')+`</div>`;
 };
 
 window.astrosSetsHtml=function astrosSetsHtml(){
   const rows=astrosSetProgress();
+  const totalHave=rows.reduce((n,p)=>n+(p.have||0),0);
   return `<div class="astrosSetsPanel">
-    <div class="ct">🧡 Astros set checklists</div>
-    <div class="teach-hint" style="font-size:12px;color:var(--mute);margin:0 0 8px">Progress from your vault (HOU cards). Tap to open that release in Sets.</div>
-    <div class="setProgList">`+rows.map(p=>`
-      <button type="button" class="setProgRow astro" data-astros-set="${esc(p.id)}">
-        <div class="l1">${esc(p.label)}</div>
-        <div class="prog fat"><i style="width:${Math.min(100,p.have?Math.min(100,p.have*8):0)}%"></i></div>
-        <div class="l2"><b>${p.have}</b> Astros cards in vault${p.uniqueNums?(' · #'+p.uniqueNums+' unique'):''}</div>
-      </button>`).join('')+`</div>
+    <div class="astrosBoardHead">
+      <div class="ct">🧡 Astros lineup</div>
+      <div class="astrosBoardHint">${totalHave} in vault · tap a set</div>
+    </div>
+    <div class="astroScoreboard">`+rows.map(p=>{
+      const soft=Math.max(10, p.uniqueNums||p.have||1);
+      const pct=Math.min(100, Math.round(((p.have||0)/soft)*100));
+      const short=(p.label||'').replace(/^\d{4}\s*/,'');
+      return `<button type="button" class="astroChip" data-astros-set="${esc(p.id)}" title="${esc(p.label)}">
+        ${astroRingSvg(pct, p.have||0)}
+        <span class="meta">
+          <span class="yr">${esc(p.y)}</span>
+          <span class="nm">${esc(short)}</span>
+          <span class="ctn">${p.uniqueNums||0} #s</span>
+        </span>
+      </button>`;
+    }).join('')+`</div>
   </div>`;
 };
 
@@ -628,6 +657,9 @@ window.addFromCatalogAdvanced=async function addFromCatalogAdvanced(x,status,{pa
 };
 
 window.psaPopUrl=function psaPopUrl(c){
+  if(c&&c.gradeCert&&typeof gradeCertLookupUrl==='function'){
+    const u=gradeCertLookupUrl(c); if(u)return u;
+  }
   if(c&&c.gradeCert)return psaCertUrl(c.gradeCert);
   const q=(typeof cardSearchBits==='function'?cardSearchBits(c,{mode:'tcdb'}):[c.year,c.setName,c.player,c.num].filter(Boolean).join(' '));
   return 'https://www.psacard.com/pop/search?q='+encodeURIComponent(q||'');
@@ -879,46 +911,70 @@ window.setsPaintChecklist=async function setsPaintChecklist(){
   const viewCards=SETS.cards.map((x,i)=>({x,i})).filter(({x})=>!astrosOnly||isAstrosCatalogCard(x));
   const body=$('checkBody');
   const houN=SETS.cards.filter(isAstrosCatalogCard).length;
-  body.innerHTML=(astrosOnly?`<div class="teach-hint" style="margin:0 0 8px;font-size:12px">🧡 Astros filter on · ${viewCards.length} of ${SETS.cards.length} loaded (${houN} tagged HOU in this page)</div>
-    <div class="toolbar" style="margin-bottom:8px"><button type="button" id="setAstrosToggle" class="bigim">Show all teams</button></div>`:
-    `<div class="toolbar" style="margin-bottom:8px"><button type="button" id="setAstrosToggle">🧡 Astros only (${houN})</button></div>`)+
-    viewCards.map(({x,i})=>{
-    const own=findOwned(x.id,'');
-    const rc=(x.attributes||[]).some(a=>/^rc$|rookie/i.test(a));
-    const pc=(x.parallels&&x.parallels.length)||0;
-    return `<div class="checkRow ${own?'owned':''}">
-      <div class="thumb" id="ck-${i}">🃏</div>
-      <div class="rmain">
-        <div class="l1">#${esc(x.number||'?')} ${esc(x.name||'')}${rc?'<span class="badge b-rc">RC</span>':''}${own?'<span class="badge b-own">HAVE ×'+(own.qty||1)+'</span>':''}</div>
-        <div class="l2">${pc?pc+' parallels':''}${(x.attributes||[]).filter(a=>!/^rc$/i.test(a)).slice(0,3).map(a=>' · '+esc(a)).join('')}</div>
+  const haveOnBoard=viewCards.filter(({x})=>{const o=findOwned(x.id,'');return o&&o.status==='have';}).length;
+  if(astrosOnly){
+    body.innerHTML=`<div class="diamondActions">
+        <span class="pillStat"><b>${haveOnBoard}</b>/${viewCards.length} Astros</span>
+        <span class="pillStat" style="background:rgba(235,110,31,.12)">tap = Have · ☆ = Want</span>
+        <button type="button" id="setAstrosToggle" class="bigim">All teams</button>
       </div>
-      <div style="display:flex;flex-direction:column;gap:4px">
-        <button data-h="${i}" class="tinyAdd">+Have</button>
-        <button data-w="${i}" class="tinyAdd">⭐</button>
-      </div>
-    </div>`;
-  }).join('');
-  body.querySelectorAll('[data-h]').forEach(b=>b.onclick=async()=>{
+      <div class="diamondBoard">`+viewCards.map(({x,i})=>{
+        const row=findOwned(x.id,'');
+        const have=!!(row&&row.status==='have');
+        const want=!!(row&&row.status==='want');
+        const rc=(x.attributes||[]).some(a=>/^rc$|rookie/i.test(a));
+        const num=String(x.number||'?').replace(/^#/,'');
+        return `<button type="button" class="diamondTile ${have?'owned':''} ${want&&!have?'want':''} ${rc?'rc':''}" data-h="${i}" title="${esc(x.name||'')}">
+          <span class="dstamp" data-w="${i}">${have?'✔':want?'★':'☆'}</span>
+          <span class="dn">#${esc(num)}</span>
+          <span class="dp">${esc(shortPlayerName(x.name))}</span>
+        </button>`;
+      }).join('')+`</div>`;
+  }else{
+    body.classList.add('compact');
+    body.innerHTML=`<div class="toolbar" style="margin-bottom:8px"><button type="button" id="setAstrosToggle">🧡 Astros only (${houN})</button></div>`+
+      viewCards.map(({x,i})=>{
+      const own=findOwned(x.id,'');
+      const rc=(x.attributes||[]).some(a=>/^rc$|rookie/i.test(a));
+      const pc=(x.parallels&&x.parallels.length)||0;
+      return `<div class="checkRow ${own&&own.status==='have'?'owned':''}">
+        <div class="thumb" id="ck-${i}">🃏</div>
+        <div class="rmain">
+          <div class="l1">#${esc(x.number||'?')} ${esc(x.name||'')}${rc?'<span class="badge b-rc">RC</span>':''}${own&&own.status==='have'?'<span class="badge b-own">HAVE ×'+(own.qty||1)+'</span>':''}</div>
+          <div class="l2">${pc?pc+' parallels':''}${(x.attributes||[]).filter(a=>!/^rc$/i.test(a)).slice(0,3).map(a=>' · '+esc(a)).join('')}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <button data-h="${i}" class="tinyAdd">+Have</button>
+          <button data-w="${i}" class="tinyAdd">⭐</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+  body.querySelectorAll('[data-h]').forEach(b=>b.onclick=async(ev)=>{
+    if(ev.target&&ev.target.closest&&ev.target.closest('[data-w]'))return;
     await addFromCatalogAdvanced(SETS.cards[+b.dataset.h],'have');
     setsPaintChecklist();
   });
-  body.querySelectorAll('[data-w]').forEach(b=>b.onclick=async()=>{
+  body.querySelectorAll('[data-w]').forEach(b=>b.onclick=async(ev)=>{
+    ev.stopPropagation();
     await addFromCatalogAdvanced(SETS.cards[+b.dataset.w],'want');
     setsPaintChecklist();
   });
-  SETS.cards.forEach(async(x,i)=>{
-    const el=$('ck-'+i);if(!el)return;
-    try{
-      const url=typeof csDisplayUrl==='function'?csDisplayUrl(await csImageData(x.id)):csImgSrc(await csImageData(x.id));
-      if(url&&$('ck-'+i)){
-        if(typeof setImgEl==='function')setImgEl($('ck-'+i),url);
-        else $('ck-'+i).innerHTML=`<img src="${url.replace(/"/g,'&quot;')}" alt="">`;
-      }
-    }catch(e){}
-  });
-    const sat=$('setAstrosToggle');
+  if(!astrosOnly){
+    SETS.cards.forEach(async(x,i)=>{
+      const el=$('ck-'+i);if(!el)return;
+      try{
+        const url=typeof csDisplayUrl==='function'?csDisplayUrl(await csImageData(x.id)):csImgSrc(await csImageData(x.id));
+        if(url&&$('ck-'+i)){
+          if(typeof setImgEl==='function')setImgEl($('ck-'+i),url);
+          else $('ck-'+i).innerHTML=`<img src="${url.replace(/"/g,'&quot;')}" alt="">`;
+        }
+      }catch(e){}
+    });
+  }
+  const sat=$('setAstrosToggle');
   if(sat) sat.onclick=()=>{ SETS.astrosOnly=!SETS.astrosOnly; setsPaintChecklist(); };
-$('setBackSets').onclick=()=>{SETS.set=null;setsPaintSets();};
+  $('setBackSets').onclick=()=>{SETS.set=null;setsPaintSets();};
   $('setMore').onclick=()=>setsLoadCards(false);
   $('setWantMiss').onclick=async()=>{
     const miss=SETS.cards.filter(x=>!findOwned(x.id,''));

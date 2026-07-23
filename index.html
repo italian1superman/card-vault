@@ -466,8 +466,11 @@ canvas.chart{width:100%;background:var(--panel2);border:0;border-radius:12px;dis
 .mlbBio{font-size:13px;color:var(--mute);margin:0 0 8px}
 .mlbLink{color:var(--acc);text-decoration:none;font-weight:400;padding:10px 0;display:inline-block;font-size:15px}
 .gradeChips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}
-.gradeChips button{font-size:13px;padding:8px 10px;border-radius:8px;background:var(--panel);color:var(--acc);font-weight:400}
+.gradeChips button{font-size:13px;padding:8px 10px;border-radius:8px;background:var(--panel);color:var(--acc);font-weight:400;min-height:40px;touch-action:manipulation}
 .gradeChips button.on{background:var(--acc);color:#fff}
+.gradeFields{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.sheetEssentials{margin:0 0 8px}
+.sheetEssentials #inPlayer{width:100%;box-sizing:border-box}
 .showModeBk{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:85;display:flex;align-items:flex-end;justify-content:center}
 .showMode{background:var(--bg);border:0;border-radius:12px 12px 0 0;padding:16px;width:100%;max-height:88vh;overflow:auto}
 .thumbLoad{animation:pulseThumb 1s ease-in-out infinite}
@@ -1284,25 +1287,153 @@ img.portraitFallback.mlbShot{object-fit:cover}
   .sideTog button,.binderPageHead .bpNav button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
   html,body{overscroll-behavior-y:none}
   *{ -webkit-tap-highlight-color:rgba(0,45,98,.08) }
+
+  /* Add/Edit card — iPhone-first typing */
+  #sheet.sheetEasy .sheetEssentials{position:sticky;top:44px;z-index:3;background:var(--bg);padding:0 0 8px;margin:0 0 4px}
+  #sheet.sheetEasy #inPlayer{
+    min-height:52px;font-size:17px;font-weight:600;padding:12px 14px;
+    border-radius:14px;background:#fff;-webkit-appearance:none;appearance:none;
+  }
+  #sheet.sheetEasy .f input,#sheet.sheetEasy .f select,#sheet.sheetEasy .f textarea{
+    min-height:48px;padding:12px 12px;font-size:16px;border-radius:12px;
+    -webkit-appearance:none;appearance:none;width:100%;box-sizing:border-box;
+  }
+  #sheet.sheetEasy .f textarea{min-height:72px}
+  #sheet.sheetEasy .gradeFields{grid-template-columns:1fr;gap:10px}
+  #sheet.sheetEasy .gradeChips{gap:8px;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px;scrollbar-width:none}
+  #sheet.sheetEasy .gradeChips::-webkit-scrollbar{display:none}
+  #sheet.sheetEasy .gradeChips button{
+    flex:none;min-height:44px;min-width:56px;padding:10px 14px;font-size:15px;font-weight:700;border-radius:12px;
+  }
+  #sheet.sheetEasy .casFields{padding:12px;border-radius:14px}
+  #sheet.sheetEasy .valueHero,#sheet.sheetEasy .vhActions{display:none} /* keep form above fold on phone */
+  #sheet.sheetEasy .sheetSticky{
+    grid-template-columns:1fr 1.2fr;gap:8px;
+    padding:12px 0 calc(12px + env(safe-area-inset-bottom));
+    margin-left:0;margin-right:0;
+  }
+  #sheet.sheetEasy .sheetSticky #btnDup,#sheet.sheetEasy .sheetSticky #btnDel{display:none}
+  #sheet.sheetEasy.kbOpen{padding-bottom:calc(12px + var(--kb,0px) + env(safe-area-inset-bottom))}
 }
 
 
-/* Astros / imported set progress */
-.astrosSetsPanel,.setProgList{margin:8px 0 12px}
-.setProgList{display:flex;flex-direction:column;gap:8px}
+/* Astros / imported set progress — compact lineup scoreboard */
+.astrosSetsPanel{margin:6px 0 10px}
+.astrosBoardHead{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 8px;
+}
+.astrosBoardHead .ct{margin:0}
+.astrosBoardHint{font-size:11px;color:var(--mute);font-weight:600}
+.astroScoreboard{
+  display:grid;grid-template-columns:1fr 1fr;gap:6px;
+}
+button.astroChip,button.diamondTile,button.setProgRow{appearance:none;-webkit-appearance:none}
+.astroChip{
+  display:flex;align-items:center;gap:8px;text-align:left;width:100%;
+  padding:7px 8px;border-radius:12px;cursor:pointer;
+  background:
+    radial-gradient(120% 80% at 0% 0%,rgba(235,110,31,.18),transparent 55%),
+    linear-gradient(160deg,rgba(0,45,98,.1),rgba(255,255,255,.04));
+  border:0.5px solid rgba(235,110,31,.28);
+  min-height:0;
+}
+.astroChip:active{transform:scale(.98)}
+.astroChip .meta{min-width:0;flex:1}
+.astroChip .yr{
+  font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--astros-orange,#eb6e1f);line-height:1.1;
+}
+.astroChip .nm{
+  font-size:12px;font-weight:800;color:var(--astros-navy,#002d62);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;
+}
+.astroChip .ctn{
+  font-size:10px;font-weight:700;color:var(--mute);margin-top:1px;
+  font-variant-numeric:tabular-nums;
+}
+.astroRing{flex-shrink:0;display:block}
+.astroRing text{font-family:inherit}
+.setProgList{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:6px 0 10px}
 .setProgRow{
-  text-align:left;width:100%;padding:12px 12px;border-radius:14px;
+  text-align:left;width:100%;padding:8px 9px;border-radius:12px;
   background:var(--panel2);border:0.5px solid var(--sep);cursor:pointer;
+  display:flex;flex-direction:column;gap:4px;min-height:0;
 }
-.setProgRow.astro{
-  background:linear-gradient(135deg,rgba(235,110,31,.12),rgba(0,45,98,.08));
-  border-color:rgba(235,110,31,.28);
+.setProgRow .l1{
+  font-size:12px;font-weight:800;color:var(--astros-navy,#002d62);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
-.setProgRow .l1{font-size:14px;font-weight:800;color:var(--astros-navy,#002d62)}
-.setProgRow .l2{font-size:12px;color:var(--mute);margin-top:4px}
-.setProgRow .prog{margin:8px 0 0}
-.prog.fat{height:8px;border-radius:99px;background:rgba(0,45,98,.1);overflow:hidden}
+.setProgRow .l2{font-size:10px;color:var(--mute);margin:0;font-variant-numeric:tabular-nums}
+.setProgRow .prog{margin:0}
+.prog.fat{height:5px;border-radius:99px;background:rgba(0,45,98,.1);overflow:hidden}
 .prog.fat i{display:block;height:100%;background:linear-gradient(90deg,var(--astros-orange,#eb6e1f),#f5a623);border-radius:99px}
+
+/* Astros diamond checklist — jersey tiles */
+.diamondBoard{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:4px;
+}
+.diamondTile{
+  position:relative;aspect-ratio:1/1.05;border-radius:12px;padding:6px 4px 5px;
+  border:1px solid rgba(0,45,98,.18);
+  background:
+    linear-gradient(165deg,rgba(0,45,98,.07),rgba(255,255,255,.5)),
+    repeating-linear-gradient(-18deg,transparent,transparent 7px,rgba(0,45,98,.03) 7px,rgba(0,45,98,.03) 8px);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  cursor:pointer;min-height:0;color:var(--ink);
+}
+.diamondTile .dn{
+  font-size:15px;font-weight:900;font-variant-numeric:tabular-nums;
+  color:var(--astros-navy,#002d62);line-height:1;
+}
+.diamondTile .dp{
+  font-size:9px;font-weight:700;color:var(--mute);max-width:100%;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;padding:0 2px;
+}
+.diamondTile .dstamp{
+  position:absolute;top:4px;right:5px;font-size:9px;line-height:1;opacity:.55;
+}
+.diamondTile.owned{
+  border-color:rgba(235,110,31,.55);
+  background:
+    radial-gradient(90% 70% at 50% 0%,rgba(235,110,31,.35),transparent 60%),
+    linear-gradient(165deg,#002d62,rgba(0,45,98,.92));
+  color:#fff;
+  box-shadow:inset 0 0 0 1px rgba(235,110,31,.25);
+}
+.diamondTile.owned .dn{color:#fff}
+.diamondTile.owned .dp{color:rgba(255,255,255,.78)}
+.diamondTile.owned .dstamp{opacity:.9}
+.diamondTile.want{
+  border-color:rgba(0,45,98,.35);
+  border-style:dashed;
+  background:rgba(0,45,98,.04);
+}
+.diamondTile.want .dstamp{opacity:.85;color:var(--astros-orange,#eb6e1f)}
+.diamondTile.rc::after{
+  content:'RC';position:absolute;left:4px;top:4px;
+  font-size:8px;font-weight:900;letter-spacing:.04em;
+  color:var(--astros-orange,#eb6e1f);
+}
+.diamondTile.owned.rc::after{color:#f5a623}
+.diamondActions{
+  display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:0 0 8px;
+}
+.diamondActions .pillStat{
+  font-size:11px;font-weight:800;padding:4px 8px;border-radius:99px;
+  background:rgba(0,45,98,.08);color:var(--astros-navy,#002d62);
+  font-variant-numeric:tabular-nums;
+}
+.diamondActions .pillStat b{color:var(--astros-orange,#eb6e1f)}
+.checkList.compact .checkRow{padding:7px 0;gap:8px}
+.checkList.compact .thumb{width:36px;height:50px;border-radius:6px}
+.checkList.compact .l1{font-size:13px}
+.checkList.compact .l2{font-size:11px}
+.checkList.compact .tinyAdd{padding:6px 8px;font-size:12px;min-height:30px}
+
+@media (max-width:380px){
+  .astroScoreboard,.setProgList{grid-template-columns:1fr}
+  .diamondBoard{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
 
 </style>
 </head>
@@ -1330,7 +1461,7 @@ img.portraitFallback.mlbShot{object-fit:cover}
 <div id="menuBk"></div><div id="menu"></div>
 <div id="toast"><span id="toastMsg"></span><button id="toastBtn">Undo</button></div>
 <datalist id="dlBrand"></datalist><datalist id="dlSet"></datalist><datalist id="dlSport"></datalist>
-<datalist id="dlGrade"></datalist><datalist id="dlVar"></datalist><datalist id="dlTeam"></datalist>
+<datalist id="dlGrade"></datalist><datalist id="dlGradeCo"></datalist><datalist id="dlGradeVal"></datalist><datalist id="dlVar"></datalist><datalist id="dlTeam"></datalist>
 <datalist id="dlLoc"></datalist><datalist id="dlSearch"></datalist>
 <input type="file" id="fileIn" accept=".json,.csv,.xls,.xlsx,.xml" hidden>
 <input type="file" id="photoIn" accept="image/*" capture="environment" hidden>
@@ -1345,9 +1476,48 @@ const SEEDS={
  brand:['Topps','Topps Chrome','Topps Heritage','Topps Update','Bowman','Bowman Chrome','Panini Prizm','Panini Select','Panini Mosaic','Panini Donruss','Donruss Optic','Panini Contenders','Panini Absolute','Panini Obsidian','Panini National Treasures','Panini Immaculate','Panini Flawless','Upper Deck','Upper Deck SP Authentic','Upper Deck SPx','Upper Deck Artifacts','Fleer','Score','Leaf','O-Pee-Chee','Stadium Club','Allen & Ginter','NBA Hoops','Court Kings','Phoenix','Spectra','Certified'],
  sport:['Baseball'],
  grade:['Raw','PSA 10','PSA 9','PSA 8','PSA 7','BGS 10','BGS 9.5','BGS 9','SGC 10','SGC 9.5','SGC 9','CGC 9.5'],
+ gradeCompany:['PSA','BGS','SGC','CGC','CSG','HGA'],
+ gradeValue:['10','9.5','9','8.5','8','7.5','7','6','5','4','3','2','1','AUTH'],
  variant:['Base','Refractor','Silver Prizm','Holo','Gold','Auto','Patch','Patch Auto (RPA)','Numbered','Short Print','Case Hit','1st Bowman','Rookie']
 };
-const FIELDS=['status','sport','year','brand','setName','num','player','team','variant','serial','rookie','grade','gradeCert','qty','cost','purchDate','location','target','salePrice','saleDate','notes','imgUrl'];
+const FIELDS=['status','sport','year','brand','setName','num','player','team','variant','serial','rookie','grade','gradeCompany','gradeValue','gradeCert','qty','cost','purchDate','location','target','salePrice','saleDate','notes','imgUrl'];
+function parseGradeFields(c){
+  if(!c)return c;
+  const g=String(c.grade||'').trim();
+  if(c.gradeCompany!=null&&String(c.gradeCompany).trim()!==''){
+    if(!c.gradeValue&&g){
+      const m=g.match(/^(PSA|BGS|SGC|CGC|CSG|HGA)\s+(.+)$/i);
+      if(m)c.gradeValue=m[2].trim();
+    }
+    return c;
+  }
+  if(!g||/^raw$/i.test(g)){c.gradeCompany='';c.gradeValue='';return c;}
+  const m=g.match(/^(PSA|BGS|SGC|CGC|CSG|HGA)\s*(.+)$/i);
+  if(m){c.gradeCompany=m[1].toUpperCase();c.gradeValue=m[2].trim();}
+  else{c.gradeCompany='';c.gradeValue=g;}
+  return c;
+}
+function composeGrade(c){
+  if(!c)return '';
+  const co=String(c.gradeCompany||'').trim();
+  const v=String(c.gradeValue||'').trim();
+  if(!co||/^raw$/i.test(co)){c.grade='';c.gradeCompany='';return '';}
+  c.gradeCompany=co.toUpperCase();
+  c.gradeValue=v;
+  c.grade=v?(c.gradeCompany+' '+v):c.gradeCompany;
+  return c.grade;
+}
+function gradeCertLookupUrl(c){
+  const n=String(c&&c.gradeCert||'').replace(/\D/g,'');
+  if(!n)return '';
+  parseGradeFields(c);
+  const co=String(c.gradeCompany||'').toUpperCase();
+  if(co==='BGS'||co==='BECKETT')return 'https://www.beckett.com/grading/card-lookup?item_id='+encodeURIComponent(n);
+  if(co==='SGC')return 'https://www.gosgc.com/verify?cert='+encodeURIComponent(n);
+  if(co==='CGC')return 'https://www.cgccards.com/certlookup/'+encodeURIComponent(n)+'/';
+  if(co==='CSG')return 'https://www.csgenetics.com/certlookup/'+encodeURIComponent(n)+'/';
+  return 'https://www.psacard.com/cert/'+encodeURIComponent(n);
+}
 
 /* ---------------- pure helpers (node-testable) ---------------- */
 function normH(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');}
@@ -1493,6 +1663,9 @@ const HSYN={
  variant:['variant','parallel','insert','subset','type','finish','print'],
  serial:['serial','serialnumber','numbered','printrun','printnumber','limited'],
  grade:['grade','grading','condition','gradecompany','grader','cgc','psa','bgs','sgc'],
+ gradeCompany:['gradecompany','grader','gradingcompany','company'],
+ gradeValue:['gradevalue','grade_number','gradenum','numericgrade'],
+ gradeCert:['cert','certnumber','cert#','certno','certification','psacert','bgscert'],
  qty:['qty','quantity','count','copies','owned','have','qtyowned'],
  cost:['cost','paid','costpaid','purchaseprice','pricepaid','buyprice','acquisitioncost','paidprice'],
  value:['value','currentvalue','marketvalue','price','comp','comps','estvalue','worth','lastvalue','currentprice','latest','fmv'],
@@ -1780,7 +1953,11 @@ function psaCertUrl(cert){
   return 'https://www.psacard.com/cert/'+encodeURIComponent(n);
 }
 function psaPopUrl(c){
-  if(c&&c.gradeCert)return psaCertUrl(c.gradeCert);
+  if(c&&c.gradeCert){
+    const u=gradeCertLookupUrl(c);
+    if(u)return u;
+    return psaCertUrl(c.gradeCert);
+  }
   const q=cardSearchBits(c,{mode:'tcdb'})||[c&&c.year,c&&c.player].filter(Boolean).join(' ');
   return 'https://www.psacard.com/pop/search?q='+encodeURIComponent(q||'');
 }
@@ -1790,7 +1967,10 @@ function imgSearchUrl(c){
 function renderCardLinks(c){
   const has=!!(c&&(c.player||c.setName||c.csId));
   if(!has)return `<div class="links muted">Add a player or catalog card to unlock eBay / TCDB / PSA links.</div>`;
+  parseGradeFields(c);
   const cert=c.gradeCert?String(c.gradeCert).replace(/\D/g,''):'';
+  const certUrl=cert?gradeCertLookupUrl(c):'';
+  const co=String(c.gradeCompany||'PSA').toUpperCase()||'PSA';
   return `<div class="links">
     <a href="${ebaySoldUrl(c)}" target="_blank" rel="noopener noreferrer">eBay sold</a>
     <a href="${ebayLiveUrl(c)}" target="_blank" rel="noopener noreferrer">eBay live</a>
@@ -1798,8 +1978,8 @@ function renderCardLinks(c){
     <a href="${tcdbUrl(c)}" target="_blank" rel="noopener noreferrer">TCDB card search</a>
     <a href="${tcdbPlayerUrl(c)}" target="_blank" rel="noopener noreferrer">TCDB player</a>
     <a href="${pcUrl(c)}" target="_blank" rel="noopener noreferrer">PriceCharting</a>
-    <a href="${psaPopUrl(c)}" target="_blank" rel="noopener noreferrer">${cert?'PSA cert':'PSA pop'}</a>
-    ${cert?`<a href="${psaCertUrl(cert)}" target="_blank" rel="noopener noreferrer">Cert #${esc(cert)}</a>`:''}
+    <a href="${psaPopUrl(c)}" target="_blank" rel="noopener noreferrer">${cert?(co+' cert'):'PSA pop'}</a>
+    ${certUrl?`<a href="${certUrl}" target="_blank" rel="noopener noreferrer">Cert #${esc(cert)}</a>`:''}
     <a href="${imgSearchUrl(c)}" target="_blank" rel="noopener noreferrer">Pics</a>
   </div>
   <div class="linkHint">Searches use year · brand · player · # · parallel — Baseball Cards category on eBay.</div>`;
@@ -1925,11 +2105,12 @@ const CS_STALE_MAX=365*864e5; /* serve soft-stale up to 1y without re-billing */
 const netMem=new Map();
 const idb={db:null,
   open(){return new Promise(res=>{try{
-    const r=indexedDB.open('cardVaultImgs',2);
+    const r=indexedDB.open('cardVaultImgs',3);
     r.onupgradeneeded=()=>{
       const db=r.result;
       if(!db.objectStoreNames.contains('imgs'))db.createObjectStore('imgs');
       if(!db.objectStoreNames.contains('net'))db.createObjectStore('net');
+      if(!db.objectStoreNames.contains('state'))db.createObjectStore('state');
     };
     r.onsuccess=()=>{idb.db=r.result;res();};r.onerror=()=>res();}catch(e){res();}});},
   op(store,mode,fn){return new Promise(res=>{if(!idb.db)return res(null);
@@ -1939,6 +2120,8 @@ const idb={db:null,
   get(k){return idb.op('imgs','readonly',s=>s.get(k));},
   del(k){return idb.op('imgs','readwrite',s=>s.delete(k));},
   keys(){return idb.op('imgs','readonly',s=>s.getAllKeys());},
+  statePut(v){return idb.op('state','readwrite',s=>s.put(v,'vault'));},
+  stateGet(){return idb.op('state','readonly',s=>s.get('vault'));},
   async netPut(k,v){netMem.set(k,v);return idb.op('net','readwrite',s=>s.put(v,k));},
   async netGet(k){
     if(netMem.has(k))return netMem.get(k);
@@ -1967,13 +2150,114 @@ async function getImg(c, side){
 }
 function hasBackPhoto(c){return !!(c&&(c.imgIdBack||c.imgUrlBack));}
 
-function load(){
+const COLLECTION_SEED_VER='jay-tcdb-ds-v1';
+const COLLECTION_SEED_URL='./vault/jay-collection-seed.json';
+
+async function load(){
+  try{
+    const idbState=await idb.stateGet();
+    if(idbState&&Array.isArray(idbState.cards)&&idbState.cards.length){
+      state=idbState; state.meta=state.meta||{lastBackup:0}; return;
+    }
+  }catch(e){}
   try{const j=JSON.parse(localStorage.getItem(LS2));if(j&&Array.isArray(j.cards)){state=j;state.meta=state.meta||{lastBackup:0};return;}}catch(e){}
   try{const v1=JSON.parse(localStorage.getItem(LS1));
     if(v1&&Array.isArray(v1.cards)&&v1.cards.length){state={cards:migrateV1(v1),meta:{lastBackup:0}};save();}}catch(e){}
 }
-function save(){try{localStorage.setItem(LS2,JSON.stringify(state));}catch(e){alert('Storage full — remove some photos or export a backup.');}}
-
+/** Preload Jay’s TCDB + Diamond Stars on GitHub Pages — no menu import needed. */
+async function ensureCollectionSeed(){
+  if(!state.meta)state.meta={};
+  const n=(state.cards||[]).length;
+  const ver=state.meta.collectionSeed||'';
+  if(ver===COLLECTION_SEED_VER && n>=1000) return false;
+  try{
+    if(typeof showToast==='function') showToast('Loading Jay’s collection…');
+    const r=await fetch(COLLECTION_SEED_URL,{cache:'no-store'});
+    if(!r.ok) throw new Error('seed '+r.status);
+    const j=await r.json();
+    if(!j||!Array.isArray(j.cards)||!j.cards.length) throw new Error('seed empty');
+    state.cards=j.cards;
+    state.meta={...(state.meta||{}),...(j.meta||{}),collectionSeed:COLLECTION_SEED_VER,lastBackup:Date.now()};
+    if(typeof rebuildLocalChecklists==='function')rebuildLocalChecklists();
+    save();
+    if(typeof showToast==='function')
+      showToast(j.cards.length.toLocaleString()+' cards ready · Diamond Stars included ✔');
+    return true;
+  }catch(e){
+    console.warn('collection seed', e);
+    if(typeof showToast==='function') showToast('Could not preload collection');
+    return false;
+  }
+}
+function save(){
+  const payload={cards:state.cards,meta:state.meta||{lastBackup:0},v:2};
+  // Prefer IndexedDB for large collections (Jay's TCDB dump ~20k cards won't fit in localStorage)
+  try{idb.statePut(payload);}catch(e){}
+  try{
+    localStorage.setItem(LS2,JSON.stringify(payload));
+  }catch(e){
+    // Keep a tiny stub so older tabs know IDB is canonical
+    try{localStorage.setItem(LS2,JSON.stringify({v:2,meta:{...(state.meta||{}),idb:true,count:(state.cards||[]).length},cards:[]}));}catch(e2){}
+    if(!(state.cards||[]).length) alert('Storage full — export a backup.');
+  }
+}
+async function importJayTcdbDump(opts){
+  opts=opts||{};
+  showToast('Loading Jay’s TCDB collection…');
+  const url=opts.url||'./vault/jayk527-tcdb-import.json';
+  const r=await fetch(url,{cache:'no-store'});
+  if(!r.ok) throw new Error('Could not load '+url+' ('+r.status+')');
+  const j=await r.json();
+  if(!j||!Array.isArray(j.cards)||!j.cards.length) throw new Error('Import file empty');
+  const replace=opts.replace!=null?opts.replace:confirm(
+    `Import ${j.cards.length.toLocaleString()} cards from Jayk527’s TCDB print?\n\nOK = REPLACE current ${(state.cards||[]).length} cards\nCancel = merge new only`
+  );
+  if(replace) state.cards=j.cards;
+  else{
+    const ids=new Set(state.cards.map(c=>c.id));
+    let added=0;
+    j.cards.forEach(c=>{if(!ids.has(c.id)){state.cards.push(c);added++;}});
+    showToast('Merged '+added+' new cards');
+  }
+  if(j.meta) state.meta={...(state.meta||{}),...j.meta,lastBackup:Date.now()};
+  save(); render();
+  showToast((replace?'Replaced with ':'')+state.cards.length.toLocaleString()+' cards ✔');
+}
+/** Full 1934–36 National Chicle Diamond Stars (R327) checklist + Jay’s 5 slabs. */
+function isDiamondStarsCard(c){
+  if(!c)return false;
+  const f=String(c.setFocus||'');
+  if(f==='diamond-stars-r327'||f==='diamond-stars-r327-var'||f==='diamond-stars-ext-1981')return true;
+  const sn=String(c.setName||'').toLowerCase();
+  return sn.includes('diamond stars')&&(sn.includes('national chicle')||sn.includes('r327')||/\(r\b/.test(sn));
+}
+async function importDiamondStarsR327(opts){
+  opts=opts||{};
+  showToast('Loading 1934–36 Diamond Stars…');
+  const url=opts.url||'./vault/diamond-stars-r327.json';
+  const r=await fetch(url,{cache:'no-store'});
+  if(!r.ok) throw new Error('Could not load '+url+' ('+r.status+')');
+  const j=await r.json();
+  if(!j||!Array.isArray(j.cards)||!j.cards.length) throw new Error('Diamond Stars file empty');
+  const mode=opts.mode||(confirm(
+    `Import ${j.cards.length} Diamond Stars cards (R327 base + VARs + 1981 ext)?\n\n`+
+    `OK = refresh set in vault (keeps other cards)\nCancel = abort`
+  )?'refresh':'abort');
+  if(mode==='abort'){showToast('Cancelled');return;}
+  const before=(state.cards||[]).length;
+  const kept=(state.cards||[]).filter(c=>!isDiamondStarsCard(c));
+  const removed=before-kept.length;
+  state.cards=kept.concat(j.cards);
+  if(!state.meta)state.meta={};
+  if(j.meta){
+    state.meta={...state.meta,...j.meta,lastBackup:Date.now()};
+    if(j.meta.diamondStars) state.meta.diamondStars=j.meta.diamondStars;
+  }
+  if(typeof rebuildLocalChecklists==='function')rebuildLocalChecklists();
+  save(); render();
+  const have=j.cards.filter(c=>c.status==='have').length;
+  showToast(`Diamond Stars ✔ ${j.cards.length} cards (${have} owned)${removed?` · replaced ${removed}`:''}`);
+}
 /* ---- charts (canvas, no libs) ---- */
 function ctx2d(cv,h){const r=window.devicePixelRatio||1;const w=cv.clientWidth||300;
   cv.width=w*r;cv.height=h*r;cv.style.height=h+'px';
@@ -3386,6 +3670,8 @@ function fillDatalists(){
   fill('dlSet',own('setName'));
   fill('dlSport',[...own('sport'),...SEEDS.sport]);
   fill('dlGrade',[...own('grade'),...SEEDS.grade]);
+  fill('dlGradeCo',[...own('gradeCompany'),...SEEDS.gradeCompany]);
+  fill('dlGradeVal',[...own('gradeValue'),...SEEDS.gradeValue]);
   fill('dlVar',[...own('variant'),...SEEDS.variant]);
   fill('dlTeam',own('team'));
   fill('dlLoc',own('location'));
@@ -3394,19 +3680,109 @@ function fillDatalists(){
 
 /* ---- editor sheet ---- */
 function F(l,k,v,extra=''){return `<div class="f"><label>${l}</label><input data-k="${k}" value="${esc(v??'')}" ${extra}></div>`;}
+function wireSheetKeyboardPad(){
+  const sh=$('sheet'); if(!sh||!window.visualViewport)return;
+  const sync=()=>{
+    const vv=window.visualViewport;
+    const kb=Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+    sh.style.setProperty('--kb', kb+'px');
+    sh.classList.toggle('kbOpen', kb>40);
+  };
+  if(!sh._kbWired){
+    sh._kbWired=true;
+    window.visualViewport.addEventListener('resize',sync);
+    window.visualViewport.addEventListener('scroll',sync);
+  }
+  sync();
+}
+function scrollFieldIntoSheet(el){
+  if(!el||!$('sheet'))return;
+  try{
+    requestAnimationFrame(()=>{
+      el.scrollIntoView({behavior:'smooth',block:'center',inline:'nearest'});
+    });
+  }catch(e){}
+}
 async function openSheet(){
   if(!sel)return;
   const c=sel;
+  parseGradeFields(c);
   $('sheetBk').style.display='block';
   $('sheet').classList.add('sheetEasy');
   const gp=gainPct(c);
+  const coOn=String(c.gradeCompany||'');
+  const valOn=String(c.gradeValue||'');
+  const gradeVals=coOn==='BGS'?['10','9.5','9','8.5','8','7.5','7']:['10','9.5','9','8.5','8','7','6','AUTH'];
+  const isNew=!String(c.player||'').trim()&&!(c.prices&&c.prices.length)&&!c.grade&&!c.cost;
+  const showHero=!isNew&&typeof renderValueHero==='function';
   $('sheet').innerHTML=`
    <div class="shead"><h2>${c.player?esc(c.player):'New card'} ${badges(c)}</h2>
-    <button id="shClose">✕</button></div>
-   ${typeof renderValueHero==='function'?renderValueHero(c):''}
-   <div class="gradeChips" id="gradeChips">
-     ${['Raw','PSA 8','PSA 9','PSA 10','BGS 9.5','SGC 10'].map(g=>`<button type="button" data-g="${esc(g)}" class="${String(c.grade||'')===g?'on':''}">${esc(g)}</button>`).join('')}
+    <button id="shClose" type="button" aria-label="Close">✕</button></div>
+   ${showHero?renderValueHero(c):''}
+
+   <div class="sheetEssentials">
+   <div class="f" style="position:relative;margin-top:4px"><label>Player name</label>
+    <input data-k="player" id="inPlayer" value="${esc(c.player)}" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" enterkeyhint="next" placeholder="Type player name — e.g. Jose Altuve">
+    <div class="autoc" id="autoc" style="display:none"></div></div>
+   <div id="propStrip" class="prop-panel cascade-host" ${c.player&&String(c.player).trim().length>=2?'':'hidden'}></div>
    </div>
+
+   <div class="casFields">
+    <div class="ct">Card details</div>
+    <div class="g3">
+      ${F('Year','year',c.year,'inputmode="numeric" list="dlCasYear" placeholder="2024" enterkeyhint="next"')}
+      ${F('Brand','brand',c.brand,'list="dlCasBrand" placeholder="Topps / Bowman…" autocapitalize="words" enterkeyhint="next"')}
+      ${F('Card #','num',c.num,'list="dlCasNum" placeholder="e.g. 287" enterkeyhint="next"')}
+    </div>
+    ${F('Set / product','setName',c.setName,'list="dlCasSet" placeholder="Chrome Update, etc." autocapitalize="words" enterkeyhint="next"')}
+    <div class="g2">${F('Team','team',c.team,'list="dlTeam" autocapitalize="words"')}<div class="f"><label>Sport</label><input value="Baseball" readonly></div></div>
+    <div class="g3">
+      ${F('Parallel / insert','variant',c.variant,'list="dlVar" autocapitalize="words"')}
+      ${F('Serial (e.g. 23/99)','serial',c.serial,'placeholder="23/99" inputmode="text"')}
+      <div class="f"><label>Rookie</label><select data-k="rookie"><option value="">No</option><option value="1" ${c.rookie?'selected':''}>RC ✔</option></select></div>
+    </div>
+   </div>
+   <datalist id="dlCasYear"></datalist><datalist id="dlCasBrand"></datalist><datalist id="dlCasSet"></datalist><datalist id="dlCasNum"></datalist>
+
+   <div class="casFields" style="margin-top:10px">
+    <div class="ct">Grading · company · cert #</div>
+    <div class="gradeChips" id="gradeCoChips">
+      ${['Raw','PSA','BGS','SGC','CGC'].map(g=>`<button type="button" data-co="${esc(g)}" class="${(g==='Raw'?!coOn:coOn===g)?'on':''}">${esc(g)}</button>`).join('')}
+    </div>
+    <div class="gradeChips" id="gradeValChips" style="margin-top:6px">
+      ${gradeVals.map(g=>`<button type="button" data-gv="${esc(g)}" class="${valOn===g?'on':''}">${esc(g)}</button>`).join('')}
+    </div>
+    <div class="gradeFields" style="margin-top:8px">
+      ${F('Grading company','gradeCompany',c.gradeCompany||'','list="dlGradeCo" placeholder="PSA, BGS, SGC…" autocapitalize="characters" enterkeyhint="next"')}
+      ${F('Grade','gradeValue',c.gradeValue||'','list="dlGradeVal" placeholder="10, 9.5, 9…" inputmode="decimal" enterkeyhint="next"')}
+      ${F('Cert number','gradeCert',c.gradeCert||'','inputmode="numeric" placeholder="e.g. 12345678" enterkeyhint="done"')}
+    </div>
+    <div class="f"><label>Shows as</label><input data-k="grade" value="${esc(c.grade||'')}" list="dlGrade" readonly style="opacity:.85" placeholder="PSA 10"></div>
+   </div>
+
+   <div class="g3" style="margin-top:8px">
+    ${F('Qty','qty',c.qty??1,'type="number" inputmode="numeric"')}
+    <div class="f"><label>Status</label><select data-k="status" id="selStatus">
+      <option ${c.status==='have'?'selected':''}>have</option>
+      <option ${c.status==='want'?'selected':''}>want</option>
+      <option ${c.status==='sold'?'selected':''}>sold</option></select></div>
+    ${F('Location','location',c.location,'list="dlLoc" placeholder="Box A / binder…"')}
+   </div>
+   <div class="g3" id="ownRow">
+    ${F('Cost paid $','cost',c.cost,'type="number" inputmode="decimal" step="0.01"')}
+    ${F('Purchased','purchDate',c.purchDate,'type="date"')}
+    <div class="f"><label>&nbsp;</label><div style="padding:8px 2px;color:var(--dim);font-size:12px">${c.gradeCert?('Cert #'+esc(c.gradeCert)):''}</div></div>
+   </div>
+   <div class="g2" id="wantRow" style="display:${c.status==='want'?'grid':'none'}">
+    ${F('Target price $ (deal alert)','target',c.target,'type="number" inputmode="decimal"')}
+    <div class="f"><label>Deal status</label><div style="padding:8px 2px">${dealHit(c)?'<b class="pos">🔥 under target!</b>':'<span class="muted" style="color:var(--dim)">waiting…</span>'}</div></div>
+   </div>
+   <div class="g2" id="soldRow" style="display:${c.status==='sold'?'grid':'none'}">
+    ${F('Sale price $','salePrice',c.salePrice,'type="number" inputmode="decimal"')}
+    ${F('Sale date','saleDate',c.saleDate,'type="date"')}
+   </div>
+   <div class="f"><label>Notes</label><textarea data-k="notes" rows="2">${esc(c.notes)}</textarea></div>
+
    <div class="photoBox dual">
     <div class="sideTog">
       <button type="button" id="sideFront" class="on">Front</button>
@@ -3425,55 +3801,12 @@ async function openSheet(){
      ${F('Back image URL','imgUrlBack',c.imgUrlBack||'')}
     </div>
    </div>
-   <div class="f" style="position:relative"><label>Player — type a name, then pick a real card below</label>
-    <input data-k="player" id="inPlayer" value="${esc(c.player)}" autocomplete="off" placeholder="e.g. Ken Griffey Jr">
-    <div class="autoc" id="autoc" style="display:none"></div></div>
-   <div id="propStrip" class="prop-panel cascade-host" ${c.player&&String(c.player).trim().length>=2?'':'hidden'}></div>
-   <div class="casFields">
-    <div class="ct">Card details <span style="font-weight:400;text-transform:none;letter-spacing:0">(auto-fill from catalog tap — or edit)</span></div>
-    <div class="g3">
-      ${F('Year','year',c.year,'inputmode="numeric" list="dlCasYear"')}
-      ${F('Brand','brand',c.brand,'list="dlCasBrand"')}
-      ${F('Card #','num',c.num,'list="dlCasNum"')}
-    </div>
-    ${F('Set / product','setName',c.setName,'list="dlCasSet"')}
-   </div>
-   <datalist id="dlCasYear"></datalist><datalist id="dlCasBrand"></datalist><datalist id="dlCasSet"></datalist><datalist id="dlCasNum"></datalist>
-   <div class="g2">${F('Team','team',c.team,'list="dlTeam"')}<div class="f"><label>Sport</label><input value="Baseball" readonly></div></div>
-   <div class="g3">
-    ${F('Parallel / insert','variant',c.variant,'list="dlVar"')}
-    ${F('Serial (e.g. 23/99)','serial',c.serial)}
-    <div class="f"><label>Rookie</label><select data-k="rookie"><option value="">No</option><option value="1" ${c.rookie?'selected':''}>RC ✔</option></select></div>
-   </div>
-   <div class="g3">
-    ${F('Grade','grade',c.grade,'list="dlGrade"')}
-    ${F('Qty','qty',c.qty??1,'type="number" inputmode="numeric"')}
-    <div class="f"><label>Status</label><select data-k="status" id="selStatus">
-      <option ${c.status==='have'?'selected':''}>have</option>
-      <option ${c.status==='want'?'selected':''}>want</option>
-      <option ${c.status==='sold'?'selected':''}>sold</option></select></div>
-   </div>
-   <div class="g3" id="ownRow">
-    ${F('Cost paid $','cost',c.cost,'type="number" inputmode="decimal" step="0.01"')}
-    ${F('Purchased','purchDate',c.purchDate,'type="date"')}
-    ${F('Location','location',c.location,'list="dlLoc" placeholder="Box A / binder…"')}
-   </div>
-   <div class="g2" id="wantRow" style="display:${c.status==='want'?'grid':'none'}">
-    ${F('Target price $ (deal alert)','target',c.target,'type="number" inputmode="decimal"')}
-    <div class="f"><label>Deal status</label><div style="padding:8px 2px">${dealHit(c)?'<b class="pos">🔥 under target!</b>':'<span class="muted" style="color:var(--dim)">waiting…</span>'}</div></div>
-   </div>
-   <div class="g2" id="soldRow" style="display:${c.status==='sold'?'grid':'none'}">
-    ${F('Sale price $','salePrice',c.salePrice,'type="number" inputmode="decimal"')}
-    ${F('Sale date','saleDate',c.saleDate,'type="date"')}
-   </div>
-   <div class="f"><label>Notes</label><textarea data-k="notes" rows="2">${esc(c.notes)}</textarea></div>
    ${typeof mlbChipsHtml==='function'?mlbChipsHtml(c):''}
    ${typeof renderMlbPanel==='function'?renderMlbPanel(c):''}
    ${typeof renderCardLinks==='function'?renderCardLinks(c):`<div class="links">
     <a href="${ebaySoldUrl(c)}" target="_blank" rel="noopener">eBay sold</a>
     <a href="${tcdbUrl(c)}" target="_blank" rel="noopener">TCDB</a>
    </div>`}
-   ${F('PSA/BGS cert #','gradeCert',c.gradeCert||'','inputmode="numeric"')}
    <div id="csPop" class="teach-hint" style="color:var(--dim);font-size:12px;margin:6px 0">${c.csId?'Loading PSA pop (free)…':(csKey()?'Link a catalog card for PSA pop + accurate prices.':'')}</div>
    <div class="deltas">
      <span>7d <b class="${(deltaDays(c,7)??0)>=0?'pos':'neg'}">${deltaDays(c,7)==null?'—':deltaDays(c,7).toFixed(1)+'%'}</b></span>
@@ -3488,7 +3821,7 @@ async function openSheet(){
     ${csKey()?'<button id="btnCsPrice" title="CardSight market price">🤖$</button>':''}
    </div>
    <div id="csResults"></div>
-   <p class="bb-lock">⚾ Pick from the catalog chips above — year / brand / set / # only show cards that actually exist for this player.</p>
+   <p class="bb-lock">⚾ Type the player name above, then fill year / brand / set / # — or tap catalog chips when they appear.</p>
    <canvas class="chart" id="cardChart" style="margin-top:10px"></canvas>
    <div class="phist" id="phist"></div>
    <div class="sheetSticky">
@@ -3498,7 +3831,10 @@ async function openSheet(){
     <button id="btnDel" type="button" style="color:var(--red)">Del</button>
    </div>`;
   requestAnimationFrame(()=>{$('sheet').classList.add('open');
-    chLine($('cardChart'),(c.prices||[]).map(p=>({t:p.d,v:p.v})),'#3ecf7a',170);});
+    chLine($('cardChart'),(c.prices||[]).map(p=>({t:p.d,v:p.v})),'#3ecf7a',170);
+    wireSheetKeyboardPad();
+    const ip=$('inPlayer'); if(ip&&!(c.player||'').trim()){try{ip.focus({preventScroll:false});}catch(e){try{ip.focus();}catch(e2){}}}
+  });
   /* front/back previews */
   {
     const pf=$('pvFront'), pb=$('pvBack');
@@ -3525,13 +3861,24 @@ async function openSheet(){
       const neu=wrap.firstElementChild; if(neu&&p.parentNode){p.replaceWith(neu); if(typeof wireMlbPanel==='function')wireMlbPanel(c);}
     }}}).catch(()=>{});
   }
-  $('sheet').querySelectorAll('[data-k]').forEach(inp=>inp.onchange=()=>{
+  const applyField=(inp)=>{
     const k=inp.dataset.k;
+    if(!k)return;
     c[k]=k==='rookie'?!!inp.value:(inp.type==='number'?(inp.value===''?'':+inp.value):inp.value);
     if(k==='status'){$('wantRow').style.display=c.status==='want'?'grid':'none';
       $('soldRow').style.display=c.status==='sold'?'grid':'none';}
+    if(k==='gradeCompany'||k==='gradeValue'){
+      if(k==='gradeCompany'&&(/^raw$/i.test(String(c.gradeCompany||''))||!c.gradeCompany)){c.gradeCompany='';c.gradeValue='';}
+      composeGrade(c);
+      const gEl=$('sheet').querySelector('[data-k="grade"]'); if(gEl)gEl.value=c.grade||'';
+    }
     if(k==='imgUrl'&&inp.value){const pf=$('pvFront');if(pf){pf.innerHTML='<span class="pvLab">Front</span><img src="'+inp.value+'" alt="">';}}
     if(k==='imgUrlBack'&&inp.value){const pb=$('pvBack');if(pb){pb.innerHTML='<span class="pvLab">Back</span><img src="'+inp.value+'" alt="">';}c.imgUrlBack=inp.value;}
+  };
+  $('sheet').querySelectorAll('[data-k]').forEach(inp=>{
+    inp.oninput=()=>applyField(inp);
+    inp.onchange=()=>applyField(inp);
+    inp.onfocus=()=>{wireSheetKeyboardPad();scrollFieldIntoSheet(inp);};
   });
   $('shClose').onclick=closeSheet;
   if(typeof wireMlbPanel==='function')wireMlbPanel(c);
@@ -3539,10 +3886,17 @@ async function openSheet(){
   const vh130=$('vh130'); if(vh130) vh130.onclick=()=>window.open(typeof point130Url==='function'?point130Url(c):ebaySoldUrl(c),'_blank');
   const vhPrice=$('vhPrice'); if(vhPrice) vhPrice.onclick=async()=>{try{await csAutoPrice(c);showToast('Priced ✔');openSheet();}catch(e){showToast(e.message);}};
   const vhShare=$('vhShare'); if(vhShare) vhShare.onclick=()=>shareCard(c);
-  document.querySelectorAll('#gradeChips [data-g]').forEach(b=>b.onclick=()=>{
-    c.grade=b.dataset.g==='Raw'?'':b.dataset.g; save(); openSheet();
+  document.querySelectorAll('#gradeCoChips [data-co]').forEach(b=>b.onclick=()=>{
+    const co=b.dataset.co;
+    if(co==='Raw'){c.gradeCompany='';c.gradeValue='';c.grade='';}
+    else{c.gradeCompany=co; if(!c.gradeValue)c.gradeValue='10'; composeGrade(c);}
+    save(); openSheet();
   });
-
+  document.querySelectorAll('#gradeValChips [data-gv]').forEach(b=>b.onclick=()=>{
+    if(!c.gradeCompany)c.gradeCompany='PSA';
+    c.gradeValue=b.dataset.gv; composeGrade(c); save(); openSheet();
+  });
+  $('btnSave').onclick=()=>{composeGrade(c);save();haptic('success');confettiBurst({n:20});closeSheet();render();};
   $('pAdd').onclick=()=>{
     const v=parseFloat($('pVal').value);if(isNaN(v))return alert('Enter a value first');
     c.prices=c.prices||[];c.prices.push({d:$('pDate').value||today(),v,src:'manual'});
@@ -3552,7 +3906,6 @@ async function openSheet(){
     `<div><span>${p.d}${p.src&&p.src!=='manual'?' · '+esc(p.src):''}</span><b>${money(p.v)}</b><span class="x" data-i="${c.prices.length-1-i}">✕</span></div>`).join('');
   $('phist').querySelectorAll('.x').forEach(x=>x.onclick=e=>{e.stopPropagation();
     c.prices.splice(+x.dataset.i,1);save();openSheet();});
-  $('btnSave').onclick=()=>{save();haptic('success');confettiBurst({n:20});closeSheet();render();};
   const bqm=$('btnQuickMatch');
   if(bqm) bqm.onclick=async()=>{
     const q=(c.player||'').trim();
@@ -3959,6 +4312,7 @@ function openMenu(anchor){
       <button type="button" class="menuItem" data-a="bk"><span class="miI">💾</span><span>Backup now<span class="miS">JSON for iCloud / Files</span></span></button>
       <button type="button" class="menuItem" data-a="bkp"><span class="miI">🖼</span>Backup + photos<span class="miS">Larger download</span></button>
       <button type="button" class="menuItem" data-a="restore"><span class="miI">📂</span>Import / restore<span class="miS">JSON · CSV · Excel · TCDB</span></button>
+      <button type="button" class="menuItem" data-a="reseed"><span class="miI">♻</span>Reload Jay’s collection<span class="miS">TCDB + Diamond Stars seed</span></button>
       <button type="button" class="menuItem" data-a="csv"><span class="miI">📑</span>Export CSV<span class="miS">Spreadsheet</span></button>
     </div>
     <div class="menuSec">Cloud (optional)</div>
@@ -3993,6 +4347,11 @@ function openMenu(anchor){
     else if(a==='bkp')doBackup(true);
     else if(a==='gh'){if(typeof openGitHubPanel==='function')openGitHubPanel();}
     else if(a==='mlb'){if(typeof importAllMlbStats==='function')importAllMlbStats().catch(e=>alert(e.message));}
+    else if(a==='reseed'){
+      if(!confirm('Reload the full Jay collection seed?\nThis replaces cards currently in this browser.'))return;
+      if(state.meta)state.meta.collectionSeed='';
+      ensureCollectionSeed().then(()=>render()).catch(e=>alert(e.message||e));
+    }
     else if(a==='restore')$('fileIn').click();
     else if(a==='csv')download('card-vault-'+today()+'.csv',csvExport(state.cards),'text/csv');
     else if(a==='prices'){
@@ -4435,9 +4794,10 @@ window.rebuildLocalChecklists=function rebuildLocalChecklists(){
   const groups=new Map();
   for(const c of state.cards||[]){
     if(c.status==='sold')continue;
-    const year=String(c.year||'').slice(0,4);
+    const rawYear=String(c.year||'').trim();
+    const year=/^\d{4}(-\d{2,4})?$/.test(rawYear)?rawYear:rawYear.slice(0,4);
     const setName=(c.setName||c.brand||'').trim();
-    if(year.length!==4||setName.length<3)continue;
+    if(year.length<4||setName.length<3)continue;
     const key=year+'|'+normH(setName);
     if(!groups.has(key))groups.set(key,{key,year,setName,total:0,have:0,want:0,astrosHave:0,nums:new Set()});
     const g=groups.get(key);
@@ -4461,6 +4821,25 @@ window.rebuildLocalChecklists=function rebuildLocalChecklists(){
   return list;
 };
 
+window.astroRingSvg=function astroRingSvg(pct, center){
+  const p=Math.max(0,Math.min(100,Number(pct)||0));
+  const r=15.5, c=2*Math.PI*r, dash=(p/100)*c;
+  const lab=String(center??Math.round(p));
+  return `<svg class="astroRing" width="38" height="38" viewBox="0 0 40 40" aria-hidden="true">
+    <circle cx="20" cy="20" r="${r}" fill="none" stroke="rgba(0,45,98,.12)" stroke-width="3.2"/>
+    <circle cx="20" cy="20" r="${r}" fill="none" stroke="#eb6e1f" stroke-width="3.2"
+      stroke-dasharray="${dash.toFixed(2)} ${c.toFixed(2)}" stroke-linecap="round"
+      transform="rotate(-90 20 20)"/>
+    <text x="20" y="23.5" text-anchor="middle" font-size="${lab.length>2?9:11}" font-weight="800" fill="#002d62">${esc(lab)}</text>
+  </svg>`;
+};
+
+window.shortPlayerName=function shortPlayerName(name){
+  const parts=String(name||'').trim().split(/\s+/).filter(Boolean);
+  if(!parts.length)return '—';
+  return parts[parts.length-1];
+};
+
 window.localChecklistsHtml=function localChecklistsHtml(){
   const list=(state.meta&&state.meta.checklists)||rebuildLocalChecklists();
   if(!list.length)return '';
@@ -4469,21 +4848,31 @@ window.localChecklistsHtml=function localChecklistsHtml(){
       <button type="button" class="setProgRow" data-ck="${esc(g.key)}">
         <div class="l1">${esc(g.year)} ${esc(g.setName)}</div>
         <div class="prog fat"><i style="width:${g.pct}%"></i></div>
-        <div class="l2">${g.have}/${g.total} have · ${g.astrosHave} Astros · ${g.want} want</div>
+        <div class="l2">${g.have}/${g.total} · 🧡${g.astrosHave}${g.want?(' · ⭐'+g.want):''}</div>
       </button>`).join('')+`</div>`;
 };
 
 window.astrosSetsHtml=function astrosSetsHtml(){
   const rows=astrosSetProgress();
+  const totalHave=rows.reduce((n,p)=>n+(p.have||0),0);
   return `<div class="astrosSetsPanel">
-    <div class="ct">🧡 Astros set checklists</div>
-    <div class="teach-hint" style="font-size:12px;color:var(--mute);margin:0 0 8px">Progress from your vault (HOU cards). Tap to open that release in Sets.</div>
-    <div class="setProgList">`+rows.map(p=>`
-      <button type="button" class="setProgRow astro" data-astros-set="${esc(p.id)}">
-        <div class="l1">${esc(p.label)}</div>
-        <div class="prog fat"><i style="width:${Math.min(100,p.have?Math.min(100,p.have*8):0)}%"></i></div>
-        <div class="l2"><b>${p.have}</b> Astros cards in vault${p.uniqueNums?(' · #'+p.uniqueNums+' unique'):''}</div>
-      </button>`).join('')+`</div>
+    <div class="astrosBoardHead">
+      <div class="ct">🧡 Astros lineup</div>
+      <div class="astrosBoardHint">${totalHave} in vault · tap a set</div>
+    </div>
+    <div class="astroScoreboard">`+rows.map(p=>{
+      const soft=Math.max(10, p.uniqueNums||p.have||1);
+      const pct=Math.min(100, Math.round(((p.have||0)/soft)*100));
+      const short=(p.label||'').replace(/^\d{4}\s*/,'');
+      return `<button type="button" class="astroChip" data-astros-set="${esc(p.id)}" title="${esc(p.label)}">
+        ${astroRingSvg(pct, p.have||0)}
+        <span class="meta">
+          <span class="yr">${esc(p.y)}</span>
+          <span class="nm">${esc(short)}</span>
+          <span class="ctn">${p.uniqueNums||0} #s</span>
+        </span>
+      </button>`;
+    }).join('')+`</div>
   </div>`;
 };
 
@@ -5025,43 +5414,69 @@ window.setsPaintChecklist=async function setsPaintChecklist(){
   const viewCards=SETS.cards.map((x,i)=>({x,i})).filter(({x})=>!astrosOnly||isAstrosCatalogCard(x));
   const body=$('checkBody');
   const houN=SETS.cards.filter(isAstrosCatalogCard).length;
-  body.innerHTML=(astrosOnly?`<div class="teach-hint" style="margin:0 0 8px;font-size:12px">🧡 Astros filter on · ${viewCards.length} of ${SETS.cards.length} loaded (${houN} tagged HOU in this page)</div>
-    <div class="toolbar" style="margin-bottom:8px"><button type="button" id="setAstrosToggle" class="bigim">Show all teams</button></div>`:
-    `<div class="toolbar" style="margin-bottom:8px"><button type="button" id="setAstrosToggle">🧡 Astros only (${houN})</button></div>`)+
-    viewCards.map(({x,i})=>{
-    const own=findOwned(x.id,'');
-    const rc=(x.attributes||[]).some(a=>/^rc$|rookie/i.test(a));
-    const pc=(x.parallels&&x.parallels.length)||0;
-    return `<div class="checkRow ${own?'owned':''}">
-      <div class="thumb" id="ck-${i}">🃏</div>
-      <div class="rmain">
-        <div class="l1">#${esc(x.number||'?')} ${esc(x.name||'')}${rc?'<span class="badge b-rc">RC</span>':''}${own?'<span class="badge b-own">HAVE ×'+(own.qty||1)+'</span>':''}</div>
-        <div class="l2">${pc?pc+' parallels':''}${(x.attributes||[]).filter(a=>!/^rc$/i.test(a)).slice(0,3).map(a=>' · '+esc(a)).join('')}</div>
+  const haveOnBoard=viewCards.filter(({x})=>{const o=findOwned(x.id,'');return o&&o.status==='have';}).length;
+  if(astrosOnly){
+    body.innerHTML=`<div class="diamondActions">
+        <span class="pillStat"><b>${haveOnBoard}</b>/${viewCards.length} Astros</span>
+        <span class="pillStat" style="background:rgba(235,110,31,.12)">tap = Have · ☆ = Want</span>
+        <button type="button" id="setAstrosToggle" class="bigim">All teams</button>
       </div>
-      <div style="display:flex;flex-direction:column;gap:4px">
-        <button data-h="${i}" class="tinyAdd">+Have</button>
-        <button data-w="${i}" class="tinyAdd">⭐</button>
-      </div>
-    </div>`;
-  }).join('');
-  body.querySelectorAll('[data-h]').forEach(b=>b.onclick=async()=>{
+      <div class="diamondBoard">`+viewCards.map(({x,i})=>{
+        const row=findOwned(x.id,'');
+        const have=!!(row&&row.status==='have');
+        const want=!!(row&&row.status==='want');
+        const rc=(x.attributes||[]).some(a=>/^rc$|rookie/i.test(a));
+        const num=String(x.number||'?').replace(/^#/,'');
+        return `<button type="button" class="diamondTile ${have?'owned':''} ${want&&!have?'want':''} ${rc?'rc':''}" data-h="${i}" title="${esc(x.name||'')}">
+          <span class="dstamp" data-w="${i}">${have?'✔':want?'★':'☆'}</span>
+          <span class="dn">#${esc(num)}</span>
+          <span class="dp">${esc(shortPlayerName(x.name))}</span>
+        </button>`;
+      }).join('')+`</div>`;
+  }else{
+    body.classList.add('compact');
+    body.innerHTML=`<div class="toolbar" style="margin-bottom:8px"><button type="button" id="setAstrosToggle">🧡 Astros only (${houN})</button></div>`+
+      viewCards.map(({x,i})=>{
+      const own=findOwned(x.id,'');
+      const rc=(x.attributes||[]).some(a=>/^rc$|rookie/i.test(a));
+      const pc=(x.parallels&&x.parallels.length)||0;
+      return `<div class="checkRow ${own&&own.status==='have'?'owned':''}">
+        <div class="thumb" id="ck-${i}">🃏</div>
+        <div class="rmain">
+          <div class="l1">#${esc(x.number||'?')} ${esc(x.name||'')}${rc?'<span class="badge b-rc">RC</span>':''}${own&&own.status==='have'?'<span class="badge b-own">HAVE ×'+(own.qty||1)+'</span>':''}</div>
+          <div class="l2">${pc?pc+' parallels':''}${(x.attributes||[]).filter(a=>!/^rc$/i.test(a)).slice(0,3).map(a=>' · '+esc(a)).join('')}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <button data-h="${i}" class="tinyAdd">+Have</button>
+          <button data-w="${i}" class="tinyAdd">⭐</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+  body.querySelectorAll('[data-h]').forEach(b=>b.onclick=async(ev)=>{
+    if(ev.target&&ev.target.closest&&ev.target.closest('[data-w]'))return;
     await addFromCatalogAdvanced(SETS.cards[+b.dataset.h],'have');
     setsPaintChecklist();
   });
-  body.querySelectorAll('[data-w]').forEach(b=>b.onclick=async()=>{
+  body.querySelectorAll('[data-w]').forEach(b=>b.onclick=async(ev)=>{
+    ev.stopPropagation();
     await addFromCatalogAdvanced(SETS.cards[+b.dataset.w],'want');
     setsPaintChecklist();
   });
-  SETS.cards.forEach(async(x,i)=>{
-    const el=$('ck-'+i);if(!el)return;
-    try{
-      const url=typeof csDisplayUrl==='function'?csDisplayUrl(await csImageData(x.id)):csImgSrc(await csImageData(x.id));
-      if(url&&$('ck-'+i)){
-        if(typeof setImgEl==='function')setImgEl($('ck-'+i),url);
-        else $('ck-'+i).innerHTML=`<img src="${url.replace(/"/g,'&quot;')}" alt="">`;
-      }
-    }catch(e){}
-  });
+  if(!astrosOnly){
+    SETS.cards.forEach(async(x,i)=>{
+      const el=$('ck-'+i);if(!el)return;
+      try{
+        const url=typeof csDisplayUrl==='function'?csDisplayUrl(await csImageData(x.id)):csImgSrc(await csImageData(x.id));
+        if(url&&$('ck-'+i)){
+          if(typeof setImgEl==='function')setImgEl($('ck-'+i),url);
+          else $('ck-'+i).innerHTML=`<img src="${url.replace(/"/g,'&quot;')}" alt="">`;
+        }
+      }catch(e){}
+    });
+  }
+  const sat=$('setAstrosToggle');
+  if(sat) sat.onclick=()=>{ SETS.astrosOnly=!SETS.astrosOnly; setsPaintChecklist(); };
   $('setBackSets').onclick=()=>{SETS.set=null;setsPaintSets();};
   $('setMore').onclick=()=>setsLoadCards(false);
   $('setWantMiss').onclick=async()=>{
@@ -5985,7 +6400,8 @@ window.openGitHubPanel=window.openMlbJsonPanel;
 /* ---- init ---- */
 async function init(){
   await idb.open();
-  load();
+  await load();
+  await ensureCollectionSeed();
   const scrub=scrubCsStoredKey();
   if(scrub==='cleared'){
     setTimeout(()=>showToast('Cleared a bad saved key — using built-in CardSight key'),0);
@@ -6006,7 +6422,7 @@ async function init(){
   }
   if(!state.meta.seenWelcome){
     state.meta.seenWelcome=1; save();
-    setTimeout(()=>showToast('Type a player in search to browse cards'), 600);
+    setTimeout(()=>showToast('Jay’s collection is loaded — search any player'), 600);
   }
   setTimeout(()=>{ if(typeof autoRefreshPricesIfNeeded==='function' && tab==='dash') autoRefreshPricesIfNeeded();
     const up=(state.cards||[]).filter(c=>c.status!=='sold'&&(!c.prices||!c.prices.length)).length;

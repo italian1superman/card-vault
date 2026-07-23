@@ -1,0 +1,78 @@
+{
+  "id": "diamond-stars-r327",
+  "name": "1934-36 National Chicle Diamond Stars",
+  "acc": "R327",
+  "brand": "National Chicle",
+  "year": "1934-36",
+  "size": "2-3/8 \u00d7 2-7/8 in",
+  "count": 108,
+  "masterApprox": 170,
+  "planned": 240,
+  "style": "Art Deco color lithography",
+  "series": [
+    {
+      "n": 1,
+      "year": 1934,
+      "range": "1\u201324",
+      "back": "Green"
+    },
+    {
+      "n": 2,
+      "year": 1935,
+      "range": "25\u201384",
+      "back": "Green (73\u201384 also blue)"
+    },
+    {
+      "n": 3,
+      "year": 1936,
+      "range": "85\u2013108",
+      "back": "Blue \u00b7 #97\u2013108 scarce"
+    }
+  ],
+  "keys": [
+    "#1 Lefty Grove",
+    "#54 Greenberg (ERR Greenburg)",
+    "#64 Jimmie Foxx",
+    "#50 Mel Ott",
+    "#103 Bill Dickey"
+  ],
+  "missingStars": [
+    "Babe Ruth",
+    "Lou Gehrig"
+  ],
+  "hofCount": 40,
+  "ownedHave": 5,
+  "sources": [
+    "https://prewarcards.com/2016/10/05/1934-1936-diamond-stars-set-checklist/",
+    "https://www.cardboardconnection.com/1934-36-diamond-stars-baseball-cards",
+    "https://oldcardboard.com/r/r327/r327.asp?cardsetID=885",
+    "MLB Stats API (player ids / headshots)"
+  ],
+  "jayOwned": [
+    {
+      "num": "27",
+      "player": "Pie Traynor",
+      "grade": "PSA 3"
+    },
+    {
+      "num": "32",
+      "player": "Sam Rice",
+      "grade": "BVG 2.5"
+    },
+    {
+      "num": "39",
+      "player": "Carl Hubbell",
+      "grade": "SGC 2"
+    },
+    {
+      "num": "48",
+      "player": "Rick Ferrell",
+      "grade": "SGC 1"
+    },
+    {
+      "num": "54a",
+      "player": "Hank Greenberg ERR",
+      "grade": "SGC 2"
+    }
+  ]
+}

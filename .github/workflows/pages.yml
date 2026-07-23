@@ -26,7 +26,19 @@ jobs:
         run: |
           mkdir -p _site
           cp index.html manifest.webmanifest sw.js .nojekyll README.md _site/
+          # Optional JS modules (present in repo)
+          for f in visuals.js hobby-advanced.js pro-suite.js mlb-github.js; do
+            [ -f "$f" ] && cp "$f" _site/
+          done
           cp -R icons _site/icons
+          [ -d assets ] && cp -R assets _site/assets
+          [ -d data ] && cp -R data _site/data
+          [ -d vault ] && cp -R vault _site/vault
+          # Drop non-site noise from vault publish
+          rm -f _site/vault/parse-fails.txt
+          # iCloud stubs are useless on Pages
+          find _site -name '*.icloud' -delete || true
+          ls -lah _site _site/vault | head -40
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

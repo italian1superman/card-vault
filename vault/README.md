@@ -1,5 +1,24 @@
-# Not used for private collection
+# Jay’s Card Vault — preloaded collection (GitHub Pages)
 
-Card collection backups stay on your phone (⋯ → Backup).
+On first open (and whenever the seed version changes), the app loads:
 
-Public MLB career stats live at [`../data/mlb-career.json`](../data/mlb-career.json).
+**`jay-collection-seed.json`** — no Menu import required.
+
+## What’s inside
+
+| Piece | Count | Notes |
+|--------|------:|--------|
+| Jayk527 TCDB Collection Print | ~19,668 | Ownership + grades from PDFs |
+| 1934–36 Diamond Stars R327 | 127 | Full #1–108 + owned 54a ERR + VARs + 1981 ext wants |
+| Wikimedia Commons card scans | ~37 | Matched free scans (T206 / Goudey / Play Ball / etc.) |
+| MLB headshots | ~17k | Free MLB Stats CDN where name matched |
+
+Seed version: **`jay-tcdb-ds-v1`**
+
+## Search
+
+Diamond Stars (have + want checklist) live in the vault, so Home / Have / Want search finds Grove, Greenberg, Traynor, etc. immediately.
+
+## Reload
+
+Menu → **Reload Jay’s collection** forces the seed again (replaces browser vault).
