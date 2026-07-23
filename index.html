@@ -2042,13 +2042,9 @@ window.applyTcdbPhotoMap=function applyTcdbPhotoMap(rows, opts){
     if(c.tcdbSid&&c.tcdbCid) r=byKey.get('id|'+c.tcdbSid+'|'+c.tcdbCid);
     if(!r) r=byKey.get([year,num,player].join('|'));
     if(!r) r=byKey.get(['s',year,num,setName].join('|'));
-    if(!r&&r!==0){
-      /* direct url / ids on row */
-      if(r) {}
-    }
     if(!r) continue;
     matched++;
-    const hasReal=c.imgId||(c.imgUrl&&!/mlbstatic/.test(c.imgUrl)&&c.imgSource==='tcdb');
+    const hasReal=c.imgId||(c.imgUrl&&c.imgSource==='tcdb');
     if(hasReal&&!overwrite) continue;
     if(r.sid&&r.cid){
       applyTcdbCardUrl(c, `https://www.tcdb.com/ViewCard.cfm/sid/${r.sid}/cid/${r.cid}`, {both:true});
