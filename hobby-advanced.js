@@ -276,16 +276,13 @@ window.cardMatchesSetPreset=function cardMatchesSetPreset(c, preset){
   return true;
 };
 
-window.astrosSetProgress=function astrosSetProgress(){
-  const have=(state.cards||[]).filter(c=>c.status==='have'&&isAstrosCard(c));
-  return ASTROS_SET_PRESETS.map(p=>{
-    const cards=have.filter(c=>cardMatchesSetPreset(c,p));
-    const nums=new Set(cards.map(c=>String(c.num||'').replace(/^#/,'')).filter(Boolean));
-    return {...p, have:cards.length, uniqueNums:nums.size, sample:cards[0]||null};
-  }).filter(x=>true);
-};
+window.astrosSetProgress=function astrosSetProgress(){return [];};
+window.astrosSetsHtml=function astrosSetsHtml(){return '';};
+window.openAstrosSetPreset=async function openAstrosSetPreset(){};
 
-window.rebuildLocalChecklists=function rebuildLocalChecklists(){
+window.rebuildLocalChecklists=function rebuildLocalChecklists(force){
+  const n=(state.cards||[]).length;
+  if(!force && state.meta && state.meta.checklists && state.meta._ckN===n) return state.meta.checklists;
   const groups=new Map();
   for(const c of state.cards||[]){
     if(c.status==='sold')continue;
@@ -293,25 +290,26 @@ window.rebuildLocalChecklists=function rebuildLocalChecklists(){
     const setName=(c.setName||c.brand||'').trim();
     if(year.length!==4||setName.length<3)continue;
     const key=year+'|'+normH(setName);
-    if(!groups.has(key))groups.set(key,{key,year,setName,total:0,have:0,want:0,astrosHave:0,nums:new Set()});
+    if(!groups.has(key))groups.set(key,{key,year,setName,total:0,have:0,want:0,nums:new Set()});
     const g=groups.get(key);
     g.total++;
     const num=String(c.num||'').replace(/^#/,'');
     if(num)g.nums.add(num);
-    if(c.status==='have'){g.have++; if(isAstrosCard(c))g.astrosHave++;}
+    if(c.status==='have')g.have++;
     if(c.status==='want')g.want++;
   }
   const list=[...groups.values()]
     .filter(g=>g.total>=5)
     .map(g=>({
       key:g.key, year:g.year, setName:g.setName,
-      total:g.total, have:g.have, want:g.want, astrosHave:g.astrosHave,
+      total:g.total, have:g.have, want:g.want,
       uniqueNums:g.nums.size,
       pct:Math.min(100, Math.round((g.have/g.total)*100))
     }))
     .sort((a,b)=>b.have-a.have||b.total-a.total);
   if(!state.meta)state.meta={};
   state.meta.checklists=list;
+  state.meta._ckN=n;
   return list;
 };
 
@@ -342,59 +340,16 @@ window.localChecklistsHtml=function localChecklistsHtml(){
       <button type="button" class="setProgRow" data-ck="${esc(g.key)}">
         <div class="l1">${esc(g.year)} ${esc(g.setName)}</div>
         <div class="prog fat"><i style="width:${g.pct}%"></i></div>
-        <div class="l2">${g.have}/${g.total} · 🧡${g.astrosHave}${g.want?(' · ⭐'+g.want):''}</div>
+        <div class="l2">${g.have}/${g.total}${g.want?(' · ⭐'+g.want):''}</div>
       </button>`).join('')+`</div>`;
 };
 
-window.astrosSetsHtml=function astrosSetsHtml(){
-  const rows=astrosSetProgress();
-  const totalHave=rows.reduce((n,p)=>n+(p.have||0),0);
-  return `<div class="astrosSetsPanel">
-    <div class="astrosBoardHead">
-      <div class="ct">🧡 Astros lineup</div>
-      <div class="astrosBoardHint">${totalHave} in vault · tap a set</div>
-    </div>
-    <div class="astroScoreboard">`+rows.map(p=>{
-      const soft=Math.max(10, p.uniqueNums||p.have||1);
-      const pct=Math.min(100, Math.round(((p.have||0)/soft)*100));
-      const short=(p.label||'').replace(/^\d{4}\s*/,'');
-      return `<button type="button" class="astroChip" data-astros-set="${esc(p.id)}" title="${esc(p.label)}">
-        ${astroRingSvg(pct, p.have||0)}
-        <span class="meta">
-          <span class="yr">${esc(p.y)}</span>
-          <span class="nm">${esc(short)}</span>
-          <span class="ctn">${p.uniqueNums||0} #s</span>
-        </span>
-      </button>`;
-    }).join('')+`</div>
-  </div>`;
-};
-
-window.openAstrosSetPreset=async function openAstrosSetPreset(id){
-  const p=ASTROS_SET_PRESETS.find(x=>x.id===id);
-  if(!p)return;
-  tab='sets';
-  window.SETS=window.SETS||{};
-  SETS.year=p.y; SETS.q=p.q; SETS.release=null; SETS.set=null; SETS.cards=[]; SETS.astrosOnly=true;
-  render();
-  /* after renderSets mounts, search */
-  setTimeout(()=>{
-    const y=$('setYear'), q=$('setQ');
-    if(y)y.value=p.y; if(q)q.value=p.q;
-    if(typeof setsSearchReleases==='function')setsSearchReleases();
-  }, 60);
-};
-
 window.wireSetProgressUi=function wireSetProgressUi(root){
-  (root||document).querySelectorAll('[data-astros-set]').forEach(btn=>{
-    btn.onclick=()=>{if(typeof haptic==='function')haptic('light');openAstrosSetPreset(btn.getAttribute('data-astros-set'));};
-  });
   (root||document).querySelectorAll('[data-ck]').forEach(btn=>{
     btn.onclick=()=>{
       if(typeof haptic==='function')haptic('light');
       const key=btn.getAttribute('data-ck')||'';
-      const [year,...rest]=key.split('|');
-      /* filter have by year */
+      const [year]=key.split('|');
       if(typeof applyCollectionFilter==='function')applyCollectionFilter(year,{status:'have'});
       else {q=year;tab='have';render();}
     };
@@ -734,7 +689,6 @@ window.renderSets=async function renderSets(){
   $('view').innerHTML=`<div class="panel heroPanel">
     <div class="heroTitle">📚 Build a set</div>
     <div class="heroSub">Search a release, open a checklist, tap Have / Want. Photos load free from the catalog as you browse (All photos caches the whole set).</div>
-    ${typeof astrosSetsHtml==='function'?astrosSetsHtml():''}
     ${typeof localChecklistsHtml==='function'?localChecklistsHtml():''}
     <div class="boothBar">
       <input id="setYear" type="number" inputmode="numeric" placeholder="Year" value="${esc(S.year||'')}" style="width:88px">
@@ -877,8 +831,6 @@ window.setsPaintChecklist=async function setsPaintChecklist(){
   const haveN=ownCountInSet(s.id);
   const tot=SETS.total||s.cardCount||SETS.cards.length;
   const pct=tot?Math.min(100,Math.round(haveN/tot*100)):0;
-  const houCards=SETS.cards.filter(isAstrosCatalogCard);
-  const houHave=houCards.filter(x=>findOwned(x.id,'')).length;
   const parTypes=s.parallelCount||0;
   const masterDenom=parTypes?tot*(parTypes+1):tot;
   const masterHave=ownParallelCountInSet(s.id);
@@ -893,7 +845,7 @@ window.setsPaintChecklist=async function setsPaintChecklist(){
       <div style="flex:1">
         <div class="ct" style="margin:0">${esc(r&&r.year||'')} ${esc(r&&r.name||'')} · ${esc(s.name)}</div>
         <div class="prog fat"><i style="width:${pct}%"></i></div>
-        <div class="l2" style="font-size:12px;color:var(--dim)">Base ${haveN}/${tot} (${pct}%) · Master-ish ${masterPct}% · 🧡 Astros on page ${houHave}/${houCards.length||0}</div>
+        <div class="l2" style="font-size:12px;color:var(--dim)">Base ${haveN}/${tot} (${pct}%) · Master-ish ${masterPct}%</div>
       </div>
     </div>
     <div class="toolbar">
@@ -907,33 +859,10 @@ window.setsPaintChecklist=async function setsPaintChecklist(){
     <div style="text-align:center;margin-top:10px">
       <button id="setMore" style="display:${SETS.cards.length<tot?'inline-block':'none'}">More cards ↓</button>
     </div>`;
-  const astrosOnly=!!SETS.astrosOnly;
-  const viewCards=SETS.cards.map((x,i)=>({x,i})).filter(({x})=>!astrosOnly||isAstrosCatalogCard(x));
+  const viewCards=SETS.cards.map((x,i)=>({x,i}));
   const body=$('checkBody');
-  const houN=SETS.cards.filter(isAstrosCatalogCard).length;
-  const haveOnBoard=viewCards.filter(({x})=>{const o=findOwned(x.id,'');return o&&o.status==='have';}).length;
-  if(astrosOnly){
-    body.innerHTML=`<div class="diamondActions">
-        <span class="pillStat"><b>${haveOnBoard}</b>/${viewCards.length} Astros</span>
-        <span class="pillStat" style="background:rgba(235,110,31,.12)">tap = Have · ☆ = Want</span>
-        <button type="button" id="setAstrosToggle" class="bigim">All teams</button>
-      </div>
-      <div class="diamondBoard">`+viewCards.map(({x,i})=>{
-        const row=findOwned(x.id,'');
-        const have=!!(row&&row.status==='have');
-        const want=!!(row&&row.status==='want');
-        const rc=(x.attributes||[]).some(a=>/^rc$|rookie/i.test(a));
-        const num=String(x.number||'?').replace(/^#/,'');
-        return `<button type="button" class="diamondTile ${have?'owned':''} ${want&&!have?'want':''} ${rc?'rc':''}" data-h="${i}" title="${esc(x.name||'')}">
-          <span class="dstamp" data-w="${i}">${have?'✔':want?'★':'☆'}</span>
-          <span class="dn">#${esc(num)}</span>
-          <span class="dp">${esc(shortPlayerName(x.name))}</span>
-        </button>`;
-      }).join('')+`</div>`;
-  }else{
-    body.classList.add('compact');
-    body.innerHTML=`<div class="toolbar" style="margin-bottom:8px"><button type="button" id="setAstrosToggle">🧡 Astros only (${houN})</button></div>`+
-      viewCards.map(({x,i})=>{
+  body.classList.add('compact');
+  body.innerHTML=viewCards.map(({x,i})=>{
       const own=findOwned(x.id,'');
       const rc=(x.attributes||[]).some(a=>/^rc$|rookie/i.test(a));
       const pc=(x.parallels&&x.parallels.length)||0;
@@ -949,7 +878,6 @@ window.setsPaintChecklist=async function setsPaintChecklist(){
         </div>
       </div>`;
     }).join('');
-  }
   body.querySelectorAll('[data-h]').forEach(b=>b.onclick=async(ev)=>{
     if(ev.target&&ev.target.closest&&ev.target.closest('[data-w]'))return;
     await addFromCatalogAdvanced(SETS.cards[+b.dataset.h],'have');
@@ -960,20 +888,16 @@ window.setsPaintChecklist=async function setsPaintChecklist(){
     await addFromCatalogAdvanced(SETS.cards[+b.dataset.w],'want');
     setsPaintChecklist();
   });
-  if(!astrosOnly){
-    SETS.cards.forEach(async(x,i)=>{
-      const el=$('ck-'+i);if(!el)return;
-      try{
-        const url=typeof csDisplayUrl==='function'?csDisplayUrl(await csImageData(x.id)):csImgSrc(await csImageData(x.id));
-        if(url&&$('ck-'+i)){
-          if(typeof setImgEl==='function')setImgEl($('ck-'+i),url);
-          else $('ck-'+i).innerHTML=`<img src="${url.replace(/"/g,'&quot;')}" alt="">`;
-        }
-      }catch(e){}
-    });
-  }
-  const sat=$('setAstrosToggle');
-  if(sat) sat.onclick=()=>{ SETS.astrosOnly=!SETS.astrosOnly; setsPaintChecklist(); };
+  SETS.cards.forEach(async(x,i)=>{
+    const el=$('ck-'+i);if(!el)return;
+    try{
+      const url=typeof csDisplayUrl==='function'?csDisplayUrl(await csImageData(x.id)):csImgSrc(await csImageData(x.id));
+      if(url&&$('ck-'+i)){
+        if(typeof setImgEl==='function')setImgEl($('ck-'+i),url);
+        else $('ck-'+i).innerHTML=`<img src="${url.replace(/"/g,'&quot;')}" alt="">`;
+      }
+    }catch(e){}
+  });
   $('setBackSets').onclick=()=>{SETS.set=null;setsPaintSets();};
   $('setMore').onclick=()=>setsLoadCards(false);
   $('setWantMiss').onclick=async()=>{

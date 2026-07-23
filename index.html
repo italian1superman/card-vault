@@ -1324,6 +1324,8 @@ img.portraitFallback.mlbShot{object-fit:cover}
 }
 .astrosBoardHead .ct{margin:0}
 .astrosBoardHint{font-size:11px;color:var(--mute);font-weight:600}
+.loadMoreWrap{display:flex;justify-content:center;padding:14px 8px 22px}
+.loadMoreWrap .bigim{min-width:min(100%,280px)}
 .astroScoreboard{
   display:grid;grid-template-columns:1fr 1fr;gap:6px;
 }
@@ -2093,7 +2095,9 @@ function confettiBurst(opts){
 }
 window.confettiBurst=confettiBurst;
 window.haptic=haptic;
-let state={cards:[],meta:{lastBackup:0}},tab='dash',q='',view=(window.matchMedia&&matchMedia('(max-width:899px)').matches)?'binder':'list',listGroup='',sel=null,lastDeleted=null,toastT=null,binderPage=0,photoSide='front';
+let state={cards:[],meta:{lastBackup:0}},tab='dash',q='',view=(window.matchMedia&&matchMedia('(max-width:899px)').matches)?'binder':'list',listGroup='',sel=null,lastDeleted=null,toastT=null,binderPage=0,listLimit=60,photoSide='front';
+const LIST_PAGE_SIZE=60;
+let _filteredCache={key:'',rows:null};
 /* BINDER_ID lives on window from pro-suite */
 const imgCache=new Map();
 
@@ -2190,6 +2194,7 @@ async function ensureCollectionSeed(){
   }
 }
 function save(){
+  _filteredCache={key:'',rows:null};
   const payload={cards:state.cards,meta:state.meta||{lastBackup:0},v:2};
   // Prefer IndexedDB for large collections (Jay's TCDB dump ~20k cards won't fit in localStorage)
   try{idb.statePut(payload);}catch(e){}
@@ -2752,23 +2757,49 @@ function renderTeamPage(abbr){
 function renderNav(){
   $('tabsTop').innerHTML=TABS.map(([k,i,l])=>`<div class="tab ${tab===k?'on':''}" data-t="${k}">${i} ${l}</div>`).join('');
   $('navB').innerHTML=TABS.map(([k,i,l])=>`<div class="nb ${tab===k?'on':''}" data-t="${k}"><span class="i">${i}</span><span class="nl">${l}</span></div>`).join('');
-  document.querySelectorAll('[data-t]').forEach(el=>el.onclick=()=>{window.TEAM_PAGE=null;tab=el.dataset.t;render();});
+  document.querySelectorAll('[data-t]').forEach(el=>el.onclick=()=>{
+    window.TEAM_PAGE=null;
+    const next=el.dataset.t;
+    if(next!==tab){listLimit=LIST_PAGE_SIZE;binderPage=0;_filteredCache={key:'',rows:null};}
+    /* Large vaults: binder stays snappy (9 cards/page) */
+    if((next==='have'||next==='want'||next==='sold')&&(state.cards||[]).length>400&&view==='list')
+      view='binder';
+    tab=next;render();
+  });
   syncPhoneFilter();
 }
 function filtered(){
-  let cs=state.cards.filter(c=>tab==='dash'||c.status===tab);
-  if(typeof applyBinder==='function' && (tab==='have'||tab==='want'||tab==='sold')){
-    const bid=window.BINDER_ID||'all';
-    if(bid==='want'&&tab==='have') cs=state.cards.filter(c=>c.status==='want');
-    else if(bid!=='all'&&bid!=='want') cs=applyBinder(cs);
-  }
   const sp=($('fSport')||{}).value||'';
-  if(sp)cs=cs.filter(c=>c.sport===sp);
-  if(q){const s=q.toLowerCase();
-    cs=cs.filter(c=>FIELDS.some(k=>String(c[k]||'').toLowerCase().includes(s))||String(c.gradeCert||'').toLowerCase().includes(s));}
   const m=($('fSort')||{}).value||'recent';
-  const g=c=>{const x=gainPct(c);return x==null?-1e9:x;};
   listGroup=($('fGroup')||{}).value||'';
+  const bid=(typeof applyBinder==='function'&&(tab==='have'||tab==='want'||tab==='sold'))?(window.BINDER_ID||'all'):'all';
+  const cacheKey=[tab,sp,q||'',m,listGroup,bid,(state.cards||[]).length,state.meta&&state.meta.lastBackup].join('|');
+  if(_filteredCache.key===cacheKey&&_filteredCache.rows) return _filteredCache.rows.slice();
+
+  let cs;
+  if(tab==='dash') cs=state.cards.slice();
+  else {
+    cs=[];
+    for(let i=0;i<state.cards.length;i++){
+      const c=state.cards[i];
+      if(c.status===tab) cs.push(c);
+    }
+  }
+  if(typeof applyBinder==='function' && (tab==='have'||tab==='want'||tab==='sold')){
+    if(bid==='want'&&tab==='have'){
+      cs=[];
+      for(let i=0;i<state.cards.length;i++){const c=state.cards[i];if(c.status==='want')cs.push(c);}
+    }else if(bid!=='all'&&bid!=='want') cs=applyBinder(cs);
+  }
+  if(sp)cs=cs.filter(c=>c.sport===sp);
+  if(q){
+    const s=q.toLowerCase();
+    cs=cs.filter(c=>{
+      const blob=(c.player||'')+' '+(c.setName||'')+' '+(c.brand||'')+' '+(c.year||'')+' '+(c.num||'')+' '+(c.team||'')+' '+(c.variant||'')+' '+(c.grade||'')+' '+(c.gradeCert||'');
+      return blob.toLowerCase().includes(s);
+    });
+  }
+  const g=c=>{const x=gainPct(c);return x==null?-1e9:x;};
   if(m==='player'||listGroup==='player')cs.sort((a,b)=>String(a.player||'').localeCompare(b.player||'')||(b.created||0)-(a.created||0));
   else if(m==='year'||listGroup==='year')cs.sort((a,b)=>(+b.year||0)-(+a.year||0)||String(a.player||'').localeCompare(b.player||''));
   else if(listGroup==='set')cs.sort((a,b)=>String(a.setName||'').localeCompare(b.setName||'')||(+a.num||0)-(+b.num||0));
@@ -2780,7 +2811,8 @@ function filtered(){
   else if(m==='gain')cs.sort((a,b)=>g(b)-g(a));
   else if(m==='d30')cs.sort((a,b)=>(deltaDays(b,30)??-1e9)-(deltaDays(a,30)??-1e9));
   else cs.sort((a,b)=>(b.created||0)-(a.created||0));
-  return cs;
+  _filteredCache={key:cacheKey,rows:cs};
+  return cs.slice();
 }
 function badges(c){
   let b='';
@@ -2880,17 +2912,21 @@ function renderListPanel(cs){
       <div class="teach-hint" style="margin-top:8px;font-size:12px;color:var(--mute)">Tap to flip (if back photo) · double-tap to edit · swipe for pages</div>
     </div>`;
   }
+  const total=cs.length;
+  const shown=cs.slice(0, Math.max(LIST_PAGE_SIZE, listLimit||LIST_PAGE_SIZE));
+  const more=total>shown.length;
   if(view==='grid'){
-    return `<div class="grid">${cs.map(c=>`
+    return `<div class="grid">${shown.map(c=>`
       <div class="gcard" data-id="${c.id}" data-status="${esc(c.status||'have')}">
         <i class="foil" aria-hidden="true"></i>
         ${typeof cardThumb==='function'?cardThumb(c,'gimg'):`<div class="gimg" id="im-${c.id}">${sportIcon(c.sport)}</div>`}
         <div class="gt"><div class="l1">${esc(c.player||c.setName||'—')}${badges(c)}</div>
         <div class="l2">${typeof cardMetaLine==='function'?cardMetaLine(c,[c.year,c.brand||c.setName,c.num?'#'+c.num:'',c.variant,c.grade]):esc([c.year,c.brand||c.setName,c.num?'#'+c.num:'',c.variant,c.grade].filter(Boolean).join(' · '))}</div>
-        <div class="l3">${money(valueOf(c))}</div></div></div>`).join('')}</div>`;
+        <div class="l3">${money(valueOf(c))}</div></div></div>`).join('')}</div>`+
+      (more?`<div class="loadMoreWrap"><button type="button" class="bigim" id="btnLoadMore">Show more · ${shown.length.toLocaleString()} / ${total.toLocaleString()}</button></div>`:'');
   }
   let last='', html='<div class="listWrap">';
-  for(const c of cs){
+  for(const c of shown){
     const gl=groupLabel(c);
     if(listGroup&&gl!==last){
       if(last!=='') html+='</div><div class="listWrap">';
@@ -2904,12 +2940,13 @@ function renderListPanel(cs){
           <div class="l2">${typeof cardMetaLine==='function'?cardMetaLine(c,[c.year,c.brand,c.setName,c.num?'#'+c.num:'',c.variant,c.grade,c.gradeCert?('cert '+c.gradeCert):'',(+c.qty||1)>1?('×'+c.qty):'']):esc([c.year,c.brand,c.setName,c.num?'#'+c.num:'',c.variant,c.grade,c.gradeCert?('cert '+c.gradeCert):'',(+c.qty||1)>1?('×'+c.qty):''].filter(Boolean).join(' · '))}</div>
           ${typeof mlbChipsHtml==='function'?mlbChipsHtml(c):''}
         </div>
-        <canvas class="spark" id="sp-${c.id}"></canvas>
+        <canvas class="spark" id="sp-${c.id}" width="48" height="26"></canvas>
         <div class="rright"><div class="v">${money(valueOf(c))}</div>
         <div class="g ${cls}">${gp==null?'':(gp>=0?'+':'')+gp.toFixed(0)+'%'}</div></div>
       </div>`;
   }
   html+='</div>';
+  if(more) html+=`<div class="loadMoreWrap"><button type="button" class="bigim" id="btnLoadMore">Show more · ${shown.length.toLocaleString()} / ${total.toLocaleString()}</button></div>`;
   return html;
 }
 function afterListRender(cs){
@@ -2981,21 +3018,15 @@ function afterListRender(cs){
       applyPortraitFallback(t,c);
     }
   };
-  /* Paint first screen of thumbs immediately; defer the rest so Find/Home stay snappy */
-  const eager=cs.slice(0,24);
-  const rest=cs.slice(24);
-  eager.forEach(thumbGo);
-  if(rest.length){
-    const kick=()=>rest.forEach(thumbGo);
-    if(typeof requestIdleCallback==='function') requestIdleCallback(kick,{timeout:1200});
-    else setTimeout(kick, 0);
-  }
-  cs.forEach(c=>{
+  /* Only paint thumbs / sparks for the paged rows currently in the DOM */
+  const visible=(cs||[]).slice(0, Math.max(LIST_PAGE_SIZE, listLimit||LIST_PAGE_SIZE));
+  visible.forEach(thumbGo);
+  visible.forEach(c=>{
     const sp=$('sp-'+c.id);if(sp)spark(sp,(c.prices||[]).map(p=>p.v));
   });
 
   /* Quiet free MLB chips for first rows */
-  (cs||[]).slice(0,24).forEach(c=>{
+  visible.slice(0,24).forEach(c=>{
     if(!c.player||c.mlbStats) return;
     if(typeof mlbEnrichCard==='function') mlbEnrichCard(c).then(st=>{
       if(!st)return; save();
@@ -3116,7 +3147,7 @@ function renderDash(){
    ${empty?`<div class="panel heroPanel coolHero emptyCool">
       <div class="heroEyebrow"><span class="dot"></span> Jay's Card Vault · Crush City</div>
       <div class="heroTitle">Jay's Card Vault</div>
-      <div class="heroSub">Jay's Astros collection — values, sets, and photos on this phone.</div>
+      <div class="heroSub">Jay's collection — values, sets, and photos on this phone.</div>
       <div class="floatLogos">
         ${['HOU','NYY','LAD','BOS','ATL'].map(a=>`<button type="button" class="logoChip" data-team-abbr="${a}" title="${a}"><img src="assets/teams/${a}.svg" alt="${a}"></button>`).join('')}
       </div>
@@ -3128,8 +3159,6 @@ function renderDash(){
         <button type="button" class="quickCard" data-go="show"><b>🃏 Show Mode</b><span>Check if you already have it</span></button>
       </div>
       ${typeof mlbLogoStripHtml==='function'?`<div class="ct" style="margin-top:14px">MLB teams</div>${mlbLogoStripHtml()}`:''}
-      <div class="ct" style="margin-top:14px">Add an Astro</div>
-      <div class="pill-row astrosPills">${['Jose Altuve','Yordan Alvarez','Kyle Tucker','Alex Bregman','Framber Valdez','Jeremy Peña','Craig Biggio','Jeff Bagwell','Nolan Ryan'].slice(0,6).map(n=>`<button type="button" class="pill astroPill" data-add-player="${esc(n)}">🧡 ${esc(n)}</button>`).join('')}</div>
       <div class="ct" style="margin-top:14px">Or find anyone</div>
       <div class="pill-row">${qp.slice(0,4).map(n=>`<button type="button" class="pill" data-pl="${esc(n)}">⚾ ${esc(n)}</button>`).join('')}</div>
     </div>`:''}
@@ -3141,11 +3170,9 @@ function renderDash(){
      <div class="heroSub deskOnly">${s.have} owned · ${s.want} wants${s.deals?` · <span class="pos">🔥 ${s.deals} deal${s.deals>1?'s':''}</span>`:''}</div>
      <div class="plBar ${s.pl>=0?'pos':'neg'}">${s.pl>=0?'▲':'▼'} ${s.pl>=0?'+':''}${money0(s.pl)} unrealized</div>
      ${homeShowcaseHtml(cs)}
-     ${typeof astrosSetsHtml==='function'?astrosSetsHtml():''}
      ${typeof localChecklistsHtml==='function'?localChecklistsHtml():''}
      <div class="home-actions">
        <button type="button" id="btnGoFind" class="bigim">Search</button>
-       <button type="button" id="btnAstrosHome">Astros</button>
        <button type="button" id="btnGoSets">Sets</button>
        <button type="button" id="btnFillData" class="bigim">Fill data</button>
        <button type="button" id="btnFillPhotos" class="homeMore">Photos</button>
@@ -3154,8 +3181,6 @@ function renderDash(){
        <button type="button" id="btnGh" class="deskOnly">Stats JSON</button>
      </div>
      ${typeof mlbLogoStripHtml==='function'?`<div class="ct">Teams</div>${mlbLogoStripHtml()}`:''}
-     <div class="ct" style="margin-top:12px">Astros stars — tap to add</div>
-     <div class="pill-row astrosPills">${['Jose Altuve','Yordan Alvarez','Kyle Tucker','Alex Bregman','Framber Valdez','Jeremy Peña','Craig Biggio','Jeff Bagwell','Nolan Ryan'].map(n=>`<button type="button" class="pill astroPill" data-add-player="${esc(n)}">🧡 ${esc(n)}</button>`).join('')}</div>
      <div class="ct" style="margin-top:12px">Jump to Find</div>
      <div class="pill-row">${qp.slice(0,6).map(n=>`<button type="button" class="pill" data-pl="${esc(n)}">⚾ ${esc(n)}</button>`).join('')}</div>
    </div>`:''}
@@ -3181,14 +3206,10 @@ function renderDash(){
     else if(g==='want'){tab='want';addCard();} else if(g==='show'){if(typeof openShowMode==='function')openShowMode();}
   });
   document.querySelectorAll('[data-pl]').forEach(b=>b.onclick=()=>goExplorePlayer(b.dataset.pl));
-  document.querySelectorAll('[data-add-player]').forEach(b=>b.onclick=()=>{
-    addCard({player:b.getAttribute('data-add-player'), team:'Houston Astros', status:'have'});
-  });
   if(typeof wireLogoStrip==='function')wireLogoStrip($('view'));
   if(typeof wireHomeShowcase==='function')wireHomeShowcase();
   if(typeof rebuildLocalChecklists==='function')rebuildLocalChecklists();
   if(typeof wireSetProgressUi==='function')wireSetProgressUi(document.getElementById('view'));
-  const ba=$('btnAstrosHome'); if(ba) ba.onclick=()=>{ if(typeof openTeamPage==='function') openTeamPage('HOU'); };
   const bf=$('btnGoFind'); if(bf) bf.onclick=()=>{tab='explore';render();};
   const bs=$('btnGoSets'); if(bs) bs.onclick=()=>{tab='sets';render();};
   const br=$('btnStale'); if(br) br.onclick=()=>refreshStalePrices();
@@ -3257,7 +3278,9 @@ function renderList(){
     <div id="listBody"></div>
    </div>`;
   if(listGroup)$('fGroup').value=listGroup;
-  $('fSport').onchange=refreshList;$('fSort').onchange=refreshList;$('fGroup').onchange=refreshList;
+  $('fSport').onchange=()=>{listLimit=LIST_PAGE_SIZE;_filteredCache={key:'',rows:null};refreshList();};
+  $('fSort').onchange=()=>{listLimit=LIST_PAGE_SIZE;_filteredCache={key:'',rows:null};refreshList();};
+  $('fGroup').onchange=()=>{listLimit=LIST_PAGE_SIZE;_filteredCache={key:'',rows:null};refreshList();};
   $('vList').onclick=()=>{haptic('light');view='list';renderList();};
   $('vGrid').onclick=()=>{haptic('light');view='grid';renderList();};
   const vb=$('vBinder'); if(vb) vb.onclick=()=>{haptic('light');view='binder';binderPage=0;renderList();};
@@ -3268,15 +3291,24 @@ function renderList(){
 function refreshList(){
   const cs=filtered();
   const sortM=($('fSort')||{}).value||'recent';
-  $('cnt').textContent=cs.length+' cards · '+money0(cs.reduce((s,c)=>s+valueOf(c)*(+c.qty||1),0));
+  const shownN=view==='binder'?Math.min(9,cs.length):Math.min(cs.length, Math.max(LIST_PAGE_SIZE, listLimit||LIST_PAGE_SIZE));
+  /* Skip full-portfolio reduce on huge Have lists — that alone freezes phones */
+  let valLabel='';
+  if(cs.length<=2500){
+    let sum=0; for(let i=0;i<cs.length;i++) sum+=valueOf(cs[i])*(+cs[i].qty||1);
+    valLabel=' · '+money0(sum);
+  }
+  $('cnt').textContent=cs.length.toLocaleString()+' cards'+(view!=='binder'&&cs.length>shownN?(' · showing '+shownN.toLocaleString()):'')+valLabel;
   let hero='';
   if(sortM==='rarity'&&cs.length){
     hero=`<div class="rareListHero"><h3>✦ Rarest first</h3><p>Ranked by gem grades, low serials, SSP/RC, and value — your vault’s crown jewels.</p></div>`;
   }
   $('listBody').innerHTML=hero+renderListPanel(cs);
   afterListRender(cs);
+  const bm=$('btnLoadMore');
+  if(bm) bm.onclick=()=>{listLimit=(listLimit||LIST_PAGE_SIZE)+LIST_PAGE_SIZE;haptic('light');refreshList();};
   if(sortM==='rarity'){
-    cs.slice(0,12).forEach((c,i)=>{
+    cs.slice(0, Math.min(12, shownN)).forEach((c,i)=>{
       const el=document.querySelector(`.gcard[data-id="${c.id}"], .row[data-id="${c.id}"]`);
       if(!el||el.querySelector('.rareN')) return;
       el.classList.add('rareRank');
@@ -3294,7 +3326,8 @@ function render(){
   else if(tab==='explore')renderExplore();
   else if(tab==='sets'){ if(typeof renderSets==='function') renderSets(); else $('view').innerHTML='<div class="empty">Loading Sets…</div>'; }
   else renderList();
-  fillDatalists();
+  /* Datalists only when editing / small vault — never on every Have paint */
+  if(tab!=='have'&&tab!=='want'&&tab!=='sold') fillDatalists();
   const n=(state.cards||[]).length;
   const f=$('footSave');
   if(f){
@@ -3664,6 +3697,19 @@ async function addFromCatalog(x,status,opts){
   return nc;
 }
 function fillDatalists(){
+  const n=(state.cards||[]).length;
+  /* Huge vaults: skip building 20k <option> nodes on every tab change — kill Have lag */
+  if(n>800){
+    const fill=(id,arr)=>{const el=$(id);if(el)el.innerHTML=[...new Set(arr)].map(v=>`<option value="${esc(v)}">`).join('');};
+    fill('dlBrand',[...SEEDS.brand]);
+    fill('dlSport',[...SEEDS.sport]);
+    fill('dlGrade',[...SEEDS.grade]);
+    fill('dlGradeCo',[...SEEDS.gradeCompany]);
+    fill('dlGradeVal',[...SEEDS.gradeValue]);
+    fill('dlVar',[...SEEDS.variant]);
+    fill('dlSet',[]); fill('dlTeam',[]); fill('dlLoc',[]); fill('dlSearch',[]);
+    return;
+  }
   const own=k=>[...new Set(state.cards.map(c=>c[k]).filter(Boolean))];
   const fill=(id,arr)=>{const el=$(id);if(el)el.innerHTML=[...new Set(arr)].map(v=>`<option value="${esc(v)}">`).join('');};
   fill('dlBrand',[...own('brand'),...SEEDS.brand]);
@@ -3705,6 +3751,7 @@ function scrollFieldIntoSheet(el){
 }
 async function openSheet(){
   if(!sel)return;
+  fillDatalists();
   const c=sel;
   parseGradeFields(c);
   $('sheetBk').style.display='block';
@@ -4281,7 +4328,7 @@ async function handleImportFile(f){
     }
     if(typeof rebuildLocalChecklists==='function') rebuildLocalChecklists();
     const lists=(state.meta&&state.meta.checklists)||[];
-    const setLines=lists.slice(0,6).map(g=>`· ${g.year} ${g.setName}: ${g.have}/${g.total} (${g.astrosHave} Astros)`).join('\n');
+    const setLines=lists.slice(0,6).map(g=>`· ${g.year} ${g.setName}: ${g.have}/${g.total}`).join('\n');
     save();render();
     alert(`Imported ✔\n· ${added} new cards\n· ${dup} duplicates skipped\n· ${priced} price points`+
       (r.unmapped.length?`\n· Ignored columns: ${r.unmapped.slice(0,8).join(', ')}`:'')+
@@ -4781,16 +4828,13 @@ window.cardMatchesSetPreset=function cardMatchesSetPreset(c, preset){
   return true;
 };
 
-window.astrosSetProgress=function astrosSetProgress(){
-  const have=(state.cards||[]).filter(c=>c.status==='have'&&isAstrosCard(c));
-  return ASTROS_SET_PRESETS.map(p=>{
-    const cards=have.filter(c=>cardMatchesSetPreset(c,p));
-    const nums=new Set(cards.map(c=>String(c.num||'').replace(/^#/,'')).filter(Boolean));
-    return {...p, have:cards.length, uniqueNums:nums.size, sample:cards[0]||null};
-  }).filter(x=>true);
-};
+window.astrosSetProgress=function astrosSetProgress(){return [];};
+window.astrosSetsHtml=function astrosSetsHtml(){return '';};
+window.openAstrosSetPreset=async function openAstrosSetPreset(){};
 
-window.rebuildLocalChecklists=function rebuildLocalChecklists(){
+window.rebuildLocalChecklists=function rebuildLocalChecklists(force){
+  const n=(state.cards||[]).length;
+  if(!force && state.meta && state.meta.checklists && state.meta._ckN===n) return state.meta.checklists;
   const groups=new Map();
   for(const c of state.cards||[]){
     if(c.status==='sold')continue;
@@ -4799,25 +4843,26 @@ window.rebuildLocalChecklists=function rebuildLocalChecklists(){
     const setName=(c.setName||c.brand||'').trim();
     if(year.length<4||setName.length<3)continue;
     const key=year+'|'+normH(setName);
-    if(!groups.has(key))groups.set(key,{key,year,setName,total:0,have:0,want:0,astrosHave:0,nums:new Set()});
+    if(!groups.has(key))groups.set(key,{key,year,setName,total:0,have:0,want:0,nums:new Set()});
     const g=groups.get(key);
     g.total++;
     const num=String(c.num||'').replace(/^#/,'');
     if(num)g.nums.add(num);
-    if(c.status==='have'){g.have++; if(isAstrosCard(c))g.astrosHave++;}
+    if(c.status==='have')g.have++;
     if(c.status==='want')g.want++;
   }
   const list=[...groups.values()]
     .filter(g=>g.total>=5)
     .map(g=>({
       key:g.key, year:g.year, setName:g.setName,
-      total:g.total, have:g.have, want:g.want, astrosHave:g.astrosHave,
+      total:g.total, have:g.have, want:g.want,
       uniqueNums:g.nums.size,
       pct:Math.min(100, Math.round((g.have/g.total)*100))
     }))
     .sort((a,b)=>b.have-a.have||b.total-a.total);
   if(!state.meta)state.meta={};
   state.meta.checklists=list;
+  state.meta._ckN=n;
   return list;
 };
 
@@ -4848,61 +4893,18 @@ window.localChecklistsHtml=function localChecklistsHtml(){
       <button type="button" class="setProgRow" data-ck="${esc(g.key)}">
         <div class="l1">${esc(g.year)} ${esc(g.setName)}</div>
         <div class="prog fat"><i style="width:${g.pct}%"></i></div>
-        <div class="l2">${g.have}/${g.total} · 🧡${g.astrosHave}${g.want?(' · ⭐'+g.want):''}</div>
+        <div class="l2">${g.have}/${g.total}${g.want?(' · ⭐'+g.want):''}</div>
       </button>`).join('')+`</div>`;
 };
 
-window.astrosSetsHtml=function astrosSetsHtml(){
-  const rows=astrosSetProgress();
-  const totalHave=rows.reduce((n,p)=>n+(p.have||0),0);
-  return `<div class="astrosSetsPanel">
-    <div class="astrosBoardHead">
-      <div class="ct">🧡 Astros lineup</div>
-      <div class="astrosBoardHint">${totalHave} in vault · tap a set</div>
-    </div>
-    <div class="astroScoreboard">`+rows.map(p=>{
-      const soft=Math.max(10, p.uniqueNums||p.have||1);
-      const pct=Math.min(100, Math.round(((p.have||0)/soft)*100));
-      const short=(p.label||'').replace(/^\d{4}\s*/,'');
-      return `<button type="button" class="astroChip" data-astros-set="${esc(p.id)}" title="${esc(p.label)}">
-        ${astroRingSvg(pct, p.have||0)}
-        <span class="meta">
-          <span class="yr">${esc(p.y)}</span>
-          <span class="nm">${esc(short)}</span>
-          <span class="ctn">${p.uniqueNums||0} #s</span>
-        </span>
-      </button>`;
-    }).join('')+`</div>
-  </div>`;
-};
-
-window.openAstrosSetPreset=async function openAstrosSetPreset(id){
-  const p=ASTROS_SET_PRESETS.find(x=>x.id===id);
-  if(!p)return;
-  tab='sets';
-  window.SETS=window.SETS||{};
-  SETS.year=p.y; SETS.q=p.q; SETS.release=null; SETS.set=null; SETS.cards=[]; SETS.astrosOnly=true;
-  render();
-  /* after renderSets mounts, search */
-  setTimeout(()=>{
-    const y=$('setYear'), q=$('setQ');
-    if(y)y.value=p.y; if(q)q.value=p.q;
-    if(typeof setsSearchReleases==='function')setsSearchReleases();
-  }, 60);
-};
-
 window.wireSetProgressUi=function wireSetProgressUi(root){
-  (root||document).querySelectorAll('[data-astros-set]').forEach(btn=>{
-    btn.onclick=()=>{if(typeof haptic==='function')haptic('light');openAstrosSetPreset(btn.getAttribute('data-astros-set'));};
-  });
   (root||document).querySelectorAll('[data-ck]').forEach(btn=>{
     btn.onclick=()=>{
       if(typeof haptic==='function')haptic('light');
       const key=btn.getAttribute('data-ck')||'';
-      const [year,...rest]=key.split('|');
-      /* filter have by year */
+      const [year]=key.split('|');
       if(typeof applyCollectionFilter==='function')applyCollectionFilter(year,{status:'have'});
-      else {q=year;tab='have';render();}
+      else {q=year;tab='have';listLimit=LIST_PAGE_SIZE;_filteredCache={key:'',rows:null};render();}
     };
   });
 };
@@ -5237,7 +5239,6 @@ window.renderSets=async function renderSets(){
   $('view').innerHTML=`<div class="panel heroPanel">
     <div class="heroTitle">📚 Build a set</div>
     <div class="heroSub">Search a release, open a checklist, tap Have / Want. Photos load free from the catalog as you browse (All photos caches the whole set).</div>
-    ${typeof astrosSetsHtml==='function'?astrosSetsHtml():''}
     ${typeof localChecklistsHtml==='function'?localChecklistsHtml():''}
     <div class="boothBar">
       <input id="setYear" type="number" inputmode="numeric" placeholder="Year" value="${esc(S.year||'')}" style="width:88px">
@@ -5261,9 +5262,9 @@ window.renderSets=async function renderSets(){
     <div id="setCheck" style="display:none"></div>
   </div>`;
   const pills=$('setPills');
-  [['🧡 2024 Chrome','2024','Topps Chrome'],['🧡 2024 Update','2024','Topps Update'],['🧡 2025 Bowman','2025','Bowman'],['2024 Topps','2024','Topps Series'],['2023 Chrome','2023','Topps Chrome']].forEach(([lab,y,q])=>{
+  [['2024 Chrome','2024','Topps Chrome'],['2024 Update','2024','Topps Update'],['2025 Bowman','2025','Bowman'],['2024 Topps','2024','Topps Series'],['2023 Chrome','2023','Topps Chrome'],['1934-36 Diamond Stars','1934','Diamond Stars']].forEach(([lab,y,q])=>{
     const b=document.createElement('button'); b.className='pill'; b.type='button'; b.textContent=lab;
-    b.onclick=()=>{SETS.astrosOnly=/🧡/.test(lab);$('setYear').value=y;$('setQ').value=q;setsSearchReleases();};
+    b.onclick=()=>{SETS.astrosOnly=false;$('setYear').value=y;$('setQ').value=q;setsSearchReleases();};
     pills.appendChild(b);
   });
   if(typeof wireSetProgressUi==='function') wireSetProgressUi($('view'));
@@ -5380,8 +5381,6 @@ window.setsPaintChecklist=async function setsPaintChecklist(){
   const haveN=ownCountInSet(s.id);
   const tot=SETS.total||s.cardCount||SETS.cards.length;
   const pct=tot?Math.min(100,Math.round(haveN/tot*100)):0;
-  const houCards=SETS.cards.filter(isAstrosCatalogCard);
-  const houHave=houCards.filter(x=>findOwned(x.id,'')).length;
   const parTypes=s.parallelCount||0;
   const masterDenom=parTypes?tot*(parTypes+1):tot;
   const masterHave=ownParallelCountInSet(s.id);
@@ -5396,7 +5395,7 @@ window.setsPaintChecklist=async function setsPaintChecklist(){
       <div style="flex:1">
         <div class="ct" style="margin:0">${esc(r&&r.year||'')} ${esc(r&&r.name||'')} · ${esc(s.name)}</div>
         <div class="prog fat"><i style="width:${pct}%"></i></div>
-        <div class="l2" style="font-size:12px;color:var(--dim)">Base ${haveN}/${tot} (${pct}%) · Master-ish ${masterPct}% · 🧡 Astros on page ${houHave}/${houCards.length||0}</div>
+        <div class="l2" style="font-size:12px;color:var(--dim)">Base ${haveN}/${tot} (${pct}%) · Master-ish ${masterPct}%</div>
       </div>
     </div>
     <div class="toolbar">
@@ -5410,33 +5409,10 @@ window.setsPaintChecklist=async function setsPaintChecklist(){
     <div style="text-align:center;margin-top:10px">
       <button id="setMore" style="display:${SETS.cards.length<tot?'inline-block':'none'}">More cards ↓</button>
     </div>`;
-  const astrosOnly=!!SETS.astrosOnly;
-  const viewCards=SETS.cards.map((x,i)=>({x,i})).filter(({x})=>!astrosOnly||isAstrosCatalogCard(x));
+  const viewCards=SETS.cards.map((x,i)=>({x,i}));
   const body=$('checkBody');
-  const houN=SETS.cards.filter(isAstrosCatalogCard).length;
-  const haveOnBoard=viewCards.filter(({x})=>{const o=findOwned(x.id,'');return o&&o.status==='have';}).length;
-  if(astrosOnly){
-    body.innerHTML=`<div class="diamondActions">
-        <span class="pillStat"><b>${haveOnBoard}</b>/${viewCards.length} Astros</span>
-        <span class="pillStat" style="background:rgba(235,110,31,.12)">tap = Have · ☆ = Want</span>
-        <button type="button" id="setAstrosToggle" class="bigim">All teams</button>
-      </div>
-      <div class="diamondBoard">`+viewCards.map(({x,i})=>{
-        const row=findOwned(x.id,'');
-        const have=!!(row&&row.status==='have');
-        const want=!!(row&&row.status==='want');
-        const rc=(x.attributes||[]).some(a=>/^rc$|rookie/i.test(a));
-        const num=String(x.number||'?').replace(/^#/,'');
-        return `<button type="button" class="diamondTile ${have?'owned':''} ${want&&!have?'want':''} ${rc?'rc':''}" data-h="${i}" title="${esc(x.name||'')}">
-          <span class="dstamp" data-w="${i}">${have?'✔':want?'★':'☆'}</span>
-          <span class="dn">#${esc(num)}</span>
-          <span class="dp">${esc(shortPlayerName(x.name))}</span>
-        </button>`;
-      }).join('')+`</div>`;
-  }else{
-    body.classList.add('compact');
-    body.innerHTML=`<div class="toolbar" style="margin-bottom:8px"><button type="button" id="setAstrosToggle">🧡 Astros only (${houN})</button></div>`+
-      viewCards.map(({x,i})=>{
+  body.classList.add('compact');
+  body.innerHTML=viewCards.map(({x,i})=>{
       const own=findOwned(x.id,'');
       const rc=(x.attributes||[]).some(a=>/^rc$|rookie/i.test(a));
       const pc=(x.parallels&&x.parallels.length)||0;
@@ -5452,7 +5428,6 @@ window.setsPaintChecklist=async function setsPaintChecklist(){
         </div>
       </div>`;
     }).join('');
-  }
   body.querySelectorAll('[data-h]').forEach(b=>b.onclick=async(ev)=>{
     if(ev.target&&ev.target.closest&&ev.target.closest('[data-w]'))return;
     await addFromCatalogAdvanced(SETS.cards[+b.dataset.h],'have');
@@ -5463,20 +5438,16 @@ window.setsPaintChecklist=async function setsPaintChecklist(){
     await addFromCatalogAdvanced(SETS.cards[+b.dataset.w],'want');
     setsPaintChecklist();
   });
-  if(!astrosOnly){
-    SETS.cards.forEach(async(x,i)=>{
-      const el=$('ck-'+i);if(!el)return;
-      try{
-        const url=typeof csDisplayUrl==='function'?csDisplayUrl(await csImageData(x.id)):csImgSrc(await csImageData(x.id));
-        if(url&&$('ck-'+i)){
-          if(typeof setImgEl==='function')setImgEl($('ck-'+i),url);
-          else $('ck-'+i).innerHTML=`<img src="${url.replace(/"/g,'&quot;')}" alt="">`;
-        }
-      }catch(e){}
-    });
-  }
-  const sat=$('setAstrosToggle');
-  if(sat) sat.onclick=()=>{ SETS.astrosOnly=!SETS.astrosOnly; setsPaintChecklist(); };
+  SETS.cards.forEach(async(x,i)=>{
+    const el=$('ck-'+i);if(!el)return;
+    try{
+      const url=typeof csDisplayUrl==='function'?csDisplayUrl(await csImageData(x.id)):csImgSrc(await csImageData(x.id));
+      if(url&&$('ck-'+i)){
+        if(typeof setImgEl==='function')setImgEl($('ck-'+i),url);
+        else $('ck-'+i).innerHTML=`<img src="${url.replace(/"/g,'&quot;')}" alt="">`;
+      }
+    }catch(e){}
+  });
   $('setBackSets').onclick=()=>{SETS.set=null;setsPaintSets();};
   $('setMore').onclick=()=>setsLoadCards(false);
   $('setWantMiss').onclick=async()=>{
@@ -6432,9 +6403,17 @@ async function init(){
   $('q').oninput=e=>{
     q=e.target.value;
     clearTimeout(window.__qPropTimer);
+    clearTimeout(window.__qListTimer);
     const v=q.trim();
-    /* Have/Want/Sold/Sets: filter the vault only — never hijack to Find */
-    if(tab==='have'||tab==='want'||tab==='sold'||tab==='sets'){
+    /* Have/Want/Sold: debounce list refresh only — full render freezes ~20k vaults */
+    if(tab==='have'||tab==='want'||tab==='sold'){
+      window.__qListTimer=setTimeout(()=>{
+        listLimit=LIST_PAGE_SIZE;binderPage=0;_filteredCache={key:'',rows:null};
+        refreshList();
+      },140);
+      return;
+    }
+    if(tab==='sets'){
       render();
       return;
     }
