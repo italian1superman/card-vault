@@ -1,5 +1,5 @@
 /* Card Vault service worker — GitHub Pages */
-const CACHE = 'card-vault-v47-ds-compact';
+const CACHE = 'card-vault-v48-binder-default';
 const ASSETS = [
   './',
   './index.html',

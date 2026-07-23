@@ -2413,10 +2413,26 @@ function confettiBurst(opts){
 }
 window.confettiBurst=confettiBurst;
 window.haptic=haptic;
-let state={cards:[],meta:{lastBackup:0}},tab='dash',q='',view=(window.matchMedia&&matchMedia('(max-width:899px)').matches)?'binder':'list',listGroup='',sel=null,lastDeleted=null,toastT=null,binderPage=0,listLimit=60,photoSide='front',searchMode='vault';
+let state={cards:[],meta:{lastBackup:0}},tab='dash',q='',view='binder',listGroup='',sel=null,lastDeleted=null,toastT=null,binderPage=0,listLimit=60,photoSide='front',searchMode='vault';
 const LIST_PAGE_SIZE=60;
 let _filteredCache={key:'',rows:null};
 let _binderCountCache={key:'',counts:null};
+/** Have stays binder until user taps List/Grid; that choice lasts for the session. */
+let _haveViewOverride=null;
+function setHaveView(v){
+  if(v!=='list'&&v!=='grid'&&v!=='binder') return;
+  view=v;
+  _haveViewOverride=v;
+  try{ sessionStorage.setItem('cv-have-view', v); }catch(e){}
+}
+function haveViewDefault(){
+  try{
+    const s=sessionStorage.getItem('cv-have-view');
+    if(s==='list'||s==='grid'||s==='binder') return s;
+  }catch(e){}
+  return 'binder';
+}
+try{ _haveViewOverride=haveViewDefault(); view=_haveViewOverride||'binder'; }catch(e){ view='binder'; }
 /* BINDER_ID lives on window from pro-suite */
 const imgCache=new Map();
 
@@ -3146,9 +3162,12 @@ function renderNav(){
       return;
     }
     if(next!==tab){listLimit=LIST_PAGE_SIZE;binderPage=0;_filteredCache={key:'',rows:null};}
-    /* Large vaults: binder stays snappy (9 cards/page) */
-    if((next==='have'||next==='want'||next==='sold')&&(state.cards||[]).length>400&&view==='list')
-      view='binder';
+    /* Have: binder is the standard until List/Grid is pressed */
+    if(next==='have'){
+      view = _haveViewOverride || 'binder';
+    } else if(next==='want'||next==='sold'){
+      view = _haveViewOverride || 'binder';
+    }
     /* Want hunt list: prefer deals / gap-to-target */
     if(next==='want' && tab!=='want'){
       window.BINDER_ID = (window.BINDER_ID==='all'||!window.BINDER_ID) ? 'deals' : window.BINDER_ID;
@@ -3907,9 +3926,9 @@ function renderList(){
   $('fSport').onchange=()=>{listLimit=LIST_PAGE_SIZE;_filteredCache={key:'',rows:null};refreshList();};
   $('fSort').onchange=()=>{listLimit=LIST_PAGE_SIZE;_filteredCache={key:'',rows:null};refreshList();};
   $('fGroup').onchange=()=>{listLimit=LIST_PAGE_SIZE;_filteredCache={key:'',rows:null};refreshList();};
-  $('vList').onclick=()=>{haptic('light');view='list';renderList();};
-  $('vGrid').onclick=()=>{haptic('light');view='grid';renderList();};
-  const vb=$('vBinder'); if(vb) vb.onclick=()=>{haptic('light');view='binder';binderPage=0;renderList();};
+  $('vList').onclick=()=>{haptic('light');setHaveView('list');renderList();};
+  $('vGrid').onclick=()=>{haptic('light');setHaveView('grid');renderList();};
+  const vb=$('vBinder'); if(vb) vb.onclick=()=>{haptic('light');setHaveView('binder');binderPage=0;renderList();};
   if(typeof wireBinderBar==='function') wireBinderBar(()=>renderList());
   const blp=$('btnListPhotos'); if(blp) blp.onclick=()=>{if(typeof fillMissingPhotos==='function')fillMissingPhotos();};
   refreshList();
