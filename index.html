@@ -1516,10 +1516,50 @@ body.cv-cool .binderRow.stickyBinders{background:rgba(8,14,28,.92)}
 }
 .photoProg .bar{height:4px;background:rgba(255,255,255,.2);border-radius:99px;margin-top:6px;overflow:hidden}
 .photoProg .bar i{display:block;height:100%;width:0;background:#eb6e1f;transition:width .2s}
-.diamondHome{margin:12px 0 8px}
-.diamondHome .dhHead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0 0 8px}
-.diamondHome .dhTitle{font-weight:800;font-size:15px}
-.diamondHome .dhSub{font-size:11px;color:var(--mute);font-weight:600}
+.diamondHome{margin:8px 0 4px}
+.diamondHome details.dsFold{
+  border-radius:12px;border:0.5px solid rgba(0,45,98,.14);
+  background:rgba(0,45,98,.04);padding:0 10px;
+}
+.diamondHome details.dsFold > summary{
+  list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;
+  min-height:44px;padding:6px 0;font-weight:800;font-size:13px;
+}
+.diamondHome details.dsFold > summary::-webkit-details-marker{display:none}
+.diamondHome .dsSumMain{flex:1;min-width:0}
+.diamondHome .dsSumTitle{display:block;line-height:1.2}
+.diamondHome .dsSumMeta{display:block;font-size:11px;font-weight:600;color:var(--mute);margin-top:2px}
+.diamondHome .dsProg{
+  width:72px;height:6px;border-radius:99px;background:rgba(0,45,98,.12);overflow:hidden;flex:none;
+}
+.diamondHome .dsProg i{display:block;height:100%;background:var(--astros-orange,#eb6e1f);border-radius:99px}
+.diamondHome .dsChevron{opacity:.45;font-size:12px;flex:none}
+.diamondHome details.dsFold[open] .dsChevron{transform:rotate(90deg)}
+.diamondHome .dsOwnedRail{
+  display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;
+  padding:0 0 8px;margin:0;
+}
+.diamondHome .dsOwnedChip{
+  flex:0 0 auto;display:flex;align-items:center;gap:6px;
+  padding:5px 8px;border-radius:999px;border:0;cursor:pointer;
+  background:rgba(235,110,31,.14);color:var(--ink);font-size:11px;font-weight:800;
+}
+.diamondHome .dsOwnedChip b{color:var(--astros-orange,#eb6e1f);font-variant-numeric:tabular-nums}
+.diamondHome .dsFoldBody{padding:0 0 10px}
+.diamondHome .diamondBoard{
+  grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;max-height:220px;overflow:auto;
+  -webkit-overflow-scrolling:touch;padding-bottom:2px;
+}
+.diamondHome .diamondTile{
+  aspect-ratio:1;border-radius:8px;padding:3px 2px;
+}
+.diamondHome .diamondTile .dn{font-size:11px}
+.diamondHome .diamondTile .dp{font-size:8px}
+.diamondHome .diamondTile .dstamp{font-size:8px;top:2px;right:3px}
+.diamondHome .diamondActions{margin:0 0 6px}
+@media (max-width:380px){
+  .diamondHome .diamondBoard{grid-template-columns:repeat(5,minmax(0,1fr))}
+}
 .toolbarCompact details.moreFilters{flex:1;min-width:120px}
 .toolbarCompact details.moreFilters > summary{
   list-style:none;cursor:pointer;min-height:40px;display:flex;align-items:center;
@@ -3577,19 +3617,23 @@ function diamondStarsBoardHtml(){
   const cards=(state.cards||[]).filter(isDiamondStarsCard);
   if(!cards.length) return '';
   const base=cards.filter(c=>String(c.setFocus||'')==='diamond-stars-r327' || (!c.setFocus && !/var|1981/i.test(String(c.setName||'')+String(c.variant||''))));
-  /* Prefer numbered 1–108 unique by num */
   const byNum=new Map();
   for(const c of base){
     const n=String(c.num||'').replace(/^#/,'');
     if(!n || !/^\d+$/.test(n)) continue;
     const prev=byNum.get(n);
     if(!prev || (c.status==='have' && prev.status!=='have')) byNum.set(n,c);
-    else if(!prev) byNum.set(n,c);
   }
   const nums=[...byNum.keys()].sort((a,b)=>(+a)-(+b));
   if(nums.length<8) return '';
   const haveN=nums.filter(n=>byNum.get(n).status==='have').length;
   const wantN=nums.filter(n=>byNum.get(n).status==='want').length;
+  const pct=nums.length?Math.round((haveN/nums.length)*100):0;
+  const owned=nums.filter(n=>byNum.get(n).status==='have').map(n=>byNum.get(n));
+  const ownedRail=owned.length?`<div class="dsOwnedRail">`+owned.map(c=>`
+      <button type="button" class="dsOwnedChip" data-ds-id="${esc(c.id)}">
+        <b>#${esc(String(c.num||'').replace(/^#/,''))}</b>${esc((c.player||'').split(' ').slice(-1)[0]||'')}
+      </button>`).join('')+`</div>`:'';
   const tiles=nums.slice(0,108).map(n=>{
     const c=byNum.get(n);
     const have=c.status==='have', want=c.status==='want';
@@ -3600,29 +3644,39 @@ function diamondStarsBoardHtml(){
     </button>`;
   }).join('');
   return `<div class="diamondHome">
-    <div class="dhHead">
-      <div class="dhTitle">◆ 1934–36 Diamond Stars</div>
-      <div class="dhSub">${haveN} have · ${wantN} want · ${nums.length} on board</div>
-    </div>
-    <div class="diamondActions">
-      <span class="pillStat"><b>${haveN}</b>/${nums.length}</span>
-      <button type="button" class="pill" id="btnDsHave">Have only</button>
-      <button type="button" class="pill" id="btnDsAll">Open set in Have</button>
-    </div>
-    <div class="diamondBoard" id="diamondBoard">${tiles}</div>
+    <details class="dsFold" id="dsFold">
+      <summary>
+        <span class="dsSumMain">
+          <span class="dsSumTitle">◆ Diamond Stars</span>
+          <span class="dsSumMeta">${haveN} have · ${wantN} want · tap to expand board</span>
+        </span>
+        <span class="dsProg" aria-hidden="true"><i style="width:${pct}%"></i></span>
+        <span class="dsChevron">▸</span>
+      </summary>
+      ${ownedRail}
+      <div class="dsFoldBody">
+        <div class="diamondActions">
+          <span class="pillStat"><b>${haveN}</b>/${nums.length}</span>
+          <button type="button" class="pill" id="btnDsHave">Have</button>
+          <button type="button" class="pill" id="btnDsAll">Open in Have</button>
+        </div>
+        <div class="diamondBoard" id="diamondBoard">${tiles}</div>
+      </div>
+    </details>
   </div>`;
 }
 function wireDiamondStarsBoard(){
-  document.querySelectorAll('#diamondBoard [data-ds-id]').forEach(btn=>{
-    btn.onclick=()=>{
-      sel=state.cards.find(c=>c.id===btn.getAttribute('data-ds-id'));
-      if(sel){ haptic('light'); openSheet(); }
-    };
+  const openCard=id=>{
+    sel=state.cards.find(c=>c.id===id);
+    if(sel){ haptic('light'); openSheet(); }
+  };
+  document.querySelectorAll('#diamondBoard [data-ds-id], .dsOwnedRail [data-ds-id]').forEach(btn=>{
+    btn.onclick=e=>{ e.stopPropagation(); openCard(btn.getAttribute('data-ds-id')); };
   });
   const h=$('btnDsHave');
-  if(h) h.onclick=()=>{ q='Diamond Stars'; tab='have'; window.BINDER_ID='all'; searchMode='vault'; render(); };
+  if(h) h.onclick=e=>{ e.preventDefault(); q='Diamond Stars'; tab='have'; window.BINDER_ID='all'; searchMode='vault'; render(); };
   const a=$('btnDsAll');
-  if(a) a.onclick=()=>{ q='1934-36 Diamond Stars'; tab='have'; window.BINDER_ID='all'; searchMode='vault'; render(); };
+  if(a) a.onclick=e=>{ e.preventDefault(); q='1934-36 Diamond Stars'; tab='have'; window.BINDER_ID='all'; searchMode='vault'; render(); };
 }
 
 
