@@ -1,5 +1,5 @@
 /* Card Vault service worker — GitHub Pages */
-const CACHE = 'card-vault-v48-binder-default';
+const CACHE = 'card-vault-v49-fields';
 const ASSETS = [
   './',
   './index.html',
@@ -64,7 +64,12 @@ self.addEventListener('fetch', (e) => {
   if (url.origin !== self.location.origin) return;
   const path = url.pathname;
   /* Large seed JSON: network-first so collection updates ship without stale cache */
-  if (path.includes('/vault/jay-collection-seed.json') || path.includes('/vault/jayk527-tcdb-import.json')) {
+  if (
+    path.includes('/vault/jay-collection-seed.json') ||
+    path.includes('/vault/jayk527-tcdb-import.json') ||
+    path.includes('/vault/field-patch.json') ||
+    path.includes('/vault/photo-patch.json')
+  ) {
     e.respondWith(
       fetch(req)
         .then((res) => {

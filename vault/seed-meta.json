@@ -1,6 +1,8 @@
 {
-  "collectionSeed": "jay-tcdb-ds-v1",
-  "count": 19790,
+  "collectionSeed": "jay-tcdb-ds-v2",
+  "fieldPatch": "jay-fields-v2",
+  "count": 19800,
   "url": "./vault/jay-collection-seed.json",
-  "commonsMatched": 37
+  "grades": 50,
+  "serials": 117
 }

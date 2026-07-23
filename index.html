@@ -139,6 +139,8 @@ main{padding:12px 16px;max-width:720px;margin:0 auto;padding-bottom:calc(90px + 
 .badge{font-size:11px;font-weight:600;border-radius:4px;padding:1px 5px;margin-left:6px;border:0}
 .b-rc{background:#fff3cd;color:#9a6700}
 .b-ser{background:#e8f1ff;color:#007aff}
+.b-grade{background:#efe8ff;color:#5b21b6}
+.b-brand{background:#e8f7f2;color:#0f766e}
 .b-deal{background:#e4f8ea;color:#248a3d}
 .b-want{background:#fff3cd;color:#9a6700}
 .b-sold{background:#f3e8ff;color:#8944ab}
@@ -1213,10 +1215,29 @@ img.portraitFallback.mlbShot{object-fit:cover}
 .binderPocket.flipped .bpFace.front{transform:rotateY(180deg);opacity:0;pointer-events:none}
 .binderPocket.flipped .bpFace.back{transform:rotateY(0);opacity:1;pointer-events:auto}
 .binderPocket .bpCap{
-  position:absolute;left:0;right:0;bottom:0;z-index:2;padding:6px 5px 5px;
-  background:linear-gradient(transparent,rgba(0,0,0,.72));
+  position:absolute;left:0;right:0;bottom:0;z-index:2;padding:7px 5px 5px;
+  background:linear-gradient(transparent,rgba(0,0,0,.78));
   color:#fff;font-size:10px;font-weight:700;line-height:1.15;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.binderPocket .bpCap .bpPlayer{display:block;font-size:10px;font-weight:800}
+.binderPocket .bpCap .bpMeta{
+  display:block;margin-top:1px;font-size:9px;font-weight:600;opacity:.92;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.binderPocket .bpCap .bpGrade{
+  display:inline-block;margin-top:2px;font-size:8px;font-weight:800;
+  letter-spacing:.02em;background:rgba(124,58,237,.92);color:#fff;
+  border-radius:4px;padding:1px 5px;
+}
+.sheetIdLine{
+  margin:2px 0 8px;font-size:13px;line-height:1.35;color:var(--mute);
+  display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;
+}
+.sheetIdLine .sidBrand{font-weight:800;color:var(--text)}
+.sheetIdLine .sidGrade{
+  font-weight:800;font-size:11px;letter-spacing:.02em;
+  background:#efe8ff;color:#5b21b6;border-radius:6px;padding:2px 7px;
 }
 .binderPocket .bpFlipHint{
   position:absolute;top:5px;right:5px;z-index:3;font-size:9px;font-weight:800;
@@ -2489,10 +2510,72 @@ async function getImg(c, side){
 }
 function hasBackPhoto(c){return !!(c&&(c.imgIdBack||c.imgUrlBack));}
 
-const COLLECTION_SEED_VER='jay-tcdb-ds-v1';
+const COLLECTION_SEED_VER='jay-tcdb-ds-v2';
 const COLLECTION_SEED_URL='./vault/jay-collection-seed.json';
 const PHOTO_PATCH_VER='jay-photos-v2';
 const PHOTO_PATCH_URL='./vault/photo-patch.json';
+const FIELD_PATCH_VER='jay-fields-v2';
+const FIELD_PATCH_URL='./vault/field-patch.json';
+
+/** Fill brand / grade / serial / cleaned player from PDF/TCDB fields without wiping the vault. */
+async function ensureCollectionFields(){
+  if(!state.meta)state.meta={};
+  if(state.meta.fieldPatch===FIELD_PATCH_VER) return 0;
+  const n=(state.cards||[]).length;
+  if(n<50){ state.meta.fieldPatch=FIELD_PATCH_VER; return 0; }
+  let touched=0;
+  const apply=(src,c)=>{
+    if(!src) return;
+    let ch=false;
+    const fill=(k,force)=>{
+      const v=src[k];
+      if(v==null||v==='') return;
+      if(force || !String(c[k]||'').trim()){ c[k]=v; ch=true; }
+    };
+    /* Prefer patched player/grade/serial when present; fill brand/set/year/num if blank */
+    if(src.player && src.player!==c.player){ c.player=src.player; ch=true; }
+    fill('brand'); fill('setName'); fill('year'); fill('num'); fill('team');
+    fill('variant'); fill('location'); fill('notes');
+    if(src.serial && !String(c.serial||'').trim()){ c.serial=src.serial; ch=true; }
+    if(src.grade && !String(c.grade||'').trim()){
+      c.grade=src.grade;
+      if(src.gradeCompany) c.gradeCompany=src.gradeCompany;
+      if(src.gradeValue!=null) c.gradeValue=src.gradeValue;
+      ch=true;
+    }
+    if(src.rookie && !c.rookie){ c.rookie=true; ch=true; }
+    if(ch) touched++;
+  };
+  try{
+    const pr=await fetch(FIELD_PATCH_URL,{cache:'no-store'});
+    if(pr.ok){
+      const pj=await pr.json();
+      const byId=new Map((pj.cards||[]).map(c=>[c.id,c]));
+      for(const c of state.cards) apply(byId.get(c.id), c);
+    }
+  }catch(e){ console.warn('field-patch', e); }
+  try{
+    /* Backfill blank brand/set from full seed for any remaining gaps */
+    const needBrand=(state.cards||[]).filter(c=>!String(c.brand||'').trim()).length;
+    if(needBrand>20){
+      const r=await fetch(COLLECTION_SEED_URL,{cache:'force-cache'});
+      if(r.ok){
+        const j=await r.json();
+        const byId=new Map((j.cards||[]).map(c=>[c.id,c]));
+        for(const c of state.cards){
+          if(String(c.brand||'').trim() && String(c.setName||'').trim()) continue;
+          apply(byId.get(c.id), c);
+        }
+      }
+    }
+  }catch(e){ console.warn('field seed backfill', e); }
+  state.meta.fieldPatch=FIELD_PATCH_VER;
+  state.meta.collectionSeed=state.meta.collectionSeed||COLLECTION_SEED_VER;
+  try{ save(); }catch(e){}
+  if(touched && typeof showToast==='function')
+    showToast('📇 '+touched.toLocaleString()+' cards updated · brand / grade / #');
+  return touched;
+}
 
 /** Merge free photos onto an existing vault without replacing cards. */
 async function ensureCollectionPhotos(){
@@ -2565,8 +2648,11 @@ async function load(){
 async function ensureCollectionSeed(){
   if(!state.meta)state.meta={};
   const n=(state.cards||[]).length;
-  const ver=state.meta.collectionSeed||'';
-  if(ver===COLLECTION_SEED_VER && n>=1000) return false;
+  /* Never wipe a large existing vault — field/photo patches enrich in place. */
+  if(n>=1000){
+    state.meta.collectionSeed=COLLECTION_SEED_VER;
+    return false;
+  }
   try{
     if(typeof showToast==='function') showToast('Loading Jay’s collection…');
     const r=await fetch(COLLECTION_SEED_URL,{cache:'no-store'});
@@ -2574,7 +2660,7 @@ async function ensureCollectionSeed(){
     const j=await r.json();
     if(!j||!Array.isArray(j.cards)||!j.cards.length) throw new Error('seed empty');
     state.cards=j.cards;
-    state.meta={...(state.meta||{}),...(j.meta||{}),collectionSeed:COLLECTION_SEED_VER,lastBackup:Date.now()};
+    state.meta={...(state.meta||{}),...(j.meta||{}),collectionSeed:COLLECTION_SEED_VER,fieldPatch:FIELD_PATCH_VER,lastBackup:Date.now()};
     if(typeof rebuildLocalChecklists==='function')rebuildLocalChecklists();
     save();
     if(typeof showToast==='function')
@@ -3245,9 +3331,22 @@ function filtered(){
   _filteredCache={key:cacheKey,rows:cs};
   return cs.slice();
 }
+function cardIdLine(c){
+  if(!c) return '';
+  const parts=[c.year, c.brand||c.setName, c.num?('#'+c.num):'', c.variant].filter(Boolean);
+  return parts.join(' · ');
+}
+function binderCapHtml(c){
+  const player=esc(c.player||c.setName||'Card');
+  const meta=esc(cardIdLine(c));
+  const g=String(c.grade||'').trim();
+  const grade=g?`<span class="bpGrade">${esc(g)}</span>`:'';
+  return `<span class="bpPlayer">${player}</span>${meta?`<span class="bpMeta">${meta}</span>`:''}${grade}`;
+}
 function badges(c){
   let b='';
   if(c.rookie)b+='<span class="badge b-rc">RC</span>';
+  if(c.grade)b+='<span class="badge b-grade">'+esc(String(c.grade).slice(0,16))+'</span>';
   if(c.serial)b+=`<span class="badge b-ser">/${esc(String(c.serial).replace(/^\//,''))}</span>`;
   if(c.variant)b+='<span class="badge b-ser">'+esc(String(c.variant).slice(0,14))+'</span>';
   if(dealHit(c))b+='<span class="badge b-deal">🔥 DEAL</span>';
@@ -3328,7 +3427,7 @@ function renderListPanel(cs){
         ${back}
         <div class="bpFace front imgReady" id="bf-${c.id}">${(()=>{const u=cardPhotoUrl(c,220);return u?`<img class="cardPhoto" alt="" decoding="async" loading="lazy" referrerpolicy="no-referrer" src="${esc(u)}">`:(typeof sportIcon==='function'?sportIcon(c.sport):'🃏');})()}</div>
         <div class="bpFace back" id="bb-${c.id}">${hasBackPhoto(c)?'':'—'}</div>
-        <div class="bpCap">${esc(c.player||c.setName||'Card')}</div>
+        <div class="bpCap">${binderCapHtml(c)}</div>
       </button>`;
     }).join('');
     return `<div class="binderWrap">
@@ -4441,28 +4540,41 @@ async function openSheet(){
   const gradeVals=coOn==='BGS'?['10','9.5','9','8.5','8','7.5','7']:['10','9.5','9','8.5','8','7','6','AUTH'];
   const isNew=!String(c.player||'').trim()&&!(c.prices&&c.prices.length)&&!c.grade&&!c.cost;
   const showHero=!isNew&&typeof renderValueHero==='function';
+  const idLine=cardIdLine(c);
+  const setBit=c.setName&&c.setName!==c.brand?esc(c.setName):'';
   $('sheet').innerHTML=`
    <div class="shead"><h2>${c.player?esc(c.player):'New card'} ${badges(c)}</h2>
     <button id="shClose" type="button" aria-label="Close">✕</button></div>
+   ${idLine||c.grade?`<div class="sheetIdLine">${c.brand||c.setName?`<span class="sidBrand">${esc(idLine)}</span>`:''}${setBit&&c.brand?`<span>· ${setBit}</span>`:''}${c.grade?`<span class="sidGrade">${esc(c.grade)}</span>`:''}${c.serial?`<span class="badge b-ser">/${esc(String(c.serial).replace(/^\//,''))}</span>`:''}</div>`:''}
    ${showHero?renderValueHero(c):''}
 
    <div class="sheetEssentials">
    <div class="f" style="position:relative;margin-top:4px"><label>Player name</label>
     <input data-k="player" id="inPlayer" value="${esc(c.player)}" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" enterkeyhint="next" placeholder="Type player name — e.g. Jose Altuve">
     <div class="autoc" id="autoc" style="display:none"></div></div>
+   <div class="g3" style="margin-top:6px">
+      ${F('Year','year',c.year,'inputmode="numeric" list="dlCasYear" placeholder="2024" enterkeyhint="next"')}
+      ${F('Brand','brand',c.brand,'list="dlCasBrand" placeholder="Topps / Bowman…" autocapitalize="words" enterkeyhint="next"')}
+      ${F('Card #','num',c.num,'list="dlCasNum" placeholder="e.g. 287" enterkeyhint="next"')}
+   </div>
+   ${F('Set / product','setName',c.setName,'list="dlCasSet" placeholder="Chrome Update, etc." autocapitalize="words" enterkeyhint="next"')}
+   <div class="casFields" style="margin-top:8px">
+    <div class="ct">Grade</div>
+    <div class="gradeChips" id="gradeCoChips">
+      ${['Raw','PSA','BGS','SGC','CGC'].map(g=>`<button type="button" data-co="${esc(g)}" class="${(g==='Raw'?!coOn:coOn===g)?'on':''}">${esc(g)}</button>`).join('')}
+    </div>
+    <div class="gradeChips" id="gradeValChips" style="margin-top:6px">
+      ${gradeVals.map(g=>`<button type="button" data-gv="${esc(g)}" class="${valOn===g?'on':''}">${esc(g)}</button>`).join('')}
+    </div>
+    <div class="f" style="margin-top:6px"><label>Shows as</label><input data-k="grade" value="${esc(c.grade||'')}" list="dlGrade" readonly style="opacity:.85" placeholder="PSA 10 / Raw"></div>
+   </div>
    <div id="propStrip" class="prop-panel cascade-host" ${c.player&&String(c.player).trim().length>=2?'':'hidden'}></div>
    </div>
 
    <details class="sheetAcc" id="sheetDetails" ${isNew?"open":""}>
-   <summary>Card details & market</summary>
+   <summary>More details · market · cert</summary>
    <div class="casFields">
-    <div class="ct">Card details</div>
-    <div class="g3">
-      ${F('Year','year',c.year,'inputmode="numeric" list="dlCasYear" placeholder="2024" enterkeyhint="next"')}
-      ${F('Brand','brand',c.brand,'list="dlCasBrand" placeholder="Topps / Bowman…" autocapitalize="words" enterkeyhint="next"')}
-      ${F('Card #','num',c.num,'list="dlCasNum" placeholder="e.g. 287" enterkeyhint="next"')}
-    </div>
-    ${F('Set / product','setName',c.setName,'list="dlCasSet" placeholder="Chrome Update, etc." autocapitalize="words" enterkeyhint="next"')}
+    <div class="ct">Extras</div>
     <div class="g2">${F('Team','team',c.team,'list="dlTeam" autocapitalize="words"')}<div class="f"><label>Sport</label><input value="Baseball" readonly></div></div>
     <div class="g3">
       ${F('Parallel / insert','variant',c.variant,'list="dlVar" autocapitalize="words"')}
@@ -4473,19 +4585,12 @@ async function openSheet(){
    <datalist id="dlCasYear"></datalist><datalist id="dlCasBrand"></datalist><datalist id="dlCasSet"></datalist><datalist id="dlCasNum"></datalist>
 
    <div class="casFields" style="margin-top:10px">
-    <div class="ct">Grading · company · cert #</div>
-    <div class="gradeChips" id="gradeCoChips">
-      ${['Raw','PSA','BGS','SGC','CGC'].map(g=>`<button type="button" data-co="${esc(g)}" class="${(g==='Raw'?!coOn:coOn===g)?'on':''}">${esc(g)}</button>`).join('')}
-    </div>
-    <div class="gradeChips" id="gradeValChips" style="margin-top:6px">
-      ${gradeVals.map(g=>`<button type="button" data-gv="${esc(g)}" class="${valOn===g?'on':''}">${esc(g)}</button>`).join('')}
-    </div>
-    <div class="gradeFields" style="margin-top:8px">
+    <div class="ct">Cert # · grade overrides</div>
+    <div class="gradeFields">
       ${F('Grading company','gradeCompany',c.gradeCompany||'','list="dlGradeCo" placeholder="PSA, BGS, SGC…" autocapitalize="characters" enterkeyhint="next"')}
       ${F('Grade','gradeValue',c.gradeValue||'','list="dlGradeVal" placeholder="10, 9.5, 9…" inputmode="decimal" enterkeyhint="next"')}
       ${F('Cert number','gradeCert',c.gradeCert||'','inputmode="numeric" placeholder="e.g. 12345678" enterkeyhint="done"')}
     </div>
-    <div class="f"><label>Shows as</label><input data-k="grade" value="${esc(c.grade||'')}" list="dlGrade" readonly style="opacity:.85" placeholder="PSA 10"></div>
    </div>
 
    <div class="g3" style="margin-top:8px">
@@ -7128,6 +7233,7 @@ async function init(){
   await idb.open();
   await load();
   await ensureCollectionSeed();
+  await ensureCollectionFields();
   await ensureCollectionPhotos();
   const scrub=scrubCsStoredKey();
   if(scrub==='cleared'){
